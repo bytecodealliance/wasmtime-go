@@ -22,6 +22,7 @@ jobs:
     - uses: actions/setup-go@v1
       with:
         go-version: ${{ matrix.go }}
+    - run: go vet
     - run: go test
     - run: go test -tags debug
     - run: go test -tags debug
@@ -38,12 +39,3 @@ jobs:
         go-version: '1.14'
     # https://stackoverflow.com/questions/42510140/check-format-for-continous-integration
     - run: "diff -u <(echo -n) <(gofmt -d ./)"
-
-  vet:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-go@v1
-      with:
-        go-version: '1.14'
-    - run: go vet
