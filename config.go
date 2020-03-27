@@ -21,3 +21,14 @@ func (config *Config) ptr() *C.wasm_config_t {
 	maybeGC()
 	return ret
 }
+
+
+
+
+
+
+
+
+
+
+

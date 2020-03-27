@@ -5,27 +5,36 @@ jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false
       matrix:
         #os: [ubuntu-latest, macos-latest, windows-latest]
         os: [ubuntu-latest, macos-latest]
         go: ['stable']
     steps:
-      - uses: actions/checkout@v2
+    - uses: actions/checkout@v2
 
-      # first download wasmtime's last static library build using python
-      - uses: actions/setup-python@v1
-        with:
-          python-version: 3.8
-      - run: python ci/download-wasmtime.py
+    # first download wasmtime's last static library build using python
+    - uses: actions/setup-python@v1
+      with:
+        python-version: 3.8
+    - run: python ci/download-wasmtime.py
 
-      # then run our go tests ...
-      - uses: actions/setup-go@v1
-        with:
-          go-version: ${{ matrix.go }}
-      - run: go test
-      - run: go test -tags debug
-      - run: go test -tags debug
-        env:
-          GODEBUG: cgocheck=2
-          GOGC: 1
+    # then run our go tests ...
+    - uses: actions/setup-go@v1
+      with:
+        go-version: ${{ matrix.go }}
+    - run: go test
+    - run: go test -tags debug
+    - run: go test -tags debug
+      env:
+        GODEBUG: cgocheck=2
+        GOGC: 1
+
+  fmt:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-go@v1
+      with:
+        go-version: stable
+    # https://stackoverflow.com/questions/42510140/check-format-for-continous-integration
+    - run: "diff -u <(echo -n) <(gofmt -d ./)"
