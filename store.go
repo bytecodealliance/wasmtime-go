@@ -4,10 +4,13 @@ package wasmtime
 import "C"
 import "runtime"
 
+// A `Store` is a general group of wasm instances, and many objects
+// must all be created with and reference the same `Store`
 type Store struct {
 	_ptr *C.wasm_store_t
 }
 
+// Creates a new `Store` from the configuration provided in `engine`
 func NewStore(engine *Engine) *Store {
 	store := &Store{_ptr: C.wasm_store_new(engine.ptr())}
 	runtime.KeepAlive(engine)

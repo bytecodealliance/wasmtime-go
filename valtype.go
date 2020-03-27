@@ -4,7 +4,8 @@ package wasmtime
 import "C"
 import "runtime"
 
-type ValKind int
+// Enumeration of different kinds of value types
+type ValKind C.wasm_valkind_t
 
 const (
 	KindI32     ValKind = C.WASM_I32
@@ -15,6 +16,7 @@ const (
 	KindFuncref ValKind = C.WASM_FUNCREF
 )
 
+// Renders this kind as a string, similar to the `*.wat` format
 func (ty ValKind) String() string {
 	switch ty {
 	case KindI32:
@@ -37,6 +39,7 @@ type ValType struct {
 	_ptr *C.wasm_valtype_t
 }
 
+// Creates a new `ValType` with the `kind` provided
 func NewValType(kind ValKind) *ValType {
 	valtype := &ValType{_ptr: C.wasm_valtype_new(C.wasm_valkind_t(kind))}
 	runtime.SetFinalizer(valtype, func(valtype *ValType) {
@@ -45,12 +48,15 @@ func NewValType(kind ValKind) *ValType {
 	return valtype
 }
 
+// Returns the corresponding `ValKind` for this `ValType`
 func (ty *ValType) Kind() ValKind {
 	ret := ValKind(C.wasm_valtype_kind(ty.ptr()))
 	runtime.KeepAlive(ty)
 	return ret
 }
 
+// Converts this `ValType` into a string according to the string representation
+// of `ValKind`.
 func (ty *ValType) String() string {
 	return ty.Kind().String()
 }

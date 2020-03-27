@@ -4,10 +4,15 @@ package wasmtime
 import "C"
 import "runtime"
 
+// An instance of a wasmtime engine which is used to create a `Store`.
+//
+// Engines are a form of global configuration for wasm compilations and modules
+// and such.
 type Engine struct {
 	_ptr *C.wasm_engine_t
 }
 
+// Creates a new `Engine` with default configuration.
 func NewEngine() *Engine {
 	engine := &Engine{_ptr: C.wasm_engine_new()}
 	runtime.SetFinalizer(engine, func(engine *Engine) {
@@ -16,6 +21,9 @@ func NewEngine() *Engine {
 	return engine
 }
 
+// Creates a new `Engine` with the `Config` provided
+//
+// Note that once a `Config` is passed to this method it cannot be used again.
 func NewEngineWithConfig(config *Config) *Engine {
 	if config.ptr() == nil {
 		panic("config already used")
