@@ -11,8 +11,15 @@ jobs:
         go: ['1.10', '1.11', '1.12', '1.13']
     steps:
       - uses: actions/checkout@v2
+
+      # first download wasmtime's last static library build using python
+      - uses: actions/setup-python@v1
+        with:
+          python-version: 3.8
+      - run: python3 download-wasmtime.py
+
+      # then run our go tests ...
       - uses: actions/setup-go@v1
         with:
           go-version: ${{ matrix.go }}
-      - run: python3 download-wasmtime.py
       - run: go test
