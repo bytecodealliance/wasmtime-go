@@ -7,5 +7,5 @@ package wasmtime
 import "C"
 
 func Foo() {
-  C.wasm_engine_new()
+  engine := C.wasm_engine_new()
 }
