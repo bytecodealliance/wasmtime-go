@@ -1,7 +1,6 @@
 package wasmtime
 
-// #cgo CFLAGS:-Iwasmtime/include
-// #cgo LDFLAGS:-lwasmtime -Lwasmtime/lib -lm -ldl
+// #cgo LDFLAGS:-lwasmtime
 // #include <wasm.h>
 // #include <wasi.h>
 // #include <wasmtime.h>

@@ -39,15 +39,11 @@ try:
 except FileNotFoundError:
     pass
 os.rename(filename.replace('.zip', '').replace('.tar.xz', ''), 'wasmtime')
-try:
-    os.remove('wasmtime/lib/libwasmtime.so')
-except FileNotFoundError:
-    pass
-try:
-    os.remove('wasmtime/lib/libwasmtime.dylib')
-except FileNotFoundError:
-    pass
-try:
-    os.remove('wasmtime/lib/wasmtime.dll')
-except FileNotFoundError:
-    pass
+
+print("::set-env name=CGO_CFLAGS::-Iwasmtime/include")
+print("::set-env name=CGO_LDFLAGS::-Lwasmtime/lib")
+
+if sys.platform == 'linux':
+    print("::set-env name=LD_LIBRARY_PATH::{}/wasmtime/lib" % os.getcwd())
+elif sys.platform == 'darwin':
+    print("::set-env name=DYLD_LIBRARY_PATH::{}/wasmtime/lib" % os.getcwd())
