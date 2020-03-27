@@ -1,8 +1,7 @@
 package wasmtime
 
-// #cgo LDFLAGS:-lwasmtime
-// #cgo windows CFLAGS:-DWASM_API_EXTERN=
-// #cgo windows LDFLAGS:-lkernel32
+// #cgo !windows LDFLAGS:-lwasmtime
+// #cgo windows LDFLAGS:-lwasmtime.dll
 // #include <wasm.h>
 // #include <wasi.h>
 // #include <wasmtime.h>
