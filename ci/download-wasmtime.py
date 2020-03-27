@@ -41,9 +41,9 @@ except FileNotFoundError:
 os.rename(filename.replace('.zip', '').replace('.tar.xz', ''), 'wasmtime')
 
 print("::set-env name=CGO_CFLAGS::-I%s/wasmtime/include" % os.getcwd())
-print("::set-env name=CGO_LDFLAGS::-L%s/wasmtime/lib" % os.getcwd())
+print("::set-env name=CGO_LDFLAGS::-L%s/wasmtime/lib -Wl,-rpath,%s/wasmtime/lib" % (os.getcwd(), os.getcwd()))
 
-if sys.platform == 'linux':
-    print("::set-env name=LD_LIBRARY_PATH::%s/wasmtime/lib" % os.getcwd())
-elif sys.platform == 'darwin':
-    print("::set-env name=DYLD_LIBRARY_PATH::%s/wasmtime/lib" % os.getcwd())
+# if sys.platform == 'linux':
+#     print("::set-env name=LD_LIBRARY_PATH::%s/wasmtime/lib" % os.getcwd())
+# elif sys.platform == 'darwin':
+#     print("::set-env name=DYLD_LIBRARY_PATH::%s/wasmtime/lib" % os.getcwd())
