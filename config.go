@@ -16,6 +16,7 @@ func NewConfig() *Config {
 	return config
 }
 
+// See comments in `ffi.go` for what's going on here
 func (config *Config) ptr() *C.wasm_config_t {
 	ret := config._ptr
 	maybeGC()

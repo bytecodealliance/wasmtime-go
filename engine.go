@@ -22,6 +22,7 @@ func NewEngineWithConfig(config *Config) *Engine {
 	}
 	engine := &Engine{_ptr: C.wasm_engine_new_with_config(config.ptr())}
 	runtime.SetFinalizer(config, nil)
+	config._ptr = nil
 	runtime.SetFinalizer(engine, func(engine *Engine) {
 		C.wasm_engine_delete(engine._ptr)
 	})
