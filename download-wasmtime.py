@@ -1,8 +1,6 @@
 # Helper script to download a precompiled binary of the wasmtime dll for the
 # current platform. Currently always downloads the dev release of wasmtime.
 
-print('real start')
-
 import urllib.request
 import zipfile
 import tarfile
@@ -10,8 +8,6 @@ import io
 import sys
 import os
 import shutil
-
-print('start')
 
 is_zip = False
 if sys.platform == 'linux':

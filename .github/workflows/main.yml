@@ -16,7 +16,7 @@ jobs:
       - uses: actions/setup-python@v1
         with:
           python-version: 3.8
-      - run: python3 download-wasmtime.py
+      - run: python download-wasmtime.py
 
       # then run our go tests ...
       - uses: actions/setup-go@v1
