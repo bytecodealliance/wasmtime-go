@@ -11,9 +11,9 @@ import shutil
 
 
 is_zip = False
-if sys.platform == 'linux':
+if sys.platform == 'linux' and False:
     filename = 'wasmtime-dev-x86_64-linux-c-api.tar.xz'
-elif sys.platform == 'win32':
+elif sys.platform == 'win32' or True:
     filename = 'wasmtime-dev-x86_64-windows-c-api.zip'
     is_zip = True
 elif sys.platform == 'darwin':
@@ -30,13 +30,7 @@ with urllib.request.urlopen(url) as f:
 
 if is_zip:
     t = zipfile.ZipFile(io.BytesIO(contents))
-    for member in t.namelist():
-        if not member.endswith('.dll'):
-            continue
-        contents = t.read(member)
-        with open("wasmtime/wasmtime.pyd", "wb") as f:
-            f.write(contents)
-        sys.exit(0)
+    t.extractall()
 else:
     t = tarfile.open(fileobj=io.BytesIO(contents))
     t.extractall()
