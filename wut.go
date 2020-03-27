@@ -1,4 +1,0 @@
-package wasmtime
-
-func Foo() {
-}
