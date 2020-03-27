@@ -10,7 +10,7 @@ if [ ! -d $build ]; then
   build=$WASMTIME/target/debug
 fi
 
-# export CGO_LDFLAGS="-L$build -Wl,-rpath,$build"
+export CGO_LDFLAGS="-L$build -Wl,-rpath,$build"
 export CGO_CFLAGS="-I$WASMTIME/crates/c-api/wasm-c-api/include -I$WASMTIME/crates/c-api/include"
 
 exec "$@"

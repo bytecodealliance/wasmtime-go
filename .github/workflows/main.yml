@@ -7,10 +7,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # os: [ubuntu-latest, macos-latest, windows-latest]
-        # go: ['1.10', '1.11', '1.12', '1.13', '1.14']
-        os: [windows-latest]
-        go: ['1.14']
+        #os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest]
+        go: ['stable']
     steps:
       - uses: actions/checkout@v2
 
@@ -24,4 +23,9 @@ jobs:
       - uses: actions/setup-go@v1
         with:
           go-version: ${{ matrix.go }}
-      - run: go test -x
+      - run: go test
+      - run: go test -tags debug
+      - run: go test -tags debug
+        env:
+          GODEBUG: cgocheck=2
+          GOGC: 1
