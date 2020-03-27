@@ -11,9 +11,9 @@ import shutil
 
 
 is_zip = False
-if sys.platform == 'linux' and False:
+if sys.platform == 'linux':
     filename = 'wasmtime-dev-x86_64-linux-c-api.tar.xz'
-elif sys.platform == 'win32' or True:
+elif sys.platform == 'win32':
     filename = 'wasmtime-dev-x86_64-windows-c-api.zip'
     is_zip = True
 elif sys.platform == 'darwin':
