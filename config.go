@@ -37,7 +37,7 @@ type ProfilingStrategy C.wasmtime_profiling_strategy_t
 const (
 	// No profiler will be used
 	PROFILING_STRATEGY_NONE = C.WASMTIME_PROFILING_STRATEGY_NONE
-        // The "jitdump" linux support will be used
+	// The "jitdump" linux support will be used
 	PROFILING_STRATEGY_JITDUMP = C.WASMTIME_PROFILING_STRATEGY_JITDUMP
 )
 

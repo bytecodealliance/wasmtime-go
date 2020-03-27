@@ -17,9 +17,9 @@ func TestConfig(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-        NewConfig().SetCraneliftDebugVerifier(true)
-        NewConfig().SetCraneliftOptLevel(OPT_LEVEL_NONE)
-        NewConfig().SetCraneliftOptLevel(OPT_LEVEL_SPEED)
-        NewConfig().SetCraneliftOptLevel(OPT_LEVEL_SPEED_AND_SIZE)
-        NewConfig().SetProfiler(PROFILING_STRATEGY_NONE)
+	NewConfig().SetCraneliftDebugVerifier(true)
+	NewConfig().SetCraneliftOptLevel(OPT_LEVEL_NONE)
+	NewConfig().SetCraneliftOptLevel(OPT_LEVEL_SPEED)
+	NewConfig().SetCraneliftOptLevel(OPT_LEVEL_SPEED_AND_SIZE)
+	NewConfig().SetProfiler(PROFILING_STRATEGY_NONE)
 }
