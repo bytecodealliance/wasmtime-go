@@ -48,7 +48,7 @@ func NewValType(kind ValKind) *ValType {
 
 func mkValType(ptr *C.wasm_valtype_t, owner interface{}) *ValType {
 	valtype := &ValType{_ptr: ptr, owner: owner}
-	if owner != nil {
+	if owner == nil {
 		runtime.SetFinalizer(valtype, func(valtype *ValType) {
 			C.wasm_valtype_delete(valtype._ptr)
 		})

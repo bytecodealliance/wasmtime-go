@@ -34,7 +34,7 @@ func mkValTypeList(tys []*ValType) C.wasm_valtype_vec_t {
 
 func mkFuncType(ptr *C.wasm_functype_t, owner interface{}) *FuncType {
 	functype := &FuncType{_ptr: ptr, owner: owner}
-	if owner != nil {
+	if owner == nil {
 		runtime.SetFinalizer(functype, func(functype *FuncType) {
 			C.wasm_functype_delete(functype._ptr)
 		})
