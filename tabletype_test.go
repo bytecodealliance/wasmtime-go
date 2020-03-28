@@ -14,7 +14,7 @@ func TestTableType(t *testing.T) {
 		panic("invalid max")
 	}
 
-        ty = NewTableType(NewValType(KindF64), Limits{Min: 1, Max: 129})
+	ty = NewTableType(NewValType(KindF64), Limits{Min: 1, Max: 129})
 	if ty.Element().Kind() != KindF64 {
 		panic("invalid kind")
 	}
