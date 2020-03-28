@@ -42,7 +42,7 @@ func (ty *TableType) Element() *ValType {
 	return mkValType(ptr, ty)
 }
 
-// Returns the type of value stored in this table
+// Returns limits on the size of this table type
 func (ty *TableType) Limits() Limits {
 	ptr := C.wasm_tabletype_limits(ty.ptr())
 	return mkLimits(ptr, ty)
