@@ -6,8 +6,8 @@ import "runtime"
 import "unsafe"
 
 type FuncType struct {
-	_ptr  *C.wasm_functype_t
-	owner interface{}
+	_ptr   *C.wasm_functype_t
+	_owner interface{}
 }
 
 // Creates a new `FuncType` with the `kind` provided
@@ -33,7 +33,7 @@ func mkValTypeList(tys []*ValType) C.wasm_valtype_vec_t {
 }
 
 func mkFuncType(ptr *C.wasm_functype_t, owner interface{}) *FuncType {
-	functype := &FuncType{_ptr: ptr, owner: owner}
+	functype := &FuncType{_ptr: ptr, _owner: owner}
 	if owner == nil {
 		runtime.SetFinalizer(functype, func(functype *FuncType) {
 			C.wasm_functype_delete(functype._ptr)
@@ -46,6 +46,13 @@ func (ty *FuncType) ptr() *C.wasm_functype_t {
 	ret := ty._ptr
 	maybeGC()
 	return ret
+}
+
+func (ty *FuncType) owner() interface{} {
+	if ty._owner != nil {
+		return ty._owner
+	}
+	return ty
 }
 
 // Returns the parameter types of this function type
@@ -67,8 +74,14 @@ func (ty *FuncType) convertTypeList(list *C.wasm_valtype_vec_t) []*ValType {
 	var ptr *C.wasm_valtype_t
 	for i := 0; i < int(list.size); i++ {
 		ptr := *(**C.wasm_valtype_t)(unsafe.Pointer(uintptr(base) + unsafe.Sizeof(ptr)*uintptr(i)))
-		ty := mkValType(ptr, ty)
+		ty := mkValType(ptr, ty.owner())
 		ret[i] = ty
 	}
 	return ret
+}
+
+// Converts this type to an instance of `ExternType`
+func (ty *FuncType) AsExtern() *ExternType {
+	ptr := C.wasm_functype_as_externtype_const(ty.ptr())
+	return mkExternType(ptr, ty.owner())
 }

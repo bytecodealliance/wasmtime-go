@@ -48,4 +48,19 @@ func TestFuncType(t *testing.T) {
 	if results[2].Kind() != KindI64 {
 		panic("unexpected kind")
 	}
+
+	ty = NewFuncType([]*ValType{}, []*ValType{})
+	ty2 := ty.AsExtern().FuncType()
+	if ty2 == nil {
+		panic("unexpected cast")
+	}
+	if ty.AsExtern().GlobalType() != nil {
+		panic("working cast")
+	}
+	if ty.AsExtern().MemoryType() != nil {
+		panic("working cast")
+	}
+	if ty.AsExtern().TableType() != nil {
+		panic("working cast")
+	}
 }

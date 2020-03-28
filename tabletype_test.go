@@ -24,4 +24,18 @@ func TestTableType(t *testing.T) {
 	if ty.Limits().Max != 129 {
 		panic("invalid max")
 	}
+
+	ty2 := ty.AsExtern().TableType()
+	if ty2 == nil {
+		panic("unexpected cast")
+	}
+	if ty.AsExtern().FuncType() != nil {
+		panic("working cast")
+	}
+	if ty.AsExtern().GlobalType() != nil {
+		panic("working cast")
+	}
+	if ty.AsExtern().MemoryType() != nil {
+		panic("working cast")
+	}
 }

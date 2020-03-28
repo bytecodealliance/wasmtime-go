@@ -36,8 +36,8 @@ func (ty ValKind) String() string {
 }
 
 type ValType struct {
-	_ptr  *C.wasm_valtype_t
-	owner interface{}
+	_ptr   *C.wasm_valtype_t
+	_owner interface{}
 }
 
 // Creates a new `ValType` with the `kind` provided
@@ -47,7 +47,7 @@ func NewValType(kind ValKind) *ValType {
 }
 
 func mkValType(ptr *C.wasm_valtype_t, owner interface{}) *ValType {
-	valtype := &ValType{_ptr: ptr, owner: owner}
+	valtype := &ValType{_ptr: ptr, _owner: owner}
 	if owner == nil {
 		runtime.SetFinalizer(valtype, func(valtype *ValType) {
 			C.wasm_valtype_delete(valtype._ptr)
@@ -73,4 +73,11 @@ func (valtype *ValType) ptr() *C.wasm_valtype_t {
 	ret := valtype._ptr
 	maybeGC()
 	return ret
+}
+
+func (ty *ValType) owner() interface{} {
+	if ty._owner != nil {
+		return ty._owner
+	}
+	return ty
 }
