@@ -16,8 +16,9 @@ func NewGlobalType(content *ValType, mutable bool) *GlobalType {
 	if mutable {
 		mutability = C.WASM_VAR
 	}
-	ptr := C.wasm_globaltype_new(content.ptr(), C.wasm_mutability_t(mutability))
+        content_ptr := C.wasm_valtype_new(C.wasm_valtype_kind(content.ptr()))
 	runtime.KeepAlive(content)
+	ptr := C.wasm_globaltype_new(content_ptr, C.wasm_mutability_t(mutability))
 
 	return mkGlobalType(ptr, nil)
 }
