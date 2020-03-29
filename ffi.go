@@ -2,7 +2,10 @@ package wasmtime
 
 // #cgo !windows LDFLAGS:-lwasmtime
 // #cgo windows LDFLAGS:-lwasmtime.dll
+// #include <wasm.h>
 import "C"
+import "runtime"
+import "unsafe"
 
 // # What's up with `ptr()` methods?
 //
@@ -35,3 +38,12 @@ import "C"
 //
 // If anyone else has a better idea of what to handle all this it would be very
 // much appreciated :)
+
+// Convert a Go string into an owned `wasm_byte_vec_t`
+func stringToByteVec(s string) C.wasm_byte_vec_t {
+	vec := C.wasm_byte_vec_t{}
+	C.wasm_byte_vec_new_uninitialized(&vec, C.size_t(len(s)))
+	C.memcpy(unsafe.Pointer(vec.data), unsafe.Pointer(C._GoStringPtr(s)), vec.size)
+	runtime.KeepAlive(s)
+        return vec
+}

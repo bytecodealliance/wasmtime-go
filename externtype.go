@@ -9,6 +9,10 @@ type ExternType struct {
 	_owner interface{}
 }
 
+type AsExtern interface {
+	AsExtern() *ExternType
+}
+
 func mkExternType(ptr *C.wasm_externtype_t, owner interface{}) *ExternType {
 	externtype := &ExternType{_ptr: ptr, _owner: owner}
 	if owner == nil {
