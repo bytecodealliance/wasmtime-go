@@ -7,10 +7,7 @@ import "runtime"
 import "unsafe"
 
 func Wat2Wasm(wat string) ([]byte, error) {
-	wat_vec := C.wasm_byte_vec_t{
-		size: C._GoStringLen(wat),
-		data: C._GoStringPtr(wat),
-	}
+	wat_vec := stringToBorrowedByteVec(wat)
 
 	ret_vec := C.wasm_byte_vec_t{}
 	ret_error := C.wasm_byte_vec_t{}
