@@ -45,14 +45,14 @@ func stringToByteVec(s string) C.wasm_byte_vec_t {
 	C.wasm_byte_vec_new_uninitialized(&vec, C.size_t(len(s)))
 	C.memcpy(unsafe.Pointer(vec.data), unsafe.Pointer(C._GoStringPtr(s)), vec.size)
 	runtime.KeepAlive(s)
-        return vec
+	return vec
 }
 
 // Convert a Go string into an borrowed `wasm_byte_vec_t`, be sure to keep the
 // string alive!
 func stringToBorrowedByteVec(s string) C.wasm_byte_vec_t {
-	return C.wasm_byte_vec_t {
-          data: C._GoStringPtr(s),
-          size: C._GoStringLen(s),
-        }
+	return C.wasm_byte_vec_t{
+		data: C._GoStringPtr(s),
+		size: C._GoStringLen(s),
+	}
 }
