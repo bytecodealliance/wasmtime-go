@@ -4,6 +4,7 @@ package wasmtime
 // #include <wasm.h>
 // #include <wasmtime.h>
 import "C"
+import "fmt"
 import "runtime"
 import "unsafe"
 
@@ -54,13 +55,34 @@ func (t *Trap) Message() string {
 }
 
 func (t *Trap) Error() string {
-	return t.Message()
+	base := t.Message()
+	frames := t.Frames()
+	if len(frames) == 0 {
+		return base
+	}
+	base += "\nwasm backtrace:\n"
+	for i, frame := range frames {
+		module_name := unwrapStrOr(frame.ModuleName(), "<unknown>")
+		default_name := fmt.Sprintf("<wasm function %d>", frame.FuncIndex())
+		func_name := unwrapStrOr(frame.FuncName(), default_name)
+		base += fmt.Sprintf("  %d: %s!%s\n", i, module_name, func_name)
+	}
+	return base
+}
+
+func unwrapStrOr(s *string, other string) string {
+	if s == nil {
+		return other
+	} else {
+		return *s
+	}
 }
 
 type frameList struct {
 	vec C.wasm_frame_vec_t
 }
 
+// Returns the wasm function frames that make up this trap
 func (t *Trap) Frames() []*Frame {
 	frames := &frameList{}
 	C.wasm_trap_trace(t.ptr(), &frames.vec)
