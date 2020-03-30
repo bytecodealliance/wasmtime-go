@@ -12,13 +12,13 @@ type Trap struct {
 
 // Creates a new `Trap` with the `name` and the type provided.
 func NewTrap(store *Store, message string) *Trap {
-        cs := C.CString(message)
-	message_vec := C.wasm_byte_vec_t {
-          data: cs,
-          size: C.size_t(len(message) + 1),
-        }
+	cs := C.CString(message)
+	message_vec := C.wasm_byte_vec_t{
+		data: cs,
+		size: C.size_t(len(message) + 1),
+	}
 	ptr := C.wasm_trap_new(store.ptr(), &message_vec)
-        C.free(unsafe.Pointer(cs))
+	C.free(unsafe.Pointer(cs))
 	runtime.KeepAlive(store)
 	return mkTrap(ptr)
 }
@@ -41,12 +41,14 @@ func (ty *Trap) ptr() *C.wasm_trap_t {
 func (ty *Trap) Message() string {
 	message := C.wasm_byte_vec_t{}
 	C.wasm_trap_message(ty.ptr(), &message)
-	ret := C.GoStringN(message.data, C.int(message.size - 1))
+	ret := C.GoStringN(message.data, C.int(message.size-1))
 	runtime.KeepAlive(ty)
 	C.wasm_byte_vec_delete(&message)
 	return ret
 }
 
 func (ty *Trap) Error() string {
-        return ty.Message()
+	return ty.Message()
 }
+
+// TODO: bind frames
