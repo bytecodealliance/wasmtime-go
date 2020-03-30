@@ -21,10 +21,10 @@ jobs:
     - uses: actions/setup-go@v1
       with:
         go-version: ${{ matrix.go }}
-    - run: go vet
-    - run: go test
-    - run: go test -tags debug
-    - run: go test -tags debug
+    - run: go vet ./...
+    - run: go test ./...
+    - run: go test -tags debug ./...
+    - run: go test -tags debug ./...
       env:
         GODEBUG: cgocheck=2
         GOGC: 1
