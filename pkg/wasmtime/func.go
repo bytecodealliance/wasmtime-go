@@ -454,3 +454,26 @@ func (f *Func) Call(args ...interface{}) (interface{}, *Trap) {
 	}
 
 }
+
+func (f *Func) AsExtern() *Extern {
+	ptr := C.wasm_func_as_extern(f.ptr())
+	return mkExtern(ptr, f.owner())
+}
+
+// Gets an exported item from the caller's module
+//
+// May return `nil` if the export doesn't, if it's not a memory, if there isn't
+// a caller, etc.
+func (c *Caller) GetExport(name string) *Extern {
+	if c.ptr == nil {
+		return nil
+	}
+	name_vec := stringToBorrowedByteVec(name)
+	ptr := C.wasmtime_caller_export_get(c.ptr, &name_vec)
+	runtime.KeepAlive(name)
+	if ptr == nil {
+		return nil
+	} else {
+		return mkExtern(ptr, nil)
+	}
+}

@@ -74,3 +74,8 @@ func (g *Global) Set(val Val) {
 	C.wasm_global_set(g.ptr(), &val.raw)
 	runtime.KeepAlive(g)
 }
+
+func (g *Global) AsExtern() *Extern {
+	ptr := C.wasm_global_as_extern(g.ptr())
+	return mkExtern(ptr, g.owner())
+}

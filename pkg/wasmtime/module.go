@@ -21,7 +21,8 @@ import "unsafe"
 import "errors"
 
 type Module struct {
-	_ptr *C.wasm_module_t
+	_ptr  *C.wasm_module_t
+	Store *Store
 }
 
 // Compiles a new `Module` from the `wasm` provided with the given configuration
@@ -42,7 +43,7 @@ func NewModule(store *Store, wasm []byte) (*Module, error) {
 	if ptr == nil {
 		return nil, errors.New("failed to compile module")
 	} else {
-		return mkModule(ptr), nil
+		return mkModule(ptr, store), nil
 	}
 }
 
@@ -58,8 +59,8 @@ func ModuleValidate(store *Store, wasm []byte) bool {
 	return bool(ret)
 }
 
-func mkModule(ptr *C.wasm_module_t) *Module {
-	module := &Module{_ptr: ptr}
+func mkModule(ptr *C.wasm_module_t, store *Store) *Module {
+	module := &Module{_ptr: ptr, Store: store}
 	runtime.SetFinalizer(module, func(module *Module) {
 		C.wasm_module_delete(module._ptr)
 	})

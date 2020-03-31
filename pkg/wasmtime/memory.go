@@ -56,15 +56,15 @@ func (m *Memory) Data() unsafe.Pointer {
 }
 
 // Returns the size, in bytes, that `Data()` is valid for
-func (m *Memory) DataSize() int {
-	ret := int(C.wasm_memory_data_size(m.ptr()))
+func (m *Memory) DataSize() uintptr {
+	ret := uintptr(C.wasm_memory_data_size(m.ptr()))
 	runtime.KeepAlive(m)
 	return ret
 }
 
 // Returns the size, in wasm pages, of this memory
-func (m *Memory) Size() int {
-	ret := int(C.wasm_memory_size(m.ptr()))
+func (m *Memory) Size() uint32 {
+	ret := uint32(C.wasm_memory_size(m.ptr()))
 	runtime.KeepAlive(m)
 	return ret
 }
@@ -74,4 +74,9 @@ func (m *Memory) Grow(delta uint) bool {
 	ret := C.wasm_memory_grow(m.ptr(), C.wasm_memory_pages_t(delta))
 	runtime.KeepAlive(m)
 	return bool(ret)
+}
+
+func (m *Memory) AsExtern() *Extern {
+	ptr := C.wasm_memory_as_extern(m.ptr())
+	return mkExtern(ptr, m.owner())
 }
