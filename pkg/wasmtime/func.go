@@ -66,7 +66,7 @@ func NewFunc(
 	ptr := C.c_func_new_with_env(
 		store.ptr(),
 		ty.ptr(),
-		unsafe.Pointer(uintptr(idx)),
+		C.size_t(idx),
 		0,
 	)
 	runtime.KeepAlive(store)
@@ -78,11 +78,11 @@ func NewFunc(
 //export goTrampolineNew
 func goTrampolineNew(
 	caller_ptr *C.wasmtime_caller_t,
-	env unsafe.Pointer,
+	env C.size_t,
 	args_ptr *C.wasm_val_t,
 	results_ptr *C.wasm_val_t,
 ) *C.wasm_trap_t {
-	idx := int(uintptr(env))
+	idx := int(env)
 	caller := &Caller{ptr: caller_ptr}
 	defer func() { caller.ptr = nil }()
 
@@ -200,7 +200,7 @@ func WrapFunc(
 	ptr := C.c_func_new_with_env(
 		store.ptr(),
 		wasm_ty.ptr(),
-		unsafe.Pointer(uintptr(idx)),
+		C.size_t(idx),
 		1, // this is `WrapFunc`, not `NewFunc`
 	)
 	runtime.KeepAlive(store)
@@ -225,7 +225,7 @@ func typeToValType(ty reflect.Type) *ValType {
 //export goTrampolineWrap
 func goTrampolineWrap(
 	caller_ptr *C.wasmtime_caller_t,
-	env unsafe.Pointer,
+	env C.size_t,
 	args_ptr *C.wasm_val_t,
 	results_ptr *C.wasm_val_t,
 ) *C.wasm_trap_t {
@@ -235,20 +235,20 @@ func goTrampolineWrap(
 
 	// Convert all our parameters to `[]reflect.Value`, taking special care
 	// for `*Caller` but otherwise reading everything through `Val`.
-	idx := int(uintptr(env))
+	idx := int(env)
 	entry := WRAP_MAP[idx]
 	ty := entry.callback.Type()
 	params := make([]reflect.Value, ty.NumIn())
-	base := uintptr(unsafe.Pointer(args_ptr))
+	base := unsafe.Pointer(args_ptr)
 	var raw C.wasm_val_t
 	for i := 0; i < len(params); i++ {
 		if ty.In(i) == reflect.TypeOf(caller) {
 			params[i] = reflect.ValueOf(caller)
 		} else {
-			ptr := (*C.wasm_val_t)(unsafe.Pointer(base))
+			ptr := (*C.wasm_val_t)(base)
 			val := Val{raw: *ptr}
 			params[i] = reflect.ValueOf(val.Get())
-			base += unsafe.Sizeof(raw)
+			base = unsafe.Pointer(uintptr(base) + unsafe.Sizeof(raw))
 		}
 	}
 
@@ -267,9 +267,9 @@ func goTrampolineWrap(
 
 	// And now we write all the results into memory depending on the type
 	// of value that was returned.
-	base = uintptr(unsafe.Pointer(results_ptr))
+	base = unsafe.Pointer(results_ptr)
 	for _, result := range results {
-		ptr := (*C.wasm_val_t)(unsafe.Pointer(base))
+		ptr := (*C.wasm_val_t)(base)
 		switch val := result.Interface().(type) {
 		case int32:
 			*ptr = ValI32(val).raw
@@ -287,7 +287,7 @@ func goTrampolineWrap(
 		default:
 			panic("unknown return type")
 		}
-		base += unsafe.Sizeof(raw)
+		base = unsafe.Pointer(uintptr(base) + unsafe.Sizeof(raw))
 	}
 	return nil
 }
