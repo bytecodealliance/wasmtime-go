@@ -153,6 +153,27 @@ func TestFuncWrongRet(t *testing.T) {
 	}
 }
 
+func TestFuncWrongRet2(t *testing.T) {
+	store := NewStore(NewEngine())
+	cb := func(caller *Caller, args []Val) ([]Val, *Trap) {
+		return []Val{}, nil
+	}
+	i32 := NewValType(KindI32)
+	f := NewFunc(store, NewFuncType([]*ValType{}, []*ValType{i32}), cb)
+
+	var caught interface{}
+	func() {
+		defer func() { caught = recover() }()
+		f.Call()
+	}()
+	if caught == nil {
+		panic("expected a panic")
+	}
+	if !strings.Contains(caught.(string), "callback didn't produce the correct number of results") {
+		panic(fmt.Sprintf("wrong panic message %s", caught))
+	}
+}
+
 func TestFuncWrapSimple(t *testing.T) {
 	store := NewStore(NewEngine())
 	called := false
