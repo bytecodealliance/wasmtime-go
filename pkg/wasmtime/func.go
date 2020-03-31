@@ -4,6 +4,7 @@ package wasmtime
 // #include <wasmtime.h>
 import "C"
 import "unsafe"
+import "reflect"
 import "runtime"
 
 type Func struct {
@@ -15,15 +16,22 @@ type Caller struct {
 	ptr *C.wasmtime_caller_t
 }
 
-type mapEntry struct {
+type newMapEntry struct {
 	store    *Store
 	callback func(*Caller, []Val) ([]Val, *Trap)
 	nparams  int
 	results  []*ValType
 }
 
-var NEW_MAP = make(map[int]mapEntry)
-var SLAB slab
+type wrapMapEntry struct {
+	store    *Store
+	callback reflect.Value
+}
+
+var NEW_MAP = make(map[int]newMapEntry)
+var NEW_MAP_SLAB slab
+var WRAP_MAP = make(map[int]wrapMapEntry)
+var WRAP_MAP_SLAB slab
 var LAST_PANIC interface{}
 
 // Creates a new `Func` with the given `ty` which, when called, will call `f`
@@ -47,8 +55,8 @@ func NewFunc(
 	ty *FuncType,
 	f func(*Caller, []Val) ([]Val, *Trap),
 ) *Func {
-	idx := SLAB.allocate()
-	NEW_MAP[idx] = mapEntry{
+	idx := NEW_MAP_SLAB.allocate()
+	NEW_MAP[idx] = newMapEntry{
 		store:    store,
 		callback: f,
 		nparams:  len(ty.Params()),
@@ -59,6 +67,7 @@ func NewFunc(
 		store.ptr(),
 		ty.ptr(),
 		unsafe.Pointer(uintptr(idx)),
+		0,
 	)
 	runtime.KeepAlive(store)
 	runtime.KeepAlive(ty)
@@ -66,18 +75,8 @@ func NewFunc(
 	return mkFunc(ptr, nil)
 }
 
-func mkFunc(ptr *C.wasm_func_t, owner interface{}) *Func {
-	f := &Func{_ptr: ptr, _owner: owner}
-	if owner == nil {
-		runtime.SetFinalizer(f, func(f *Func) {
-			C.wasm_func_delete(f._ptr)
-		})
-	}
-	return f
-}
-
-//export goTrampoline
-func goTrampoline(
+//export goTrampolineNew
+func goTrampolineNew(
 	caller_ptr *C.wasmtime_caller_t,
 	env unsafe.Pointer,
 	args_ptr *C.wasm_val_t,
@@ -129,11 +128,185 @@ func goTrampoline(
 	return nil
 }
 
-//export goFinalize
-func goFinalize(env unsafe.Pointer) {
+//export goFinalizeNew
+func goFinalizeNew(env unsafe.Pointer) {
 	idx := int(uintptr(env))
 	delete(NEW_MAP, idx)
-	SLAB.deallocate(idx)
+	NEW_MAP_SLAB.deallocate(idx)
+}
+
+// Wraps a native Go function, `f`, as a wasm `Func`.
+//
+// This function differs from `NewFunc` in that it will determine the type
+// signature of the wasm function given the input value `f`. The `f` value
+// provided must be a Go function. It may take any number of the following
+// types as arguments:
+//
+// * `int32` - a wasm `i32`
+// * `int64` - a wasm `i64`
+// * `float32` - a wasm `f32`
+// * `float64` - a wasm `f32`
+// * `*Caller` - information about the caller's instance
+//
+// The Go function may return any number of values. It can return any number of
+// primitive wasm values (integers/floats), and the last return value may
+// optionally be `*Trap`. If a `*Trap` returned is `nil` then the other values
+// are returned from the wasm function. Otherwise the `*Trap` is returned and
+// it's considered as if the host function trapped.
+//
+// If the function `f` panics then the panic will be propagated to the caller.
+func WrapFunc(
+	store *Store,
+	f interface{},
+) *Func {
+	// Make sure the `interface{}` passed in was indeed a function
+	val := reflect.ValueOf(f)
+	ty := val.Type()
+	if ty.Kind() != reflect.Func {
+		panic("callback provided must be a `func`")
+	}
+
+	// infer the parameter types, and `*Caller` type is special in the
+	// parameters so be sure to case on that as well.
+	params := make([]*ValType, 0, ty.NumIn())
+	var caller *Caller
+	for i := 0; i < ty.NumIn(); i++ {
+		param_ty := ty.In(i)
+		if param_ty != reflect.TypeOf(caller) {
+			params = append(params, typeToValType(param_ty))
+		}
+	}
+
+	// Then infer the result types, where a final `*Trap` result value is
+	// also special.
+	results := make([]*ValType, 0, ty.NumOut())
+	var trap *Trap
+	for i := 0; i < ty.NumOut(); i++ {
+		result_ty := ty.Out(i)
+		if i == ty.NumOut()-1 && result_ty == reflect.TypeOf(trap) {
+			continue
+		}
+		results = append(results, typeToValType(result_ty))
+	}
+	wasm_ty := NewFuncType(params, results)
+
+	// Store our `f` callback into the slab for wrapped functions, and now
+	// we've got everything necessary to make thw asm handle.
+	idx := WRAP_MAP_SLAB.allocate()
+	WRAP_MAP[idx] = wrapMapEntry{
+		callback: val,
+		store:    store,
+	}
+	ptr := C.c_func_new_with_env(
+		store.ptr(),
+		wasm_ty.ptr(),
+		unsafe.Pointer(uintptr(idx)),
+		1, // this is `WrapFunc`, not `NewFunc`
+	)
+	runtime.KeepAlive(store)
+	runtime.KeepAlive(wasm_ty)
+	return mkFunc(ptr, nil)
+}
+
+func typeToValType(ty reflect.Type) *ValType {
+	switch ty.Kind() {
+	case reflect.Int32:
+		return NewValType(KindI32)
+	case reflect.Int64:
+		return NewValType(KindI64)
+	case reflect.Float32:
+		return NewValType(KindF32)
+	case reflect.Float64:
+		return NewValType(KindF64)
+	}
+	panic("invalid type in callback that couldn't be converted to wasm type")
+}
+
+//export goTrampolineWrap
+func goTrampolineWrap(
+	caller_ptr *C.wasmtime_caller_t,
+	env unsafe.Pointer,
+	args_ptr *C.wasm_val_t,
+	results_ptr *C.wasm_val_t,
+) *C.wasm_trap_t {
+	// Wrap our `Caller` argument in case it's needed
+	caller := &Caller{ptr: caller_ptr}
+	defer func() { caller.ptr = nil }()
+
+	// Convert all our parameters to `[]reflect.Value`, taking special care
+	// for `*Caller` but otherwise reading everything through `Val`.
+	idx := int(uintptr(env))
+	entry := WRAP_MAP[idx]
+	ty := entry.callback.Type()
+	params := make([]reflect.Value, ty.NumIn())
+	base := uintptr(unsafe.Pointer(args_ptr))
+	var raw C.wasm_val_t
+	for i := 0; i < len(params); i++ {
+		if ty.In(i) == reflect.TypeOf(caller) {
+			params[i] = reflect.ValueOf(caller)
+		} else {
+			ptr := (*C.wasm_val_t)(unsafe.Pointer(base))
+			val := Val{raw: *ptr}
+			params[i] = reflect.ValueOf(val.Get())
+			base += unsafe.Sizeof(raw)
+		}
+	}
+
+	// Invoke the function, catching any panics to propagate later. Panics
+	// result in immediately returning a trap.
+	var results []reflect.Value
+	func() {
+		defer func() { LAST_PANIC = recover() }()
+		results = entry.callback.Call(params)
+	}()
+	if LAST_PANIC != nil {
+		trap := NewTrap(entry.store, "go panicked")
+		runtime.SetFinalizer(trap, nil)
+		return trap.ptr()
+	}
+
+	// And now we write all the results into memory depending on the type
+	// of value that was returned.
+	base = uintptr(unsafe.Pointer(results_ptr))
+	for _, result := range results {
+		ptr := (*C.wasm_val_t)(unsafe.Pointer(base))
+		switch val := result.Interface().(type) {
+		case int32:
+			*ptr = ValI32(val).raw
+		case int64:
+			*ptr = ValI64(val).raw
+		case float32:
+			*ptr = ValF32(val).raw
+		case float64:
+			*ptr = ValF64(val).raw
+		case *Trap:
+			if val != nil {
+				runtime.SetFinalizer(val, nil)
+				return val.ptr()
+			}
+		default:
+			panic("unknown return type")
+		}
+		base += unsafe.Sizeof(raw)
+	}
+	return nil
+}
+
+//export goFinalizeWrap
+func goFinalizeWrap(env unsafe.Pointer) {
+	idx := int(uintptr(env))
+	delete(WRAP_MAP, idx)
+	WRAP_MAP_SLAB.deallocate(idx)
+}
+
+func mkFunc(ptr *C.wasm_func_t, owner interface{}) *Func {
+	f := &Func{_ptr: ptr, _owner: owner}
+	if owner == nil {
+		runtime.SetFinalizer(f, func(f *Func) {
+			C.wasm_func_delete(f._ptr)
+		})
+	}
+	return f
 }
 
 func (f *Func) ptr() *C.wasm_func_t {
@@ -204,27 +377,45 @@ func (f *Func) Call(args ...interface{}) (interface{}, *Trap) {
 	}
 	params_raw := make([]C.wasm_val_t, len(params))
 	for i, param := range args {
-		if val, ok := param.(int32); ok {
+		switch val := param.(type) {
+		case int:
+			switch params[i].Kind() {
+			case KindI32:
+				params_raw[i] = ValI32(int32(val)).raw
+			case KindI64:
+				params_raw[i] = ValI64(int64(val)).raw
+			default:
+				panic("integer provided for non-integer argument")
+			}
+		case int32:
+			if params[i].Kind() != KindI32 {
+				panic("unexpected i32 argument")
+			}
 			params_raw[i] = ValI32(val).raw
-			continue
-		}
-		if val, ok := param.(int64); ok {
+		case int64:
+			if params[i].Kind() != KindI64 {
+				panic("unexpected i64 argument")
+			}
 			params_raw[i] = ValI64(val).raw
-			continue
-		}
-		if val, ok := param.(float32); ok {
+		case float32:
+			if params[i].Kind() != KindF32 {
+				panic("unexpected f32 argument")
+			}
 			params_raw[i] = ValF32(val).raw
-			continue
-		}
-		if val, ok := param.(float64); ok {
+		case float64:
+			if params[i].Kind() != KindF64 {
+				panic("unexpected f64 argument")
+			}
 			params_raw[i] = ValF64(val).raw
-			continue
-		}
-		if val, ok := param.(Val); ok {
+		case Val:
+			if params[i].Kind() != val.Kind() {
+				panic("unexpected type in `Val`argument")
+			}
 			params_raw[i] = val.raw
-			continue
+
+		default:
+			panic("couldn't convert provided argument to wasm type")
 		}
-		panic("couldn't convert provided argument to wasm type")
 	}
 
 	results_raw := make([]C.wasm_val_t, f.ResultArity())
