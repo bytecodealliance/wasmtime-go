@@ -35,7 +35,7 @@ func (l *Linker) AllowShadowing(allow bool) {
 	runtime.KeepAlive(l)
 }
 
-func (l *Linker) Define(module, name string, item AsExtern) bool {
+func (l *Linker) Define(module, name string, item AsExtern) error {
 	extern := item.AsExtern()
 	module_vec := stringToBorrowedByteVec(module)
 	name_vec := stringToBorrowedByteVec(name)
@@ -44,28 +44,40 @@ func (l *Linker) Define(module, name string, item AsExtern) bool {
 	runtime.KeepAlive(module)
 	runtime.KeepAlive(name)
 	runtime.KeepAlive(extern)
-	return bool(ret)
+	if ret {
+		return nil
+	} else {
+		return errors.New("failed to define item")
+	}
 }
 
-func (l *Linker) DefineFunc(module, name string, f interface{}) bool {
+func (l *Linker) DefineFunc(module, name string, f interface{}) error {
 	return l.Define(module, name, WrapFunc(l.Store, f))
 }
 
-func (l *Linker) DefineInstance(name string, instance *Instance) bool {
+func (l *Linker) DefineInstance(name string, instance *Instance) error {
 	name_vec := stringToBorrowedByteVec(name)
 	ret := C.wasmtime_linker_define_instance(l.ptr(), &name_vec, instance.ptr())
 	runtime.KeepAlive(l)
 	runtime.KeepAlive(name)
 	runtime.KeepAlive(instance)
-	return bool(ret)
+	if ret {
+		return nil
+	} else {
+		return errors.New("failed to define item")
+	}
 }
 
-// func (l *Linker) DefineWasi(instance *WasiInstance) bool {
-// 	ret := C.wasmtime_linker_define_wasi(l.ptr(), instance.ptr())
-// 	runtime.KeepAlive(l)
-// 	runtime.KeepAlive(instance)
-// 	return bool(ret)
-// }
+func (l *Linker) DefineWasi(instance *WasiInstance) error {
+	ret := C.wasmtime_linker_define_wasi(l.ptr(), instance.ptr())
+	runtime.KeepAlive(l)
+	runtime.KeepAlive(instance)
+	if ret {
+		return nil
+	} else {
+		return errors.New("failed to define item")
+	}
+}
 
 func (l *Linker) Instantiate(module *Module) (*Instance, error) {
 	var trap *C.wasm_trap_t

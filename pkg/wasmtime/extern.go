@@ -36,6 +36,12 @@ func (e *Extern) owner() interface{} {
 	return e
 }
 
+func (e *Extern) Type() *ExternType {
+	ptr := C.wasm_extern_type(e.ptr())
+	runtime.KeepAlive(e)
+	return mkExternType(ptr, nil)
+}
+
 func (e *Extern) Func() *Func {
 	ret := C.wasm_extern_as_func(e.ptr())
 	if ret == nil {
