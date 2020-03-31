@@ -342,3 +342,65 @@ func TestFuncWrapPanic(t *testing.T) {
 		panic("bad results")
 	}
 }
+
+func TestWrongArgsPanic(t *testing.T) {
+	store := NewStore(NewEngine())
+	i32 := WrapFunc(store, func(a int32) {})
+	i32.Call(1)
+	i32.Call(int32(1))
+	i32.Call(ValI32(1))
+	assertPanic(func() { i32.Call() })
+	assertPanic(func() { i32.Call(1, 2) })
+	assertPanic(func() { i32.Call(int64(1)) })
+	assertPanic(func() { i32.Call(float32(1)) })
+	assertPanic(func() { i32.Call(float64(1)) })
+	assertPanic(func() { i32.Call(float32(1)) })
+	assertPanic(func() { i32.Call(float64(1)) })
+	assertPanic(func() { i32.Call(ValI64(1)) })
+	assertPanic(func() { i32.Call(ValF32(1)) })
+	assertPanic(func() { i32.Call(ValF64(1)) })
+
+	i64 := WrapFunc(store, func(a int64) {})
+	i64.Call(1)
+	i64.Call(int64(1))
+	i64.Call(ValI64(1))
+	assertPanic(func() { i64.Call(int32(1)) })
+	assertPanic(func() { i64.Call(float32(1)) })
+	assertPanic(func() { i64.Call(float64(1)) })
+	assertPanic(func() { i64.Call(float32(1)) })
+	assertPanic(func() { i64.Call(float64(1)) })
+	assertPanic(func() { i64.Call(ValI32(1)) })
+	assertPanic(func() { i64.Call(ValF32(1)) })
+	assertPanic(func() { i64.Call(ValF64(1)) })
+
+	f32 := WrapFunc(store, func(a float32) {})
+	f32.Call(float32(1))
+	assertPanic(func() { f32.Call(1) })
+	assertPanic(func() { f32.Call(f32) })
+	if f32.ParamArity() != 1 {
+		panic("wrong param arity")
+	}
+}
+
+func assertPanic(f func()) {
+	var catch interface{}
+	func() {
+		defer func() { catch = recover() }()
+		f()
+	}()
+	if catch == nil {
+		panic("closure didn't panic")
+	}
+
+}
+
+func TestNotCallable(t *testing.T) {
+	store := NewStore(NewEngine())
+	assertPanic(func() { WrapFunc(store, 1) })
+}
+
+func TestBadTypes(t *testing.T) {
+	store := NewStore(NewEngine())
+	assertPanic(func() { WrapFunc(store, func(*Store) {}) })
+	assertPanic(func() { WrapFunc(store, func() *Store { return nil }) })
+}

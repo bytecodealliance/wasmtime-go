@@ -284,8 +284,6 @@ func goTrampolineWrap(
 				runtime.SetFinalizer(val, nil)
 				return val.ptr()
 			}
-		default:
-			panic("unknown return type")
 		}
 		base = unsafe.Pointer(uintptr(base) + unsafe.Sizeof(raw))
 	}
