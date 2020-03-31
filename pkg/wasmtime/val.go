@@ -42,12 +42,12 @@ func ValF64(val float64) Val {
 }
 
 // Returns the kind of value that this `Val` contains.
-func (v *Val) Kind() ValKind {
+func (v Val) Kind() ValKind {
 	return ValKind(v.raw.kind)
 }
 
 // Returns the underlying 32-bit integer if this is an `i32`, or panics.
-func (v *Val) I32() int32 {
+func (v Val) I32() int32 {
 	if v.Kind() != KindI32 {
 		panic("not an i32")
 	}
@@ -55,7 +55,7 @@ func (v *Val) I32() int32 {
 }
 
 // Returns the underlying 64-bit integer if this is an `i64`, or panics.
-func (v *Val) I64() int64 {
+func (v Val) I64() int64 {
 	if v.Kind() != KindI64 {
 		panic("not an i64")
 	}
@@ -63,7 +63,7 @@ func (v *Val) I64() int64 {
 }
 
 // Returns the underlying 32-bit float if this is an `f32`, or panics.
-func (v *Val) F32() float32 {
+func (v Val) F32() float32 {
 	if v.Kind() != KindF32 {
 		panic("not an f32")
 	}
@@ -71,7 +71,7 @@ func (v *Val) F32() float32 {
 }
 
 // Returns the underlying 64-bit float if this is an `f64`, or panics.
-func (v *Val) F64() float64 {
+func (v Val) F64() float64 {
 	if v.Kind() != KindF64 {
 		panic("not an f64")
 	}
@@ -79,7 +79,7 @@ func (v *Val) F64() float64 {
 }
 
 // Returns the underlying 64-bit float if this is an `f64`, or panics.
-func (v *Val) Get() interface{} {
+func (v Val) Get() interface{} {
 	switch v.Kind() {
 	case KindI32:
 		return v.I32()
