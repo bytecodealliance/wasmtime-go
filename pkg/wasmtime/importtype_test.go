@@ -16,7 +16,7 @@ func TestImportType(t *testing.T) {
 	}
 
 	gty := NewGlobalType(NewValType(KindI32), true)
-	ty = NewImportType("", "", gty.AsExtern())
+	ty = NewImportType("", "", gty.AsExternType())
 	if ty.Module() != "" {
 		panic("invalid module")
 	}

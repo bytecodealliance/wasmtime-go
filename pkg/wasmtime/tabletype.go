@@ -56,7 +56,7 @@ func (ty *TableType) Limits() Limits {
 }
 
 // Converts this type to an instance of `ExternType`
-func (ty *TableType) AsExtern() *ExternType {
+func (ty *TableType) AsExternType() *ExternType {
 	ptr := C.wasm_tabletype_as_externtype_const(ty.ptr())
 	return mkExternType(ptr, ty.owner())
 }

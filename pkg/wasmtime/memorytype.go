@@ -46,7 +46,7 @@ func (ty *MemoryType) Limits() Limits {
 }
 
 // Converts this type to an instance of `ExternType`
-func (ty *MemoryType) AsExtern() *ExternType {
+func (ty *MemoryType) AsExternType() *ExternType {
 	ptr := C.wasm_memorytype_as_externtype_const(ty.ptr())
 	return mkExternType(ptr, ty.owner())
 }

@@ -18,17 +18,17 @@ func TestGlobalType(t *testing.T) {
 	}
 
 	ty = NewGlobalType(NewValType(KindI32), true)
-	ty2 := ty.AsExtern().GlobalType()
+	ty2 := ty.AsExternType().GlobalType()
 	if ty2 == nil {
 		panic("unexpected cast")
 	}
-	if ty.AsExtern().FuncType() != nil {
+	if ty.AsExternType().FuncType() != nil {
 		panic("working cast")
 	}
-	if ty.AsExtern().MemoryType() != nil {
+	if ty.AsExternType().MemoryType() != nil {
 		panic("working cast")
 	}
-	if ty.AsExtern().TableType() != nil {
+	if ty.AsExternType().TableType() != nil {
 		panic("working cast")
 	}
 }

@@ -11,14 +11,14 @@ type ImportType struct {
 
 // Creates a new `ImportType` with the given `module` and `name` and the type
 // provided.
-func NewImportType(module, name string, ty AsExtern) *ImportType {
+func NewImportType(module, name string, ty AsExternType) *ImportType {
 	module_vec := stringToByteVec(module)
 	name_vec := stringToByteVec(name)
 
 	// Creating an import type requires taking ownership, so create a copy
 	// so we don't have to invalidate pointers here. Shouldn't be too
 	// costly in theory anyway.
-	extern := ty.AsExtern()
+	extern := ty.AsExternType()
 	ptr := C.wasm_externtype_copy(extern.ptr())
 	runtime.KeepAlive(extern)
 

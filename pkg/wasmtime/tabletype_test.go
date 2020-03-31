@@ -25,17 +25,17 @@ func TestTableType(t *testing.T) {
 		panic("invalid max")
 	}
 
-	ty2 := ty.AsExtern().TableType()
+	ty2 := ty.AsExternType().TableType()
 	if ty2 == nil {
 		panic("unexpected cast")
 	}
-	if ty.AsExtern().FuncType() != nil {
+	if ty.AsExternType().FuncType() != nil {
 		panic("working cast")
 	}
-	if ty.AsExtern().GlobalType() != nil {
+	if ty.AsExternType().GlobalType() != nil {
 		panic("working cast")
 	}
-	if ty.AsExtern().MemoryType() != nil {
+	if ty.AsExternType().MemoryType() != nil {
 		panic("working cast")
 	}
 }

@@ -50,17 +50,17 @@ func TestFuncType(t *testing.T) {
 	}
 
 	ty = NewFuncType([]*ValType{}, []*ValType{})
-	ty2 := ty.AsExtern().FuncType()
+	ty2 := ty.AsExternType().FuncType()
 	if ty2 == nil {
 		panic("unexpected cast")
 	}
-	if ty.AsExtern().GlobalType() != nil {
+	if ty.AsExternType().GlobalType() != nil {
 		panic("working cast")
 	}
-	if ty.AsExtern().MemoryType() != nil {
+	if ty.AsExternType().MemoryType() != nil {
 		panic("working cast")
 	}
-	if ty.AsExtern().TableType() != nil {
+	if ty.AsExternType().TableType() != nil {
 		panic("working cast")
 	}
 }

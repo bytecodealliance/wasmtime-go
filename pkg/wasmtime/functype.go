@@ -81,7 +81,7 @@ func (ty *FuncType) convertTypeList(list *C.wasm_valtype_vec_t) []*ValType {
 }
 
 // Converts this type to an instance of `ExternType`
-func (ty *FuncType) AsExtern() *ExternType {
+func (ty *FuncType) AsExternType() *ExternType {
 	ptr := C.wasm_functype_as_externtype_const(ty.ptr())
 	return mkExternType(ptr, ty.owner())
 }

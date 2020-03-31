@@ -9,8 +9,8 @@ type ExternType struct {
 	_owner interface{}
 }
 
-type AsExtern interface {
-	AsExtern() *ExternType
+type AsExternType interface {
+	AsExternType() *ExternType
 }
 
 func mkExternType(ptr *C.wasm_externtype_t, owner interface{}) *ExternType {
@@ -77,6 +77,6 @@ func (ty *ExternType) MemoryType() *MemoryType {
 }
 
 // Returns this type itself
-func (ty *ExternType) AsExtern() *ExternType {
+func (ty *ExternType) AsExternType() *ExternType {
 	return ty
 }

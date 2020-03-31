@@ -60,7 +60,7 @@ func (ty *GlobalType) Mutable() bool {
 }
 
 // Converts this type to an instance of `ExternType`
-func (ty *GlobalType) AsExtern() *ExternType {
+func (ty *GlobalType) AsExternType() *ExternType {
 	ptr := C.wasm_globaltype_as_externtype_const(ty.ptr())
 	return mkExternType(ptr, ty.owner())
 }

@@ -10,13 +10,13 @@ type ExportType struct {
 }
 
 // Creates a new `ExportType` with the `name` and the type provided.
-func NewExportType(name string, ty AsExtern) *ExportType {
+func NewExportType(name string, ty AsExternType) *ExportType {
 	name_vec := stringToByteVec(name)
 
 	// Creating an export type requires taking ownership, so create a copy
 	// so we don't have to invalidate pointers here. Shouldn't be too
 	// costly in theory anyway.
-	extern := ty.AsExtern()
+	extern := ty.AsExternType()
 	ptr := C.wasm_externtype_copy(extern.ptr())
 	runtime.KeepAlive(extern)
 
