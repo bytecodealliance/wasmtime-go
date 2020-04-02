@@ -6,16 +6,11 @@ package main
 import (
 	"fmt"
 	"github.com/alexcrichton/wasmtime-go/pkg/wasmtime"
-	"io/ioutil"
 )
 
 func main() {
 	store := wasmtime.NewStore(wasmtime.NewEngine())
-	wat, err := ioutil.ReadFile("./examples/gcd.wat")
-	check(err)
-	wasm, err := wasmtime.Wat2Wasm(string(wat))
-	check(err)
-	module, err := wasmtime.NewModule(store, wasm)
+	module, err := wasmtime.NewModuleFromFile(store, "./examples/gcd/gcd.wat")
 	check(err)
 	instance, err := wasmtime.NewInstance(module, []*wasmtime.Extern{})
 	check(err)

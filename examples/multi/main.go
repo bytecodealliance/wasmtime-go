@@ -17,7 +17,7 @@ func main() {
 	store := wasmtime.NewStore(wasmtime.NewEngineWithConfig(config))
 
 	println("Compiling module...")
-	module, err := wasmtime.NewModuleFromFile(store, "examples/multi.wat")
+	module, err := wasmtime.NewModuleFromFile(store, "examples/multi/multi.wat")
 	check(err)
 
 	println("Creating callback...")

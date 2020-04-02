@@ -38,13 +38,14 @@ func TestFuncTrap(t *testing.T) {
 		return nil, NewTrap(store, "x")
 	}
 	f := NewFunc(store, NewFuncType([]*ValType{}, []*ValType{}), cb)
-	results, trap := f.Call()
-	if trap == nil {
+	results, err := f.Call()
+	if err == nil {
 		panic("bad trap")
 	}
 	if results != nil {
 		panic("bad results")
 	}
+	trap := err.(*Trap)
 	if trap.Message() != "x" {
 		panic("bad message")
 	}
@@ -58,10 +59,10 @@ func TestFuncPanic(t *testing.T) {
 	f := NewFunc(store, NewFuncType([]*ValType{}, []*ValType{}), cb)
 	var caught interface{}
 	var results interface{}
-	var trap *Trap
+	var err error
 	func() {
 		defer func() { caught = recover() }()
-		results, trap = f.Call()
+		results, err = f.Call()
 	}()
 	if caught == nil {
 		panic("panic didn't work")
@@ -69,7 +70,7 @@ func TestFuncPanic(t *testing.T) {
 	if caught.(string) != "x" {
 		panic("value didn't propagate")
 	}
-	if trap != nil {
+	if err != nil {
 		panic("bad trap")
 	}
 	if results != nil {
@@ -299,10 +300,11 @@ func TestFuncWrapRetErrorTrap(t *testing.T) {
 	f := WrapFunc(store, func(c *Caller) *Trap {
 		return NewTrap(store, "x")
 	})
-	_, trap := f.Call()
-	if trap == nil {
+	_, err := f.Call()
+	if err == nil {
 		panic("expected trap")
 	}
+	trap := err.(*Trap)
 	if trap.Message() != "x" {
 		panic("wrong trap")
 	}
@@ -313,9 +315,9 @@ func TestFuncWrapMultiRetWithTrap(t *testing.T) {
 	f := WrapFunc(store, func(c *Caller) (int32, float32, *Trap) {
 		return 1, 2, nil
 	})
-	_, trap := f.Call()
-	if trap != nil {
-		panic(trap)
+	_, err := f.Call()
+	if err != nil {
+		panic(err)
 	}
 }
 
@@ -324,10 +326,10 @@ func TestFuncWrapPanic(t *testing.T) {
 	f := WrapFunc(store, func() { panic("x") })
 	var caught interface{}
 	var results interface{}
-	var trap *Trap
+	var err error
 	func() {
 		defer func() { caught = recover() }()
-		results, trap = f.Call()
+		results, err = f.Call()
 	}()
 	if caught == nil {
 		panic("panic didn't work")
@@ -335,8 +337,8 @@ func TestFuncWrapPanic(t *testing.T) {
 	if caught.(string) != "x" {
 		panic("value didn't propagate")
 	}
-	if trap != nil {
-		panic("bad trap")
+	if err != nil {
+		panic(err)
 	}
 	if results != nil {
 		panic("bad results")

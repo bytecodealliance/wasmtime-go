@@ -15,7 +15,7 @@ func main() {
 	// Create our `Store` context and then compile a module and create an
 	// instance from the compiled module all in one go.
 	wasmtime_store := wasmtime.NewStore(wasmtime.NewEngine())
-	module, err := wasmtime.NewModuleFromFile(wasmtime_store, "examples/memory.wat")
+	module, err := wasmtime.NewModuleFromFile(wasmtime_store, "examples/memory/memory.wat")
 	check(err)
 	instance, err := wasmtime.NewInstance(module, []*wasmtime.Extern{})
 	check(err)

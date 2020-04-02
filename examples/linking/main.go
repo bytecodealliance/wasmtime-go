@@ -19,9 +19,9 @@ func main() {
 	check(err)
 
 	// Next we'll load up and compile our two modules
-	linking1_mod, err := wasmtime.NewModuleFromFile(store, "examples/linking1.wat")
+	linking1_mod, err := wasmtime.NewModuleFromFile(store, "examples/linking/linking1.wat")
 	check(err)
-	linking2_mod, err := wasmtime.NewModuleFromFile(store, "examples/linking2.wat")
+	linking2_mod, err := wasmtime.NewModuleFromFile(store, "examples/linking/linking2.wat")
 	check(err)
 
 	// We can now instantiate the first module, and then we'll register it
