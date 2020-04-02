@@ -1,7 +1,6 @@
 package wasmtime
 
-// #include "func.h"
-// #include <wasmtime.h>
+// #include "shims.h"
 import "C"
 import "unsafe"
 import "reflect"
@@ -468,9 +467,13 @@ func (c *Caller) GetExport(name string) *Extern {
 	if c.ptr == nil {
 		return nil
 	}
-	name_vec := stringToBorrowedByteVec(name)
-	ptr := C.wasmtime_caller_export_get(c.ptr, &name_vec)
+	ptr := C.go_caller_export_get(
+		c.ptr,
+		C._GoStringPtr(name),
+		C._GoStringLen(name),
+	)
 	runtime.KeepAlive(name)
+	runtime.KeepAlive(c)
 	if ptr == nil {
 		return nil
 	} else {

@@ -1,6 +1,7 @@
 package wasmtime
 
 // #include <wasmtime.h>
+// #include "shims.h"
 import "C"
 import "runtime"
 import "errors"
@@ -37,9 +38,14 @@ func (l *Linker) AllowShadowing(allow bool) {
 
 func (l *Linker) Define(module, name string, item AsExtern) error {
 	extern := item.AsExtern()
-	module_vec := stringToBorrowedByteVec(module)
-	name_vec := stringToBorrowedByteVec(name)
-	ret := C.wasmtime_linker_define(l.ptr(), &module_vec, &name_vec, extern.ptr())
+	ret := C.go_linker_define(
+		l.ptr(),
+		C._GoStringPtr(module),
+		C._GoStringLen(module),
+		C._GoStringPtr(name),
+		C._GoStringLen(name),
+		extern.ptr(),
+	)
 	runtime.KeepAlive(l)
 	runtime.KeepAlive(module)
 	runtime.KeepAlive(name)
@@ -56,8 +62,12 @@ func (l *Linker) DefineFunc(module, name string, f interface{}) error {
 }
 
 func (l *Linker) DefineInstance(name string, instance *Instance) error {
-	name_vec := stringToBorrowedByteVec(name)
-	ret := C.wasmtime_linker_define_instance(l.ptr(), &name_vec, instance.ptr())
+	ret := C.go_linker_define_instance(
+		l.ptr(),
+		C._GoStringPtr(name),
+		C._GoStringLen(name),
+		instance.ptr(),
+	)
 	runtime.KeepAlive(l)
 	runtime.KeepAlive(name)
 	runtime.KeepAlive(instance)

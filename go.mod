@@ -1,3 +1,3 @@
-module github.com/alexcrichton/wasmtime
+module github.com/alexcrichton/wasmtime-go
 
 go 1.14
