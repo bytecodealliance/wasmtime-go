@@ -16,9 +16,12 @@ package wasmtime
 //    return wasm_module_validate(store, &vec);
 // }
 import "C"
-import "runtime"
-import "unsafe"
-import "errors"
+import (
+	"errors"
+	"io/ioutil"
+	"runtime"
+	"unsafe"
+)
 
 type Module struct {
 	_ptr  *C.wasm_module_t
@@ -45,6 +48,27 @@ func NewModule(store *Store, wasm []byte) (*Module, error) {
 	} else {
 		return mkModule(ptr, store), nil
 	}
+}
+
+// Reads the contents of the `file` provided and interprets them as either the
+// text format or the binary format for WebAssembly.
+//
+// Afterwards delegates to the `NewModule` constructor with the contents read.
+func NewModuleFromFile(store *Store, file string) (*Module, error) {
+	wasm, err := ioutil.ReadFile(file)
+	if err != nil {
+		return nil, err
+	}
+	// If this wasm isn't actually wasm, treat it as the text format and
+	// parse it as such.
+	if len(wasm) > 0 && wasm[0] != 0 {
+		wasm, err = Wat2Wasm(string(wasm))
+		if err != nil {
+			return nil, err
+		}
+	}
+	return NewModule(store, wasm)
+
 }
 
 // Validates whether `wasm` would be a valid wasm module according to the

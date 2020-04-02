@@ -7,7 +7,8 @@ import "unsafe"
 import "errors"
 
 type Instance struct {
-	_ptr *C.wasm_instance_t
+	_ptr    *C.wasm_instance_t
+	exports map[string]*Extern
 }
 
 // Instantiates a WebAssembly `module` with the `imports` provided.
@@ -46,14 +47,21 @@ func NewInstance(module *Module, imports []*Extern) (*Instance, error) {
 		}
 		return nil, errors.New("failed to create instance")
 	}
-	return mkInstance(ptr), nil
+	return mkInstance(ptr, module), nil
 }
 
-func mkInstance(ptr *C.wasm_instance_t) *Instance {
-	instance := &Instance{_ptr: ptr}
+func mkInstance(ptr *C.wasm_instance_t, module *Module) *Instance {
+	instance := &Instance{
+		_ptr:    ptr,
+		exports: make(map[string]*Extern),
+	}
 	runtime.SetFinalizer(instance, func(instance *Instance) {
 		C.wasm_instance_delete(instance._ptr)
 	})
+	exports := instance.Exports()
+	for i, ty := range module.Exports() {
+		instance.exports[ty.Name()] = exports[i]
+	}
 	return instance
 }
 
@@ -88,4 +96,11 @@ func (i *Instance) Exports() []*Extern {
 		ret[i] = ty
 	}
 	return ret
+}
+
+// Attempts to find an export on this instance by `name`
+//
+// May return `nil` if this instance has no export named `name`
+func (i *Instance) GetExport(name string) *Extern {
+	return i.exports[name]
 }

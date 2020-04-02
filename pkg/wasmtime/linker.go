@@ -100,5 +100,5 @@ func (l *Linker) Instantiate(module *Module) (*Instance, error) {
 		}
 		return nil, errors.New("failed to instantiate")
 	}
-	return mkInstance(ret), nil
+	return mkInstance(ret, module), nil
 }
