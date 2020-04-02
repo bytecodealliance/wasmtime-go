@@ -19,7 +19,7 @@ func main() {
 	run := instance.Exports()[0].Func()
 	result, err := run.Call(6, 27)
 	check(err)
-	fmt.Printf("gcd(6, 27) = %d", result.(int32))
+	fmt.Printf("gcd(6, 27) = %d\n", result.(int32))
 }
 func check(e error) {
 	if e != nil {

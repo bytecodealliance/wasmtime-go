@@ -367,7 +367,7 @@ func (f *Func) ResultArity() int {
 //
 // 3. If a panic in Go ends up happening somewhere, then this function will
 //    panic.
-func (f *Func) Call(args ...interface{}) (interface{}, *Trap) {
+func (f *Func) Call(args ...interface{}) (interface{}, error) {
 	params := f.Type().Params()
 	if len(args) != len(params) {
 		panic("wrong number of arguments provided")
