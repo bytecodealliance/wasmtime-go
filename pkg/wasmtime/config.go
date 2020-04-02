@@ -11,11 +11,11 @@ type Strategy C.wasmtime_strategy_t
 
 const (
 	// Wasmtime will automatically pick an appropriate compilation strategy
-	STRATEGY_AUTO = C.WASMTIME_STRATEGY_AUTO
+	STRATEGY_AUTO Strategy = C.WASMTIME_STRATEGY_AUTO
 	// Force wasmtime to use the Cranelift backend
-	STRATEGY_CRANELIFT = C.WASMTIME_STRATEGY_CRANELIFT
+	STRATEGY_CRANELIFT Strategy = C.WASMTIME_STRATEGY_CRANELIFT
 	// Force wasmtime to use the lightbeam backend
-	STRATEGY_LIGHTBEAM = C.WASMTIME_STRATEGY_LIGHTBEAM
+	STRATEGY_LIGHTBEAM Strategy = C.WASMTIME_STRATEGY_LIGHTBEAM
 )
 
 // What degree of optimization wasmtime will perform on generated machine code
@@ -23,12 +23,12 @@ type OptLevel C.wasmtime_opt_level_t
 
 const (
 	// No optimizations will be performed
-	OPT_LEVEL_NONE = C.WASMTIME_OPT_LEVEL_NONE
+	OPT_LEVEL_NONE OptLevel = C.WASMTIME_OPT_LEVEL_NONE
 	// Machine code will be optimized to be as fast as possible
-	OPT_LEVEL_SPEED = C.WASMTIME_OPT_LEVEL_SPEED
+	OPT_LEVEL_SPEED OptLevel = C.WASMTIME_OPT_LEVEL_SPEED
 	// Machine code will be optimized for speed, but also optimized
 	// to be small, sometimes at the cost of speed.
-	OPT_LEVEL_SPEED_AND_SIZE = C.WASMTIME_OPT_LEVEL_SPEED_AND_SIZE
+	OPT_LEVEL_SPEED_AND_SIZE OptLevel = C.WASMTIME_OPT_LEVEL_SPEED_AND_SIZE
 )
 
 // What sort of profiling to enable, if any.
@@ -36,9 +36,9 @@ type ProfilingStrategy C.wasmtime_profiling_strategy_t
 
 const (
 	// No profiler will be used
-	PROFILING_STRATEGY_NONE = C.WASMTIME_PROFILING_STRATEGY_NONE
+	PROFILING_STRATEGY_NONE ProfilingStrategy = C.WASMTIME_PROFILING_STRATEGY_NONE
 	// The "jitdump" linux support will be used
-	PROFILING_STRATEGY_JITDUMP = C.WASMTIME_PROFILING_STRATEGY_JITDUMP
+	PROFILING_STRATEGY_JITDUMP ProfilingStrategy = C.WASMTIME_PROFILING_STRATEGY_JITDUMP
 )
 
 // Configuration of an `Engine` which is used to globally configure things

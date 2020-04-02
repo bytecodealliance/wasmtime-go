@@ -18,6 +18,10 @@ import "errors"
 import "runtime"
 import "unsafe"
 
+// Converts the text format of WebAssembly to the binary format.
+//
+// Takes the text format in-memory as input, and returns either the binary
+// encoding of the text format or an error if parsing fails.
 func Wat2Wasm(wat string) ([]byte, error) {
 	ret_vec := C.wasm_byte_vec_t{}
 	ret_error := C.wasm_byte_vec_t{}

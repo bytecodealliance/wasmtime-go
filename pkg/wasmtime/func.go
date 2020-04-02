@@ -27,11 +27,11 @@ type wrapMapEntry struct {
 	callback reflect.Value
 }
 
-var NEW_MAP = make(map[int]newMapEntry)
-var NEW_MAP_SLAB slab
-var WRAP_MAP = make(map[int]wrapMapEntry)
-var WRAP_MAP_SLAB slab
-var LAST_PANIC interface{}
+var gNEW_MAP = make(map[int]newMapEntry)
+var gNEW_MAP_SLAB slab
+var gWRAP_MAP = make(map[int]wrapMapEntry)
+var gWRAP_MAP_SLAB slab
+var gLAST_PANIC interface{}
 
 // Creates a new `Func` with the given `ty` which, when called, will call `f`
 //
@@ -54,8 +54,8 @@ func NewFunc(
 	ty *FuncType,
 	f func(*Caller, []Val) ([]Val, *Trap),
 ) *Func {
-	idx := NEW_MAP_SLAB.allocate()
-	NEW_MAP[idx] = newMapEntry{
+	idx := gNEW_MAP_SLAB.allocate()
+	gNEW_MAP[idx] = newMapEntry{
 		store:    store,
 		callback: f,
 		nparams:  len(ty.Params()),
@@ -85,7 +85,7 @@ func goTrampolineNew(
 	caller := &Caller{ptr: caller_ptr}
 	defer func() { caller.ptr = nil }()
 
-	entry := NEW_MAP[idx]
+	entry := gNEW_MAP[idx]
 	params := make([]Val, entry.nparams)
 	var val C.wasm_val_t
 	base := unsafe.Pointer(args_ptr)
@@ -97,7 +97,7 @@ func goTrampolineNew(
 	var results []Val
 	var trap *Trap
 	func() {
-		defer func() { LAST_PANIC = recover() }()
+		defer func() { gLAST_PANIC = recover() }()
 		results, trap = entry.callback(caller, params)
 		if trap != nil {
 			return
@@ -111,7 +111,7 @@ func goTrampolineNew(
 			}
 		}
 	}()
-	if trap == nil && LAST_PANIC != nil {
+	if trap == nil && gLAST_PANIC != nil {
 		trap = NewTrap(entry.store, "go panicked")
 	}
 	if trap != nil {
@@ -130,8 +130,8 @@ func goTrampolineNew(
 //export goFinalizeNew
 func goFinalizeNew(env unsafe.Pointer) {
 	idx := int(uintptr(env))
-	delete(NEW_MAP, idx)
-	NEW_MAP_SLAB.deallocate(idx)
+	delete(gNEW_MAP, idx)
+	gNEW_MAP_SLAB.deallocate(idx)
 }
 
 // Wraps a native Go function, `f`, as a wasm `Func`.
@@ -141,11 +141,15 @@ func goFinalizeNew(env unsafe.Pointer) {
 // provided must be a Go function. It may take any number of the following
 // types as arguments:
 //
-// * `int32` - a wasm `i32`
-// * `int64` - a wasm `i64`
-// * `float32` - a wasm `f32`
-// * `float64` - a wasm `f32`
-// * `*Caller` - information about the caller's instance
+// `int32` - a wasm `i32`
+//
+// `int64` - a wasm `i64`
+//
+// `float32` - a wasm `f32`
+//
+// `float64` - a wasm `f32`
+//
+// `*Caller` - information about the caller's instance
 //
 // The Go function may return any number of values. It can return any number of
 // primitive wasm values (integers/floats), and the last return value may
@@ -191,8 +195,8 @@ func WrapFunc(
 
 	// Store our `f` callback into the slab for wrapped functions, and now
 	// we've got everything necessary to make thw asm handle.
-	idx := WRAP_MAP_SLAB.allocate()
-	WRAP_MAP[idx] = wrapMapEntry{
+	idx := gWRAP_MAP_SLAB.allocate()
+	gWRAP_MAP[idx] = wrapMapEntry{
 		callback: val,
 		store:    store,
 	}
@@ -235,7 +239,7 @@ func goTrampolineWrap(
 	// Convert all our parameters to `[]reflect.Value`, taking special care
 	// for `*Caller` but otherwise reading everything through `Val`.
 	idx := int(env)
-	entry := WRAP_MAP[idx]
+	entry := gWRAP_MAP[idx]
 	ty := entry.callback.Type()
 	params := make([]reflect.Value, ty.NumIn())
 	base := unsafe.Pointer(args_ptr)
@@ -255,10 +259,10 @@ func goTrampolineWrap(
 	// result in immediately returning a trap.
 	var results []reflect.Value
 	func() {
-		defer func() { LAST_PANIC = recover() }()
+		defer func() { gLAST_PANIC = recover() }()
 		results = entry.callback.Call(params)
 	}()
-	if LAST_PANIC != nil {
+	if gLAST_PANIC != nil {
 		trap := NewTrap(entry.store, "go panicked")
 		runtime.SetFinalizer(trap, nil)
 		return trap.ptr()
@@ -292,8 +296,8 @@ func goTrampolineWrap(
 //export goFinalizeWrap
 func goFinalizeWrap(env unsafe.Pointer) {
 	idx := int(uintptr(env))
-	delete(WRAP_MAP, idx)
-	WRAP_MAP_SLAB.deallocate(idx)
+	delete(gWRAP_MAP, idx)
+	gWRAP_MAP_SLAB.deallocate(idx)
 }
 
 func mkFunc(ptr *C.wasm_func_t, owner interface{}) *Func {
@@ -346,27 +350,31 @@ func (f *Func) ResultArity() int {
 // `args` as specified by the type of this function. This property is checked
 // at runtime. Each `args` may have one of the following types:
 //
-// * `int32` - a wasm `i32`
-// * `int64` - a wasm `i64`
-// * `float32` - a wasm `f32`
-// * `float64` - a wasm `f64`
-// * `Val` - correspond to a wasm value
+// `int32` - a wasm `i32`
+//
+// `int64` - a wasm `i64`
+//
+// `float32` - a wasm `f32`
+//
+// `float64` - a wasm `f64`
+//
+// `Val` - correspond to a wasm value
 //
 // Any other types of `args` will cause this function to panic.
 //
 // This function will have one of three results:
 //
 // 1. If the function returns successfully, then the `interface{}` return
-//    argument will be the result of the function. If there were 0 results then
-//    this value is `nil`. If there was one result then this is that result.
-//    Otherwise if there were multiple results then `[]Val` is returned.
+// argument will be the result of the function. If there were 0 results then
+// this value is `nil`. If there was one result then this is that result.
+// Otherwise if there were multiple results then `[]Val` is returned.
 //
 // 2. If this function invocation traps, then the returned `interface{}` value
-//    will be `nil` and a non-`nil` `*Trap` will be returned with information
-//    about the trap that happened.
+// will be `nil` and a non-`nil` `*Trap` will be returned with information
+// about the trap that happened.
 //
 // 3. If a panic in Go ends up happening somewhere, then this function will
-//    panic.
+// panic.
 func (f *Func) Call(args ...interface{}) (interface{}, error) {
 	params := f.Type().Params()
 	if len(args) != len(params) {
@@ -431,8 +439,8 @@ func (f *Func) Call(args ...interface{}) (interface{}, error) {
 
 	if trap != nil {
 		trap := mkTrap(trap)
-		last_panic := LAST_PANIC
-		LAST_PANIC = nil
+		last_panic := gLAST_PANIC
+		gLAST_PANIC = nil
 		if last_panic != nil {
 			panic(last_panic)
 		}
@@ -459,7 +467,7 @@ func (f *Func) AsExtern() *Extern {
 	return mkExtern(ptr, f.owner())
 }
 
-// Gets an exported item from the caller's module
+// Gets an exported item from the caller's module.
 //
 // May return `nil` if the export doesn't, if it's not a memory, if there isn't
 // a caller, etc.

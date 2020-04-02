@@ -1,5 +1,6 @@
 package wasmtime
 
+import "fmt"
 import "testing"
 
 func TestLinker(t *testing.T) {
@@ -86,4 +87,57 @@ func TestLinkerTrap(t *testing.T) {
 	if err == nil {
 		panic("expected failure")
 	}
+}
+
+func ExampleLinker() {
+	store := NewStore(NewEngine())
+
+	// Compile two wasm modules where the first references the second
+	wasm1, err := Wat2Wasm(`
+	    (module
+		(import "wasm2" "double" (func $double (param i32) (result i32)))
+		(func (export "double_and_add") (param i32 i32) (result i32)
+		  local.get 0
+		  call $double
+		  local.get 1
+		  i32.add)
+	    )
+	`)
+	check(err)
+
+	wasm2, err := Wat2Wasm(`
+	    (module
+		(func (export "double") (param i32) (result i32)
+		  local.get 0
+		  i32.const 2
+		  i32.mul)
+	    )
+	`)
+	check(err)
+
+	// Next compile both modules
+	module1, err := NewModule(store, wasm1)
+	check(err)
+	module2, err := NewModule(store, wasm2)
+	check(err)
+
+	linker := NewLinker(store)
+
+	// The second module is instantiated first since it has no imports, and
+	// then we insert the instance back into the linker under the name
+	// the first module expects.
+	instance2, err := linker.Instantiate(module2)
+	check(err)
+	err = linker.DefineInstance("wasm2", instance2)
+	check(err)
+
+	// And now we can instantiate our first module, executing the result
+	// afterwards
+	instance1, err := linker.Instantiate(module1)
+	check(err)
+	double_and_add := instance1.GetExport("double_and_add").Func()
+	result, err := double_and_add.Call(2, 3)
+	check(err)
+	fmt.Print(result.(int32))
+	// Output: 7
 }

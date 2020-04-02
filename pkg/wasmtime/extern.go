@@ -36,12 +36,14 @@ func (e *Extern) owner() interface{} {
 	return e
 }
 
+// Returns the type of this export
 func (e *Extern) Type() *ExternType {
 	ptr := C.wasm_extern_type(e.ptr())
 	runtime.KeepAlive(e)
 	return mkExternType(ptr, nil)
 }
 
+// Returns a Func if this export is a function or nil otherwise
 func (e *Extern) Func() *Func {
 	ret := C.wasm_extern_as_func(e.ptr())
 	if ret == nil {
@@ -51,6 +53,7 @@ func (e *Extern) Func() *Func {
 	}
 }
 
+// Returns a Global if this export is a global or nil otherwise
 func (e *Extern) Global() *Global {
 	ret := C.wasm_extern_as_global(e.ptr())
 	if ret == nil {
@@ -60,6 +63,7 @@ func (e *Extern) Global() *Global {
 	}
 }
 
+// Returns a Memory if this export is a memory or nil otherwise
 func (e *Extern) Memory() *Memory {
 	ret := C.wasm_extern_as_memory(e.ptr())
 	if ret == nil {
@@ -69,6 +73,7 @@ func (e *Extern) Memory() *Memory {
 	}
 }
 
+// Returns a Table if this export is a table or nil otherwise
 func (e *Extern) Table() *Table {
 	ret := C.wasm_extern_as_table(e.ptr())
 	if ret == nil {
