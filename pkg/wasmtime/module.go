@@ -1,23 +1,22 @@
 package wasmtime
 
-// #include <wasm.h>
+// #include <wasmtime.h>
 //
-// wasm_module_t* go_module_new(wasm_store_t *store, uint8_t *bytes, size_t len) {
+// wasmtime_error_t *go_module_new(wasm_store_t *store, uint8_t *bytes, size_t len, wasm_module_t **ret) {
 //    wasm_byte_vec_t vec;
 //    vec.data = bytes;
 //    vec.size = len;
-//    return wasm_module_new(store, &vec);
+//    return wasmtime_module_new(store, &vec, ret);
 // }
 //
-// bool go_module_validate(wasm_store_t *store, uint8_t *bytes, size_t len) {
+// wasmtime_error_t *go_module_validate(wasm_store_t *store, uint8_t *bytes, size_t len) {
 //    wasm_byte_vec_t vec;
 //    vec.data = bytes;
 //    vec.size = len;
-//    return wasm_module_validate(store, &vec);
+//    return wasmtime_module_validate(store, &vec);
 // }
 import "C"
 import (
-	"errors"
 	"io/ioutil"
 	"runtime"
 	"unsafe"
@@ -31,20 +30,22 @@ type Module struct {
 // Compiles a new `Module` from the `wasm` provided with the given configuration
 // in `store`.
 func NewModule(store *Store, wasm []byte) (*Module, error) {
-	if len(wasm) == 0 {
-		return nil, errors.New("failed to compile module")
-	}
 	// We can't create the `wasm_byte_vec_t` here and pass it in because
 	// that runs into the error of "passed a pointer to a pointer" because
 	// the vec itself is passed by pointer and it contains a pointer to
 	// `wasm`. To work around this we insert some C shims above and call
 	// them.
-	ptr := C.go_module_new(store.ptr(), (*C.uint8_t)(unsafe.Pointer(&wasm[0])), C.size_t(len(wasm)))
+	var wasm_ptr *C.uint8_t
+	if len(wasm) > 0 {
+		wasm_ptr = (*C.uint8_t)(unsafe.Pointer(&wasm[0]))
+	}
+	var ptr *C.wasm_module_t
+	err := C.go_module_new(store.ptr(), wasm_ptr, C.size_t(len(wasm)), &ptr)
 	runtime.KeepAlive(store)
 	runtime.KeepAlive(wasm)
 
-	if ptr == nil {
-		return nil, errors.New("failed to compile module")
+	if err != nil {
+		return nil, mkError(err)
 	} else {
 		return mkModule(ptr, store), nil
 	}
@@ -73,14 +74,19 @@ func NewModuleFromFile(store *Store, file string) (*Module, error) {
 
 // Validates whether `wasm` would be a valid wasm module according to the
 // configuration in `store`
-func ModuleValidate(store *Store, wasm []byte) bool {
-	if len(wasm) == 0 {
-		return false
+func ModuleValidate(store *Store, wasm []byte) error {
+	var wasm_ptr *C.uint8_t
+	if len(wasm) > 0 {
+		wasm_ptr = (*C.uint8_t)(unsafe.Pointer(&wasm[0]))
 	}
-	ret := C.go_module_validate(store.ptr(), (*C.uint8_t)(unsafe.Pointer(&wasm[0])), C.size_t(len(wasm)))
+	err := C.go_module_validate(store.ptr(), wasm_ptr, C.size_t(len(wasm)))
 	runtime.KeepAlive(store)
 	runtime.KeepAlive(wasm)
-	return bool(ret)
+	if err == nil {
+		return nil
+	} else {
+		return mkError(err)
+	}
 }
 
 func mkModule(ptr *C.wasm_module_t, store *Store) *Module {

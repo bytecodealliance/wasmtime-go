@@ -2,9 +2,12 @@ package wasmtime
 
 // #include "shims.h"
 import "C"
-import "unsafe"
-import "reflect"
-import "runtime"
+import (
+	"errors"
+	"reflect"
+	"runtime"
+	"unsafe"
+)
 
 type Func struct {
 	_ptr   *C.wasm_func_t
@@ -377,10 +380,10 @@ func (f *Func) ResultArity() int {
 // panic.
 func (f *Func) Call(args ...interface{}) (interface{}, error) {
 	params := f.Type().Params()
-	if len(args) != len(params) {
-		panic("wrong number of arguments provided")
+	if len(args) > len(params) {
+		return nil, errors.New("too many arguments provided")
 	}
-	params_raw := make([]C.wasm_val_t, len(params))
+	params_raw := make([]C.wasm_val_t, len(args))
 	for i, param := range args {
 		switch val := param.(type) {
 		case int:
@@ -390,42 +393,28 @@ func (f *Func) Call(args ...interface{}) (interface{}, error) {
 			case KindI64:
 				params_raw[i] = ValI64(int64(val)).raw
 			default:
-				panic("integer provided for non-integer argument")
+				return nil, errors.New("integer provided for non-integer argument")
 			}
 		case int32:
-			if params[i].Kind() != KindI32 {
-				panic("unexpected i32 argument")
-			}
 			params_raw[i] = ValI32(val).raw
 		case int64:
-			if params[i].Kind() != KindI64 {
-				panic("unexpected i64 argument")
-			}
 			params_raw[i] = ValI64(val).raw
 		case float32:
-			if params[i].Kind() != KindF32 {
-				panic("unexpected f32 argument")
-			}
 			params_raw[i] = ValF32(val).raw
 		case float64:
-			if params[i].Kind() != KindF64 {
-				panic("unexpected f64 argument")
-			}
 			params_raw[i] = ValF64(val).raw
 		case Val:
-			if params[i].Kind() != val.Kind() {
-				panic("unexpected type in `Val`argument")
-			}
 			params_raw[i] = val.raw
 
 		default:
-			panic("couldn't convert provided argument to wasm type")
+			return nil, errors.New("couldn't convert provided argument to wasm type")
 		}
 	}
 
 	results_raw := make([]C.wasm_val_t, f.ResultArity())
 
 	var params_ptr, results_ptr *C.wasm_val_t
+	var trap *C.wasm_trap_t
 	if len(params_raw) > 0 {
 		params_ptr = &params_raw[0]
 	}
@@ -433,9 +422,20 @@ func (f *Func) Call(args ...interface{}) (interface{}, error) {
 		results_ptr = &results_raw[0]
 	}
 
-	trap := C.wasm_func_call(f.ptr(), params_ptr, results_ptr)
+	err := C.wasmtime_func_call(
+		f.ptr(),
+		params_ptr,
+		C.size_t(len(params_raw)),
+		results_ptr,
+		C.size_t(len(results_raw)),
+		&trap,
+	)
 	runtime.KeepAlive(f)
 	runtime.KeepAlive(params_raw)
+
+	if err != nil {
+		return nil, mkError(err)
+	}
 
 	if trap != nil {
 		trap := mkTrap(trap)

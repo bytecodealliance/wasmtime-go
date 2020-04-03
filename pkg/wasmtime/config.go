@@ -3,7 +3,6 @@ package wasmtime
 // #include <wasm.h>
 // #include <wasmtime.h>
 import "C"
-import "errors"
 import "runtime"
 
 // Compilation strategies for wasmtime
@@ -94,10 +93,10 @@ func (cfg *Config) SetWasmMultiValue(enabled bool) {
 
 // Configures what compilation strategy is used to compile wasm code
 func (cfg *Config) SetStrategy(strat Strategy) error {
-	ok := C.wasmtime_config_strategy_set(cfg.ptr(), C.wasmtime_strategy_t(strat))
+	err := C.wasmtime_config_strategy_set(cfg.ptr(), C.wasmtime_strategy_t(strat))
 	runtime.KeepAlive(cfg)
-	if !ok {
-		return errors.New("failed to configure compilation strategy")
+	if err != nil {
+		return mkError(err)
 	}
 	return nil
 }
@@ -117,10 +116,10 @@ func (cfg *Config) SetCraneliftOptLevel(level OptLevel) {
 
 // Configures what profiler strategy to use for generated code
 func (cfg *Config) SetProfiler(profiler ProfilingStrategy) error {
-	ok := C.wasmtime_config_profiler_set(cfg.ptr(), C.wasmtime_profiling_strategy_t(profiler))
+	err := C.wasmtime_config_profiler_set(cfg.ptr(), C.wasmtime_profiling_strategy_t(profiler))
 	runtime.KeepAlive(cfg)
-	if !ok {
-		return errors.New("failed to configure profiler strategy")
+	if err != nil {
+		return mkError(err)
 	}
 	return nil
 }

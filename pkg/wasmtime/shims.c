@@ -36,7 +36,7 @@ wasm_extern_t* go_caller_export_get(
   return wasmtime_caller_export_get(caller, &name);
 }
 
-bool go_linker_define(
+wasmtime_error_t* go_linker_define(
     wasmtime_linker_t *linker,
     char *module_ptr,
     size_t module_len,
@@ -53,7 +53,7 @@ bool go_linker_define(
   return wasmtime_linker_define(linker, &module, &name, item);
 }
 
-bool go_linker_define_instance(
+wasmtime_error_t* go_linker_define_instance(
     wasmtime_linker_t *linker,
     char *name_ptr,
     size_t name_len,

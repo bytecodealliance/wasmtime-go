@@ -1,10 +1,9 @@
 package wasmtime
 
-// #include <wasm.h>
+// #include <wasmtime.h>
 import "C"
 import "runtime"
 import "unsafe"
-import "errors"
 
 type Instance struct {
 	_ptr    *C.wasm_instance_t
@@ -20,9 +19,6 @@ type Instance struct {
 // This will also run the `start` function of the instance, returning an error
 // if it traps.
 func NewInstance(module *Module, imports []*Extern) (*Instance, error) {
-	if len(imports) != len(module.Imports()) {
-		return nil, errors.New("wrong number of imports specified")
-	}
 	imports_raw := make([]*C.wasm_extern_t, len(imports))
 	for i, imp := range imports {
 		imports_raw[i] = imp.ptr()
@@ -32,20 +28,22 @@ func NewInstance(module *Module, imports []*Extern) (*Instance, error) {
 		imports_raw_ptr = &imports_raw[0]
 	}
 	var trap *C.wasm_trap_t
-	ptr := C.wasm_instance_new(
-		module.Store.ptr(),
+	var ptr *C.wasm_instance_t
+	err := C.wasmtime_instance_new(
 		module.ptr(),
 		imports_raw_ptr,
+		C.size_t(len(imports)),
+		&ptr,
 		&trap,
 	)
 	runtime.KeepAlive(module)
 	runtime.KeepAlive(imports)
 	runtime.KeepAlive(imports_raw)
-	if ptr == nil {
-		if trap != nil {
-			return nil, mkTrap(trap)
-		}
-		return nil, errors.New("failed to create instance")
+	if err != nil {
+		return nil, mkError(err)
+	}
+	if trap != nil {
+		return nil, mkTrap(trap)
 	}
 	return mkInstance(ptr, module), nil
 }

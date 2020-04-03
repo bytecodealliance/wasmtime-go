@@ -20,4 +20,8 @@ func TestGlobal(t *testing.T) {
 	if err == nil {
 		panic("should fail to create global")
 	}
+	err = g.Set(ValI64(200))
+	if err == nil {
+		panic("should fail to set global")
+	}
 }

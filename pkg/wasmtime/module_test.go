@@ -14,17 +14,17 @@ func TestModule(t *testing.T) {
 }
 
 func TestModuleValidate(t *testing.T) {
-	if ModuleValidate(NewStore(NewEngine()), []byte{}) {
+	if ModuleValidate(NewStore(NewEngine()), []byte{}) == nil {
 		panic("expected an error")
 	}
-	if ModuleValidate(NewStore(NewEngine()), []byte{1}) {
+	if ModuleValidate(NewStore(NewEngine()), []byte{1}) == nil {
 		panic("expected an error")
 	}
 	wasm, err := Wat2Wasm(`(module)`)
 	if err != nil {
 		panic(err)
 	}
-	if !ModuleValidate(NewStore(NewEngine()), wasm) {
+	if ModuleValidate(NewStore(NewEngine()), wasm) != nil {
 		panic("expected valid module")
 	}
 }

@@ -4,7 +4,6 @@ package wasmtime
 // #include "shims.h"
 import "C"
 import "runtime"
-import "errors"
 
 type Linker struct {
 	_ptr  *C.wasmtime_linker_t
@@ -42,7 +41,7 @@ func (l *Linker) AllowShadowing(allow bool) {
 // an error if shadowing is disallowed and the module/name is already defined.
 func (l *Linker) Define(module, name string, item AsExtern) error {
 	extern := item.AsExtern()
-	ret := C.go_linker_define(
+	err := C.go_linker_define(
 		l.ptr(),
 		C._GoStringPtr(module),
 		C._GoStringLen(module),
@@ -54,10 +53,10 @@ func (l *Linker) Define(module, name string, item AsExtern) error {
 	runtime.KeepAlive(module)
 	runtime.KeepAlive(name)
 	runtime.KeepAlive(extern)
-	if ret {
+	if err == nil {
 		return nil
 	} else {
-		return errors.New("failed to define item")
+		return mkError(err)
 	}
 }
 
@@ -72,7 +71,7 @@ func (l *Linker) DefineFunc(module, name string, f interface{}) error {
 //
 // Returns an error if shadowing is disabled and names are already defined.
 func (l *Linker) DefineInstance(module string, instance *Instance) error {
-	ret := C.go_linker_define_instance(
+	err := C.go_linker_define_instance(
 		l.ptr(),
 		C._GoStringPtr(module),
 		C._GoStringLen(module),
@@ -81,10 +80,10 @@ func (l *Linker) DefineInstance(module string, instance *Instance) error {
 	runtime.KeepAlive(l)
 	runtime.KeepAlive(module)
 	runtime.KeepAlive(instance)
-	if ret {
+	if err == nil {
 		return nil
 	} else {
-		return errors.New("failed to define item")
+		return mkError(err)
 	}
 }
 
@@ -93,13 +92,13 @@ func (l *Linker) DefineInstance(module string, instance *Instance) error {
 //
 // Returns an error if shadowing is disabled and names are already defined.
 func (l *Linker) DefineWasi(instance *WasiInstance) error {
-	ret := C.wasmtime_linker_define_wasi(l.ptr(), instance.ptr())
+	err := C.wasmtime_linker_define_wasi(l.ptr(), instance.ptr())
 	runtime.KeepAlive(l)
 	runtime.KeepAlive(instance)
-	if ret {
+	if err == nil {
 		return nil
 	} else {
-		return errors.New("failed to define item")
+		return mkError(err)
 	}
 }
 
@@ -109,14 +108,15 @@ func (l *Linker) DefineWasi(instance *WasiInstance) error {
 // wrong types, or if a trap happened executing the start function.
 func (l *Linker) Instantiate(module *Module) (*Instance, error) {
 	var trap *C.wasm_trap_t
-	ret := C.wasmtime_linker_instantiate(l.ptr(), module.ptr(), &trap)
+	var ret *C.wasm_instance_t
+	err := C.wasmtime_linker_instantiate(l.ptr(), module.ptr(), &ret, &trap)
 	runtime.KeepAlive(l)
 	runtime.KeepAlive(module)
-	if ret == nil {
-		if trap != nil {
-			return nil, mkTrap(trap)
-		}
-		return nil, errors.New("failed to instantiate")
+	if err != nil {
+		return nil, mkError(err)
+	}
+	if trap != nil {
+		return nil, mkTrap(trap)
 	}
 	return mkInstance(ret, module), nil
 }

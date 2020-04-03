@@ -351,34 +351,94 @@ func TestWrongArgsPanic(t *testing.T) {
 	i32.Call(1)
 	i32.Call(int32(1))
 	i32.Call(ValI32(1))
-	assertPanic(func() { i32.Call() })
-	assertPanic(func() { i32.Call(1, 2) })
-	assertPanic(func() { i32.Call(int64(1)) })
-	assertPanic(func() { i32.Call(float32(1)) })
-	assertPanic(func() { i32.Call(float64(1)) })
-	assertPanic(func() { i32.Call(float32(1)) })
-	assertPanic(func() { i32.Call(float64(1)) })
-	assertPanic(func() { i32.Call(ValI64(1)) })
-	assertPanic(func() { i32.Call(ValF32(1)) })
-	assertPanic(func() { i32.Call(ValF64(1)) })
+	_, err := i32.Call()
+	if err == nil {
+		panic("expected error")
+	}
+	_, err = i32.Call(1, 2)
+	if err == nil {
+		panic("expected error")
+	}
+	_, err = i32.Call(int64(1))
+	if err == nil {
+		panic("expected error")
+	}
+	_, err = i32.Call(float32(1))
+	if err == nil {
+		panic("expected error")
+	}
+	_, err = i32.Call(float64(1))
+	if err == nil {
+		panic("expected error")
+	}
+	_, err = i32.Call(float32(1))
+	if err == nil {
+		panic("expected error")
+	}
+	_, err = i32.Call(float64(1))
+	if err == nil {
+		panic("expected error")
+	}
+	_, err = i32.Call(ValI64(1))
+	if err == nil {
+		panic("expected error")
+	}
+	_, err = i32.Call(ValF32(1))
+	if err == nil {
+		panic("expected error")
+	}
+	_, err = i32.Call(ValF64(1))
+	if err == nil {
+		panic("expected error")
+	}
 
 	i64 := WrapFunc(store, func(a int64) {})
 	i64.Call(1)
 	i64.Call(int64(1))
 	i64.Call(ValI64(1))
-	assertPanic(func() { i64.Call(int32(1)) })
-	assertPanic(func() { i64.Call(float32(1)) })
-	assertPanic(func() { i64.Call(float64(1)) })
-	assertPanic(func() { i64.Call(float32(1)) })
-	assertPanic(func() { i64.Call(float64(1)) })
-	assertPanic(func() { i64.Call(ValI32(1)) })
-	assertPanic(func() { i64.Call(ValF32(1)) })
-	assertPanic(func() { i64.Call(ValF64(1)) })
+	_, err = i64.Call(int32(1))
+	if err == nil {
+		panic("expected error")
+	}
+	_, err = i64.Call(float32(1))
+	if err == nil {
+		panic("expected error")
+	}
+	_, err = i64.Call(float64(1))
+	if err == nil {
+		panic("expected error")
+	}
+	_, err = i64.Call(float32(1))
+	if err == nil {
+		panic("expected error")
+	}
+	_, err = i64.Call(float64(1))
+	if err == nil {
+		panic("expected error")
+	}
+	_, err = i64.Call(ValI32(1))
+	if err == nil {
+		panic("expected error")
+	}
+	_, err = i64.Call(ValF32(1))
+	if err == nil {
+		panic("expected error")
+	}
+	_, err = i64.Call(ValF64(1))
+	if err == nil {
+		panic("expected error")
+	}
 
 	f32 := WrapFunc(store, func(a float32) {})
 	f32.Call(float32(1))
-	assertPanic(func() { f32.Call(1) })
-	assertPanic(func() { f32.Call(f32) })
+	_, err = f32.Call(1)
+	if err == nil {
+		panic("expected error")
+	}
+	_, err = f32.Call(f32)
+	if err == nil {
+		panic("expected error")
+	}
 	if f32.ParamArity() != 1 {
 		panic("wrong param arity")
 	}

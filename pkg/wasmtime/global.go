@@ -2,7 +2,6 @@ package wasmtime
 
 // #include <wasmtime.h>
 import "C"
-import "errors"
 import "runtime"
 
 type Global struct {
@@ -17,15 +16,17 @@ func NewGlobal(
 	ty *GlobalType,
 	val Val,
 ) (*Global, error) {
-	ptr := C.wasm_global_new(
+	var ptr *C.wasm_global_t
+	err := C.wasmtime_global_new(
 		store.ptr(),
 		ty.ptr(),
 		&val.raw,
+		&ptr,
 	)
 	runtime.KeepAlive(store)
 	runtime.KeepAlive(ty)
-	if ptr == nil {
-		return nil, errors.New("wrong type of `Val` pass for global type")
+	if err != nil {
+		return nil, mkError(err)
 	}
 
 	return mkGlobal(ptr, nil), nil
@@ -70,9 +71,14 @@ func (g *Global) Get() Val {
 }
 
 // Sets the value of this global
-func (g *Global) Set(val Val) {
-	C.wasm_global_set(g.ptr(), &val.raw)
+func (g *Global) Set(val Val) error {
+	err := C.wasmtime_global_set(g.ptr(), &val.raw)
 	runtime.KeepAlive(g)
+	if err == nil {
+		return nil
+	} else {
+		return mkError(err)
+	}
 }
 
 func (g *Global) AsExtern() *Extern {
