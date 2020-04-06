@@ -1,7 +1,9 @@
 package wasmtime
 
 // #cgo CFLAGS:-Ibuild/include
-// #cgo !windows LDFLAGS:-Wl,-Bstatic -lwasmtime -Wl,-Bdynamic -Lbuild/lib -lm -ldl
+// #cgo !windows LDFLAGS:-lwasmtime -lm -ldl
+// #cgo linux,amd64 LDFLAGS:-Lbuild/linux-x86_64
+// #cgo darwin,amd64 LDFLAGS:-Lbuild/macos-x86_64
 // #include <wasm.h>
 import "C"
 import "runtime"

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 if [ "$WASMTIME" = "" ]; then
   echo "must set \$WASMTIME env var"
@@ -12,7 +12,8 @@ if [ ! -d $build ]; then
   build=$WASMTIME/target/debug
 fi
 
-mkdir -p pkg/wasmtime/build/include
-ln -s $build pkg/wasmtime/build/lib
+mkdir -p pkg/wasmtime/build/{include,linux-x86_64,macos-x86_64}
+ln -s $build/libwasmtime.a pkg/wasmtime/build/linux-x86_64/libwasmtime.a
+ln -s $build/libwasmtime.a pkg/wasmtime/build/macos-x86_64/libwasmtime.a
 cp $WASMTIME/crates/c-api/include/*.h pkg/wasmtime/build/include
 cp $WASMTIME/crates/c-api/wasm-c-api/include/*.h pkg/wasmtime/build/include
