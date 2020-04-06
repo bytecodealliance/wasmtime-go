@@ -16,12 +16,12 @@ func Example() {
 	// package also supports converting the WebAssembly text format to the
 	// binary format.
 	wasm, err := Wat2Wasm(`
-        (module
-        (import "" "hello" (func $hello))
-        (func (export "run")
-          (call $hello))
-        )
-    `)
+	  (module
+	  (import "" "hello" (func $hello))
+	  (func (export "run")
+	    (call $hello))
+	  )
+      `)
 	check(err)
 
 	// Once we have our binary `wasm` we can compile that into a `*Module`
@@ -155,7 +155,7 @@ func Example_memory() {
 		*(*uint8)(unsafe.Pointer(uintptr(memory.Data()) + offset)) = val
 	}
 
-	println("Checking memory...")
+	// Check the initial memory sizes/contents
 	assert(memory.Size() == 2)
 	assert(memory.DataSize() == 0x20000)
 
@@ -170,7 +170,7 @@ func Example_memory() {
 	assert(call32(load, 0x1ffff) == 0)
 	assertTraps(load, 0x20000)
 
-	println("Mutating memory...")
+	// We can mutate memory as well
 	writeMemory(0x1003, 5)
 	call(store, 0x1002, 6)
 	assertTraps(store, 0x20000, 0)
@@ -180,7 +180,7 @@ func Example_memory() {
 	assert(call32(load, 0x1002) == 6)
 	assert(call32(load, 0x1003) == 5)
 
-	println("Growing memory...")
+	// And like wasm instructions, we can grow memory
 	assert(memory.Grow(1))
 	assert(memory.Size() == 3)
 	assert(memory.DataSize() == 0x30000)
@@ -194,7 +194,8 @@ func Example_memory() {
 	assert(!memory.Grow(1))
 	assert(memory.Grow(0))
 
-	println("Creating stand-alone memory...")
+	// Finally we can also create standalone memories to get imported by
+	// wasm modules too.
 	memorytype := NewMemoryType(Limits{Min: 5, Max: 5})
 	memory2 := NewMemory(wasmtime_store, memorytype)
 	assert(memory2.Size() == 5)
@@ -209,12 +210,10 @@ func Example_memory() {
 func Example_multi() {
 	// Configure our `Store`, but be sure to use a `Config` that enables the
 	// wasm multi-value feature since it's not stable yet.
-	println("Initializing...")
 	config := NewConfig()
 	config.SetWasmMultiValue(true)
 	store := NewStore(NewEngineWithConfig(config))
 
-	println("Compiling module...")
 	wasm, err := Wat2Wasm(`
 	  (module
 	    (func $f (import "" "f") (param i32 i64) (result i64 i32))
@@ -244,19 +243,15 @@ func Example_multi() {
 	module, err := NewModule(store, wasm)
 	check(err)
 
-	println("Creating callback...")
 	callback := WrapFunc(store, func(a int32, b int64) (int64, int32) {
 		return b + 1, a + 1
 	})
 
-	println("Instantiating module...")
 	instance, err := NewInstance(module, []*Extern{callback.AsExtern()})
 	check(err)
 
-	println("Extracting export...")
 	g := instance.GetExport("g").Func()
 
-	println("Calling export \"g\"...")
 	results, err := g.Call(1, 3)
 	check(err)
 	arr := results.([]Val)
@@ -267,19 +262,15 @@ func Example_multi() {
 	assert(a == 4)
 	assert(b == 2)
 
-	println("Calling export \"round_trip_many\"...")
 	round_trip_many := instance.GetExport("round_trip_many").Func()
 	results, err = round_trip_many.Call(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
 	check(err)
 	arr = results.([]Val)
 
-	println("Printing result...")
-	print(">")
 	for i := 0; i < len(arr); i++ {
 		fmt.Printf(" %d", arr[i].Get())
 		assert(arr[i].I64() == int64(i))
 	}
-	println()
 
 	// Output: > 4 2
 	//  0 1 2 3 4 5 6 7 8 9

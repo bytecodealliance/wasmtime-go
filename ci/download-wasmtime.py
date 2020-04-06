@@ -16,11 +16,11 @@ urls = [
 ]
 
 try:
-    shutil.rmtree('pkg/wasmtime/build')
+    shutil.rmtree('build')
 except FileNotFoundError:
     pass
 
-os.makedirs('pkg/wasmtime/build')
+os.makedirs('build')
 
 for i, arr in enumerate(urls):
     filename, dirname = arr
@@ -36,14 +36,14 @@ for i, arr in enumerate(urls):
 
     src = filename.replace('.zip', '').replace('.tar.xz', '')
     if i == 0:
-        os.rename(src + '/include', 'pkg/wasmtime/build/include')
+        os.rename(src + '/include', 'build/include')
 
-    os.rename(src + '/lib', 'pkg/wasmtime/build/' + dirname)
+    os.rename(src + '/lib', 'build/' + dirname)
     shutil.rmtree(src)
 
-for dylib in glob.glob("pkg/wasmtime/build/**/*.dll"):
+for dylib in glob.glob("build/**/*.dll"):
     os.remove(dylib)
-for dylib in glob.glob("pkg/wasmtime/build/**/*.dylib"):
+for dylib in glob.glob("build/**/*.dylib"):
     os.remove(dylib)
-for dylib in glob.glob("pkg/wasmtime/build/**/*.so"):
+for dylib in glob.glob("build/**/*.so"):
     os.remove(dylib)
