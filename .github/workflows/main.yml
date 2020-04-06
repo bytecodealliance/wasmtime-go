@@ -28,11 +28,6 @@ jobs:
       env:
         GODEBUG: cgocheck=2
         GOGC: 1
-    - run : go run examples/gcd/main.go
-    - run : go run examples/hello/main.go
-    - run : go run examples/linking/main.go
-    - run : go run examples/memory/main.go
-    - run : go run examples/multi/main.go
 
   coverage:
     runs-on: ubuntu-latest
