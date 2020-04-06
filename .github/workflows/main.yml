@@ -58,3 +58,20 @@ jobs:
         go-version: '1.14'
     # https://stackoverflow.com/questions/42510140/check-format-for-continous-integration
     - run: "diff -u <(echo -n) <(gofmt -d ./)"
+
+  upload_docs:
+    needs: [coverage]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/download-artifact@v1
+      with:
+        name: coverage
+    - run: find .
+    - name: Push to gh-pages
+      run: curl -LsSf https://git.io/fhJ8n | rustc - && (cd coverage && ../rust_out)
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      env:
+        GITHUB_DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+        BUILD_REPOSITORY_ID: ${{ github.repository }}
+        BUILD_SOURCEVERSION: ${{ github.sha }}
