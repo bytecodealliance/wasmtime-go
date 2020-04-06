@@ -9,13 +9,13 @@
   <strong>A <a href="https://bytecodealliance.org/">Bytecode Alliance</a> project</strong>
 
   <p>
-    <a href="https://github.com/alexcrichton/wasmtime-go/actions?query=workflow%3ACI">
-      <img src="https://github.com/alexcrichton/wasmtime-go/workflows/CI/badge.svg" alt="CI status"/>
+    <a href="https://github.com/bytecodealliance/wasmtime-go/actions?query=workflow%3ACI">
+      <img src="https://github.com/bytecodealliance/wasmtime-go/workflows/CI/badge.svg" alt="CI status"/>
     </a>
-    <a href="https://pkg.go.dev/github.com/alexcrichton/wasmtime-go">
-      <img src="https://godoc.org/github.com/alexcrichton/wasmtime-go?status.svg" alt="Documentation"/>
+    <a href="https://pkg.go.dev/github.com/bytecodealliance/wasmtime-go">
+      <img src="https://godoc.org/github.com/bytecodealliance/wasmtime-go?status.svg" alt="Documentation"/>
     </a>
-    <a href="https://alexcrichton.github.io/wasmtime-go/coverage.html">
+    <a href="https://bytecodealliance.github.io/wasmtime-go/coverage.html">
       <img src="https://img.shields.io/badge/coverage-master-green" alt="Code Coverage"/>
     </a>
   </p>
@@ -25,7 +25,7 @@
 ## Installation
 
 ```sh
-go get -u github.com/alexcrichton/wasmtime-go
+go get -u github.com/bytecodealliance/wasmtime-go
 ```
 
 Be sure to check out the [API documentation][api]!
@@ -36,7 +36,7 @@ are checked into this repository on tagged releases so you won't have to install
 Wasmtime locally, but it means that this project only works on Linux x86\_64 and
 macOS x86\_64 currently.
 
-[api]: https://pkg.go.dev/github.com/alexcrichton/wasmtime-go
+[api]: https://pkg.go.dev/github.com/bytecodealliance/wasmtime-go
 [wasmtime]: https://github.com/bytecodealliance/wasmtime
 
 ## Usage
@@ -48,7 +48,7 @@ package main
 
 import (
     "fmt"
-    "github.com/alexcrichton/wasmtime-go"
+    "github.com/bytecodealliance/wasmtime-go"
 )
 
 func main() {
