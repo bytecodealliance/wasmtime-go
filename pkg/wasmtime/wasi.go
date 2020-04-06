@@ -146,6 +146,9 @@ type WasiInstance struct {
 	_ptr *C.wasi_instance_t
 }
 
+// Creates a new instance of WASI with the given configuration.
+//
+// The version of WASI must be explicitly requested via `name`.
 func NewWasiInstance(store *Store, config *WasiConfig, name string) (*WasiInstance, error) {
 	if config._ptr == nil {
 		panic("config already used to create wasi instance")
@@ -182,6 +185,10 @@ func (i *WasiInstance) ptr() *C.wasi_instance_t {
 	return ret
 }
 
+// Attempts to bind the `imp` import provided, returning an Extern suitable for
+// satisfying the import if one can be found.
+//
+// If `imp` isn't defined by this instance of WASI then `nil` is returned.
 func (i *WasiInstance) BindImport(imp *ImportType) *Extern {
 	ret := C.wasi_instance_bind_import(i.ptr(), imp.ptr())
 	runtime.KeepAlive(i)
