@@ -35,10 +35,7 @@ else:
     t.extractall()
 
 try:
-    shutil.rmtree('wasmtime')
+    shutil.rmtree('pkg/wasmtime/build')
 except FileNotFoundError:
     pass
-os.rename(filename.replace('.zip', '').replace('.tar.xz', ''), 'wasmtime')
-
-print("::set-env name=CGO_CFLAGS::-I%s/wasmtime/include" % os.getcwd())
-print("::set-env name=CGO_LDFLAGS::-L%s/wasmtime/lib -Wl,-rpath,%s/wasmtime/lib" % (os.getcwd(), os.getcwd()))
+os.rename(filename.replace('.zip', '').replace('.tar.xz', ''), 'pkg/wasmtime/build')
