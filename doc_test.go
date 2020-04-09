@@ -36,7 +36,7 @@ func Example() {
 	})
 
 	// Next up we instantiate a module which is where we link in all our
-	// imports. We've got one improt so we pass that in here.
+	// imports. We've got one import so we pass that in here.
 	instance, err := NewInstance(module, []*Extern{item.AsExtern()})
 	check(err)
 
