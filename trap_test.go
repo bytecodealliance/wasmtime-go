@@ -52,11 +52,11 @@ func TestTrapFrames(t *testing.T) {
 		panic("bad function index")
 	}
 
-	expected := `wasm trap: unreachable, source location: @0026
+	expected := `wasm trap: unreachable
 wasm backtrace:
-  0: <unknown>!bar
-  1: <unknown>!foo
-  2: <unknown>!<wasm function 0>
+  0:   0x26 - <unknown>!bar
+  1:   0x21 - <unknown>!foo
+  2:   0x1c - <unknown>!<wasm function 0>
 `
 	if trap.Error() != expected {
 		t.Fatalf("expected\n%s\ngot\n%s", trap.Error(), expected)

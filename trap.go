@@ -65,7 +65,7 @@ func (t *Trap) Error() string {
 		module_name := unwrapStrOr(frame.ModuleName(), "<unknown>")
 		default_name := fmt.Sprintf("<wasm function %d>", frame.FuncIndex())
 		func_name := unwrapStrOr(frame.FuncName(), default_name)
-		base += fmt.Sprintf("  %d: %s!%s\n", i, module_name, func_name)
+		base += fmt.Sprintf("  %d: %#6x - %s!%s\n", i, frame.ModuleOffset(), module_name, func_name)
 	}
 	return base
 }
@@ -139,4 +139,18 @@ func (f *Frame) ModuleName() *string {
 	str := C.GoStringN(ret.data, C.int(ret.size))
 	runtime.KeepAlive(f)
 	return &str
+}
+
+// Returns offset of this frame's instruction into the original module
+func (f *Frame) ModuleOffset() uint {
+	ret := uint(C.wasm_frame_module_offset(f.ptr()))
+	runtime.KeepAlive(f)
+	return ret
+}
+
+// Returns offset of this frame's instruction into the original function
+func (f *Frame) FuncOffset() uint {
+	ret := uint(C.wasm_frame_func_offset(f.ptr()))
+	runtime.KeepAlive(f)
+	return ret
 }
