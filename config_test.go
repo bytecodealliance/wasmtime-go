@@ -22,4 +22,12 @@ func TestConfig(t *testing.T) {
 	NewConfig().SetCraneliftOptLevel(OPT_LEVEL_SPEED)
 	NewConfig().SetCraneliftOptLevel(OPT_LEVEL_SPEED_AND_SIZE)
 	NewConfig().SetProfiler(PROFILING_STRATEGY_NONE)
+	err = NewConfig().CacheConfigLoadDefault()
+	if err != nil {
+		panic(err)
+	}
+	err = NewConfig().CacheConfigLoad("nonexistent.toml")
+	if err == nil {
+		panic("expected an error")
+	}
 }
