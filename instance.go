@@ -6,8 +6,9 @@ import "runtime"
 import "unsafe"
 
 type Instance struct {
-	_ptr    *C.wasm_instance_t
-	exports map[string]*Extern
+	_ptr     *C.wasm_instance_t
+	exports  map[string]*Extern
+	freelist *freeList
 }
 
 // Instantiates a WebAssembly `module` with the `imports` provided.
@@ -50,11 +51,15 @@ func NewInstance(module *Module, imports []*Extern) (*Instance, error) {
 
 func mkInstance(ptr *C.wasm_instance_t, module *Module) *Instance {
 	instance := &Instance{
-		_ptr:    ptr,
-		exports: make(map[string]*Extern),
+		_ptr:     ptr,
+		exports:  make(map[string]*Extern),
+		freelist: module.Store.freelist,
 	}
 	runtime.SetFinalizer(instance, func(instance *Instance) {
-		C.wasm_instance_delete(instance._ptr)
+		freelist := instance.freelist
+		freelist.lock.Lock()
+		defer freelist.lock.Unlock()
+		freelist.instances = append(freelist.instances, instance._ptr)
 	})
 	exports := instance.Exports()
 	for i, ty := range module.Exports() {
@@ -81,8 +86,11 @@ func (i *Instance) Exports() []*Extern {
 	externs := &externList{}
 	C.wasm_instance_exports(i.ptr(), &externs.vec)
 	runtime.KeepAlive(i)
+	freelist := i.freelist
 	runtime.SetFinalizer(externs, func(externs *externList) {
-		C.wasm_extern_vec_delete(&externs.vec)
+		freelist.lock.Lock()
+		defer freelist.lock.Unlock()
+		freelist.extern_vecs = append(freelist.extern_vecs, &externs.vec)
 	})
 
 	ret := make([]*Extern, int(externs.vec.size))
@@ -90,7 +98,7 @@ func (i *Instance) Exports() []*Extern {
 	var ptr *C.wasm_extern_t
 	for i := 0; i < int(externs.vec.size); i++ {
 		ptr := *(**C.wasm_extern_t)(unsafe.Pointer(uintptr(base) + unsafe.Sizeof(ptr)*uintptr(i)))
-		ty := mkExtern(ptr, externs)
+		ty := mkExtern(ptr, freelist, externs)
 		ret[i] = ty
 	}
 	return ret

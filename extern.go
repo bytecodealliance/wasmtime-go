@@ -5,19 +5,22 @@ import "C"
 import "runtime"
 
 type Extern struct {
-	_ptr   *C.wasm_extern_t
-	_owner interface{}
+	_ptr     *C.wasm_extern_t
+	_owner   interface{}
+	freelist *freeList
 }
 
 type AsExtern interface {
 	AsExtern() *Extern
 }
 
-func mkExtern(ptr *C.wasm_extern_t, owner interface{}) *Extern {
-	f := &Extern{_ptr: ptr, _owner: owner}
+func mkExtern(ptr *C.wasm_extern_t, freelist *freeList, owner interface{}) *Extern {
+	f := &Extern{_ptr: ptr, _owner: owner, freelist: freelist}
 	if owner == nil {
 		runtime.SetFinalizer(f, func(f *Extern) {
-			C.wasm_extern_delete(f._ptr)
+			f.freelist.lock.Lock()
+			defer f.freelist.lock.Unlock()
+			f.freelist.externs = append(f.freelist.externs, f._ptr)
 		})
 	}
 	return f
@@ -49,7 +52,7 @@ func (e *Extern) Func() *Func {
 	if ret == nil {
 		return nil
 	} else {
-		return mkFunc(ret, e.owner())
+		return mkFunc(ret, e.freelist, e.owner())
 	}
 }
 
@@ -59,7 +62,7 @@ func (e *Extern) Global() *Global {
 	if ret == nil {
 		return nil
 	} else {
-		return mkGlobal(ret, e.owner())
+		return mkGlobal(ret, e.freelist, e.owner())
 	}
 }
 
@@ -69,7 +72,7 @@ func (e *Extern) Memory() *Memory {
 	if ret == nil {
 		return nil
 	} else {
-		return mkMemory(ret, e.owner())
+		return mkMemory(ret, e.freelist, e.owner())
 	}
 }
 
@@ -79,7 +82,7 @@ func (e *Extern) Table() *Table {
 	if ret == nil {
 		return nil
 	} else {
-		return mkTable(ret, e.owner())
+		return mkTable(ret, e.freelist, e.owner())
 	}
 }
 

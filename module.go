@@ -92,7 +92,10 @@ func ModuleValidate(store *Store, wasm []byte) error {
 func mkModule(ptr *C.wasm_module_t, store *Store) *Module {
 	module := &Module{_ptr: ptr, Store: store}
 	runtime.SetFinalizer(module, func(module *Module) {
-		C.wasm_module_delete(module._ptr)
+		freelist := module.Store.freelist
+		freelist.lock.Lock()
+		defer freelist.lock.Unlock()
+		freelist.modules = append(freelist.modules, module._ptr)
 	})
 	return module
 }

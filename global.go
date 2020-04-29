@@ -5,8 +5,9 @@ import "C"
 import "runtime"
 
 type Global struct {
-	_ptr   *C.wasm_global_t
-	_owner interface{}
+	_ptr     *C.wasm_global_t
+	_owner   interface{}
+	freelist *freeList
 }
 
 // Creates a new `Global` in the given `Store` with the specified `ty` and
@@ -29,14 +30,16 @@ func NewGlobal(
 		return nil, mkError(err)
 	}
 
-	return mkGlobal(ptr, nil), nil
+	return mkGlobal(ptr, store.freelist, nil), nil
 }
 
-func mkGlobal(ptr *C.wasm_global_t, owner interface{}) *Global {
-	f := &Global{_ptr: ptr, _owner: owner}
+func mkGlobal(ptr *C.wasm_global_t, freelist *freeList, owner interface{}) *Global {
+	f := &Global{_ptr: ptr, _owner: owner, freelist: freelist}
 	if owner == nil {
 		runtime.SetFinalizer(f, func(f *Global) {
-			C.wasm_global_delete(f._ptr)
+			f.freelist.lock.Lock()
+			defer f.freelist.lock.Unlock()
+			f.freelist.globals = append(f.freelist.globals, f._ptr)
 		})
 	}
 	return f
@@ -83,5 +86,5 @@ func (g *Global) Set(val Val) error {
 
 func (g *Global) AsExtern() *Extern {
 	ptr := C.wasm_global_as_extern(g.ptr())
-	return mkExtern(ptr, g.owner())
+	return mkExtern(ptr, g.freelist, g.owner())
 }

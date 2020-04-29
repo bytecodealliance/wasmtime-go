@@ -11,15 +11,22 @@ import (
 // A `Store` is a general group of wasm instances, and many objects
 // must all be created with and reference the same `Store`
 type Store struct {
-	_ptr *C.wasm_store_t
+	_ptr     *C.wasm_store_t
+	freelist *freeList
 }
 
 // Creates a new `Store` from the configuration provided in `engine`
 func NewStore(engine *Engine) *Store {
-	store := &Store{_ptr: C.wasm_store_new(engine.ptr())}
+	store := &Store{
+		_ptr:     C.wasm_store_new(engine.ptr()),
+		freelist: newFreeList(),
+	}
 	runtime.KeepAlive(engine)
 	runtime.SetFinalizer(store, func(store *Store) {
-		C.wasm_store_delete(store._ptr)
+		freelist := store.freelist
+		freelist.lock.Lock()
+		defer freelist.lock.Unlock()
+		freelist.stores = append(freelist.stores, store._ptr)
 	})
 	return store
 }
@@ -39,6 +46,7 @@ func (store *Store) InterruptHandle() (*InterruptHandle, error) {
 }
 
 func (store *Store) ptr() *C.wasm_store_t {
+	store.freelist.clear()
 	ret := store._ptr
 	maybeGC()
 	return ret

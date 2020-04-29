@@ -143,7 +143,8 @@ func (c *WasiConfig) PreopenDir(path, guest_path string) error {
 }
 
 type WasiInstance struct {
-	_ptr *C.wasi_instance_t
+	_ptr     *C.wasi_instance_t
+	freelist *freeList
 }
 
 // Creates a new instance of WASI with the given configuration.
@@ -172,9 +173,15 @@ func NewWasiInstance(store *Store, config *WasiConfig, name string) (*WasiInstan
 		return nil, errors.New("failed to create instance")
 	}
 
-	instance := &WasiInstance{_ptr: ptr}
+	instance := &WasiInstance{
+		_ptr:     ptr,
+		freelist: store.freelist,
+	}
 	runtime.SetFinalizer(instance, func(instance *WasiInstance) {
-		C.wasi_instance_delete(instance._ptr)
+		freelist := instance.freelist
+		freelist.lock.Lock()
+		defer freelist.lock.Unlock()
+		freelist.wasi_instances = append(freelist.wasi_instances, instance._ptr)
 	})
 	return instance, nil
 }
@@ -196,6 +203,6 @@ func (i *WasiInstance) BindImport(imp *ImportType) *Extern {
 	if ret == nil {
 		return nil
 	} else {
-		return mkExtern(ret, nil)
+		return mkExtern(ret, i.freelist, nil)
 	}
 }

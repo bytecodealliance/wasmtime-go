@@ -19,7 +19,10 @@ func NewLinker(store *Store) *Linker {
 func mkLinker(ptr *C.wasmtime_linker_t, store *Store) *Linker {
 	linker := &Linker{_ptr: ptr, Store: store}
 	runtime.SetFinalizer(linker, func(linker *Linker) {
-		C.wasmtime_linker_delete(linker._ptr)
+		freelist := linker.Store.freelist
+		freelist.lock.Lock()
+		defer freelist.lock.Unlock()
+		freelist.linkers = append(freelist.linkers, linker._ptr)
 	})
 	return linker
 }

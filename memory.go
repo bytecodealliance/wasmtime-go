@@ -6,8 +6,9 @@ import "runtime"
 import "unsafe"
 
 type Memory struct {
-	_ptr   *C.wasm_memory_t
-	_owner interface{}
+	_ptr     *C.wasm_memory_t
+	freelist *freeList
+	_owner   interface{}
 }
 
 // Creates a new `Memory` in the given `Store` with the specified `ty`.
@@ -15,14 +16,16 @@ func NewMemory(store *Store, ty *MemoryType) *Memory {
 	ptr := C.wasm_memory_new(store.ptr(), ty.ptr())
 	runtime.KeepAlive(store)
 	runtime.KeepAlive(ty)
-	return mkMemory(ptr, nil)
+	return mkMemory(ptr, store.freelist, nil)
 }
 
-func mkMemory(ptr *C.wasm_memory_t, owner interface{}) *Memory {
-	f := &Memory{_ptr: ptr, _owner: owner}
+func mkMemory(ptr *C.wasm_memory_t, freelist *freeList, owner interface{}) *Memory {
+	f := &Memory{_ptr: ptr, _owner: owner, freelist: freelist}
 	if owner == nil {
 		runtime.SetFinalizer(f, func(f *Memory) {
-			C.wasm_memory_delete(f._ptr)
+			f.freelist.lock.Lock()
+			defer f.freelist.lock.Unlock()
+			f.freelist.memories = append(f.freelist.memories, f._ptr)
 		})
 	}
 	return f
@@ -78,5 +81,5 @@ func (m *Memory) Grow(delta uint) bool {
 
 func (m *Memory) AsExtern() *Extern {
 	ptr := C.wasm_memory_as_extern(m.ptr())
-	return mkExtern(ptr, m.owner())
+	return mkExtern(ptr, m.freelist, m.owner())
 }

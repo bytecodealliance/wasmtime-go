@@ -5,15 +5,18 @@ import "C"
 import "runtime"
 
 type Table struct {
-	_ptr   *C.wasm_table_t
-	_owner interface{}
+	_ptr     *C.wasm_table_t
+	_owner   interface{}
+	freelist *freeList
 }
 
-func mkTable(ptr *C.wasm_table_t, owner interface{}) *Table {
-	f := &Table{_ptr: ptr, _owner: owner}
+func mkTable(ptr *C.wasm_table_t, freelist *freeList, owner interface{}) *Table {
+	f := &Table{_ptr: ptr, _owner: owner, freelist: freelist}
 	if owner == nil {
 		runtime.SetFinalizer(f, func(f *Table) {
-			C.wasm_table_delete(f._ptr)
+			f.freelist.lock.Lock()
+			defer f.freelist.lock.Unlock()
+			f.freelist.tables = append(f.freelist.tables, f._ptr)
 		})
 	}
 	return f
@@ -46,5 +49,5 @@ func (t *Table) Type() *TableType {
 
 func (t *Table) AsExtern() *Extern {
 	ptr := C.wasm_table_as_extern(t.ptr())
-	return mkExtern(ptr, t.owner())
+	return mkExtern(ptr, t.freelist, t.owner())
 }

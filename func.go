@@ -10,12 +10,14 @@ import (
 )
 
 type Func struct {
-	_ptr   *C.wasm_func_t
-	_owner interface{}
+	_ptr     *C.wasm_func_t
+	_owner   interface{}
+	freelist *freeList
 }
 
 type Caller struct {
-	ptr *C.wasmtime_caller_t
+	ptr   *C.wasmtime_caller_t
+	store *Store
 }
 
 type newMapEntry struct {
@@ -74,7 +76,7 @@ func NewFunc(
 	runtime.KeepAlive(store)
 	runtime.KeepAlive(ty)
 
-	return mkFunc(ptr, nil)
+	return mkFunc(ptr, store.freelist, nil)
 }
 
 //export goTrampolineNew
@@ -85,10 +87,11 @@ func goTrampolineNew(
 	results_ptr *C.wasm_val_t,
 ) *C.wasm_trap_t {
 	idx := int(env)
-	caller := &Caller{ptr: caller_ptr}
+	entry := gNEW_MAP[idx]
+
+	caller := &Caller{ptr: caller_ptr, store: entry.store}
 	defer func() { caller.ptr = nil }()
 
-	entry := gNEW_MAP[idx]
 	params := make([]Val, entry.nparams)
 	var val C.wasm_val_t
 	base := unsafe.Pointer(args_ptr)
@@ -211,7 +214,7 @@ func WrapFunc(
 	)
 	runtime.KeepAlive(store)
 	runtime.KeepAlive(wasm_ty)
-	return mkFunc(ptr, nil)
+	return mkFunc(ptr, store.freelist, nil)
 }
 
 func typeToValType(ty reflect.Type) *ValType {
@@ -235,14 +238,15 @@ func goTrampolineWrap(
 	args_ptr *C.wasm_val_t,
 	results_ptr *C.wasm_val_t,
 ) *C.wasm_trap_t {
-	// Wrap our `Caller` argument in case it's needed
-	caller := &Caller{ptr: caller_ptr}
-	defer func() { caller.ptr = nil }()
-
 	// Convert all our parameters to `[]reflect.Value`, taking special care
 	// for `*Caller` but otherwise reading everything through `Val`.
 	idx := int(env)
 	entry := gWRAP_MAP[idx]
+
+	// Wrap our `Caller` argument in case it's needed
+	caller := &Caller{ptr: caller_ptr, store: entry.store}
+	defer func() { caller.ptr = nil }()
+
 	ty := entry.callback.Type()
 	params := make([]reflect.Value, ty.NumIn())
 	base := unsafe.Pointer(args_ptr)
@@ -303,17 +307,20 @@ func goFinalizeWrap(env unsafe.Pointer) {
 	gWRAP_MAP_SLAB.deallocate(idx)
 }
 
-func mkFunc(ptr *C.wasm_func_t, owner interface{}) *Func {
-	f := &Func{_ptr: ptr, _owner: owner}
+func mkFunc(ptr *C.wasm_func_t, freelist *freeList, owner interface{}) *Func {
+	f := &Func{_ptr: ptr, _owner: owner, freelist: freelist}
 	if owner == nil {
 		runtime.SetFinalizer(f, func(f *Func) {
-			C.wasm_func_delete(f._ptr)
+			freelist.lock.Lock()
+			defer freelist.lock.Unlock()
+			freelist.funcs = append(freelist.funcs, f._ptr)
 		})
 	}
 	return f
 }
 
 func (f *Func) ptr() *C.wasm_func_t {
+	f.freelist.clear()
 	ret := f._ptr
 	maybeGC()
 	return ret
@@ -464,7 +471,7 @@ func (f *Func) Call(args ...interface{}) (interface{}, error) {
 
 func (f *Func) AsExtern() *Extern {
 	ptr := C.wasm_func_as_extern(f.ptr())
-	return mkExtern(ptr, f.owner())
+	return mkExtern(ptr, f.freelist, f.owner())
 }
 
 // Gets an exported item from the caller's module.
@@ -485,6 +492,6 @@ func (c *Caller) GetExport(name string) *Extern {
 	if ptr == nil {
 		return nil
 	} else {
-		return mkExtern(ptr, nil)
+		return mkExtern(ptr, c.store.freelist, nil)
 	}
 }
