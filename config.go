@@ -158,6 +158,13 @@ func (cfg *Config) CacheConfigLoad(path string) error {
 	return nil
 }
 
+// Configures whether generated wasm code will be interrupted via interrupt
+// handles.
+func (cfg *Config) SetInterruptable(interruptable bool) {
+	C.wasmtime_config_interruptable_set(cfg.ptr(), C.bool(interruptable))
+	runtime.KeepAlive(cfg)
+}
+
 // See comments in `ffi.go` for what's going on here
 func (config *Config) ptr() *C.wasm_config_t {
 	ret := config._ptr
