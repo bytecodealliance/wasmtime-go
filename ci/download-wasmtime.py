@@ -11,6 +11,7 @@ import shutil
 import glob
 
 urls = [
+    ['wasmtime-dev-x86_64-mingw-c-api.zip', 'windows-x86_64'],
     ['wasmtime-dev-x86_64-linux-c-api.tar.xz', 'linux-x86_64'],
     ['wasmtime-dev-x86_64-macos-c-api.tar.xz', 'macos-x86_64'],
 ]
@@ -31,8 +32,12 @@ for i, arr in enumerate(urls):
     with urllib.request.urlopen(url) as f:
         contents = f.read()
 
-    t = tarfile.open(fileobj=io.BytesIO(contents))
-    t.extractall()
+    if filename.endswith('.zip'):
+        z = zipfile.ZipFile(file=io.BytesIO(contents))
+        z.extractall()
+    else:
+        t = tarfile.open(fileobj=io.BytesIO(contents))
+        t.extractall()
 
     src = filename.replace('.zip', '').replace('.tar.xz', '')
     if i == 0:
