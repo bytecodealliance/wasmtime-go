@@ -6,6 +6,7 @@ import (
 	"errors"
 	"reflect"
 	"runtime"
+	"sync"
 	"unsafe"
 )
 
@@ -32,6 +33,7 @@ type wrapMapEntry struct {
 	callback reflect.Value
 }
 
+var gLOCK sync.Mutex
 var gNEW_MAP = make(map[int]newMapEntry)
 var gNEW_MAP_SLAB slab
 var gWRAP_MAP = make(map[int]wrapMapEntry)
@@ -59,6 +61,7 @@ func NewFunc(
 	ty *FuncType,
 	f func(*Caller, []Val) ([]Val, *Trap),
 ) *Func {
+	gLOCK.Lock()
 	idx := gNEW_MAP_SLAB.allocate()
 	gNEW_MAP[idx] = newMapEntry{
 		store:    store,
@@ -66,6 +69,7 @@ func NewFunc(
 		nparams:  len(ty.Params()),
 		results:  ty.Results(),
 	}
+	gLOCK.Unlock()
 
 	ptr := C.c_func_new_with_env(
 		store.ptr(),
@@ -87,7 +91,9 @@ func goTrampolineNew(
 	results_ptr *C.wasm_val_t,
 ) *C.wasm_trap_t {
 	idx := int(env)
+	gLOCK.Lock()
 	entry := gNEW_MAP[idx]
+	gLOCK.Unlock()
 
 	caller := &Caller{ptr: caller_ptr, store: entry.store}
 	defer func() { caller.ptr = nil }()
@@ -136,6 +142,8 @@ func goTrampolineNew(
 //export goFinalizeNew
 func goFinalizeNew(env unsafe.Pointer) {
 	idx := int(uintptr(env))
+	gLOCK.Lock()
+	defer gLOCK.Unlock()
 	delete(gNEW_MAP, idx)
 	gNEW_MAP_SLAB.deallocate(idx)
 }
@@ -201,11 +209,14 @@ func WrapFunc(
 
 	// Store our `f` callback into the slab for wrapped functions, and now
 	// we've got everything necessary to make thw asm handle.
+	gLOCK.Lock()
 	idx := gWRAP_MAP_SLAB.allocate()
 	gWRAP_MAP[idx] = wrapMapEntry{
 		callback: val,
 		store:    store,
 	}
+	gLOCK.Unlock()
+
 	ptr := C.c_func_new_with_env(
 		store.ptr(),
 		wasm_ty.ptr(),
@@ -241,7 +252,9 @@ func goTrampolineWrap(
 	// Convert all our parameters to `[]reflect.Value`, taking special care
 	// for `*Caller` but otherwise reading everything through `Val`.
 	idx := int(env)
+	gLOCK.Lock()
 	entry := gWRAP_MAP[idx]
+	gLOCK.Unlock()
 
 	// Wrap our `Caller` argument in case it's needed
 	caller := &Caller{ptr: caller_ptr, store: entry.store}
@@ -303,6 +316,8 @@ func goTrampolineWrap(
 //export goFinalizeWrap
 func goFinalizeWrap(env unsafe.Pointer) {
 	idx := int(uintptr(env))
+	gLOCK.Lock()
+	defer gLOCK.Unlock()
 	delete(gWRAP_MAP, idx)
 	gWRAP_MAP_SLAB.deallocate(idx)
 }
@@ -446,10 +461,10 @@ func (f *Func) Call(args ...interface{}) (interface{}, error) {
 
 	if trap != nil {
 		trap := mkTrap(trap)
-		last_panic := gLAST_PANIC
+		lastPanic := gLAST_PANIC
 		gLAST_PANIC = nil
-		if last_panic != nil {
-			panic(last_panic)
+		if lastPanic != nil {
+			panic(lastPanic)
 		}
 		return nil, trap
 	}
