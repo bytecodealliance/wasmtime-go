@@ -7,7 +7,7 @@ type slab struct {
 
 func (s *slab) allocate() int {
 	if s.next == len(s.list) {
-		s.list = append(s.list, s.next)
+		s.list = append(s.list, s.next+1)
 	}
 	ret := s.next
 	s.next = s.list[ret]
