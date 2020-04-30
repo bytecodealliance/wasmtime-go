@@ -38,7 +38,7 @@ var gNEW_MAP = make(map[int]newMapEntry)
 var gNEW_MAP_SLAB slab
 var gWRAP_MAP = make(map[int]wrapMapEntry)
 var gWRAP_MAP_SLAB slab
-var gLAST_PANIC interface{}
+var gCALLER_PANICS = make(map[*freeList]interface{})
 
 // Creates a new `Func` with the given `ty` which, when called, will call `f`
 //
@@ -108,8 +108,9 @@ func goTrampolineNew(
 
 	var results []Val
 	var trap *Trap
+	var lastPanic interface{}
 	func() {
-		defer func() { gLAST_PANIC = recover() }()
+		defer func() { lastPanic = recover() }()
 		results, trap = entry.callback(caller, params)
 		if trap != nil {
 			return
@@ -123,7 +124,10 @@ func goTrampolineNew(
 			}
 		}
 	}()
-	if trap == nil && gLAST_PANIC != nil {
+	if trap == nil && lastPanic != nil {
+		gLOCK.Lock()
+		gCALLER_PANICS[entry.store.freelist] = lastPanic
+		gLOCK.Unlock()
 		trap = NewTrap(entry.store, "go panicked")
 	}
 	if trap != nil {
@@ -278,11 +282,15 @@ func goTrampolineWrap(
 	// Invoke the function, catching any panics to propagate later. Panics
 	// result in immediately returning a trap.
 	var results []reflect.Value
+	var lastPanic interface{}
 	func() {
-		defer func() { gLAST_PANIC = recover() }()
+		defer func() { lastPanic = recover() }()
 		results = entry.callback.Call(params)
 	}()
-	if gLAST_PANIC != nil {
+	if lastPanic != nil {
+		gLOCK.Lock()
+		gCALLER_PANICS[entry.store.freelist] = lastPanic
+		gLOCK.Unlock()
 		trap := NewTrap(entry.store, "go panicked")
 		runtime.SetFinalizer(trap, nil)
 		return trap.ptr()
@@ -461,8 +469,10 @@ func (f *Func) Call(args ...interface{}) (interface{}, error) {
 
 	if trap != nil {
 		trap := mkTrap(trap)
-		lastPanic := gLAST_PANIC
-		gLAST_PANIC = nil
+		gLOCK.Lock()
+		defer gLOCK.Unlock()
+		lastPanic := gCALLER_PANICS[f.freelist]
+		delete(gCALLER_PANICS, f.freelist)
 		if lastPanic != nil {
 			panic(lastPanic)
 		}
