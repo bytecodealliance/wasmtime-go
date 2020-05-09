@@ -164,6 +164,7 @@ func NewWasiInstance(store *Store, config *WasiConfig, name string) (*WasiInstan
 	)
 	runtime.KeepAlive(store)
 	config._ptr = nil
+	runtime.SetFinalizer(config, nil)
 	C.free(unsafe.Pointer(name_ptr))
 
 	if ptr == nil {
