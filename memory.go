@@ -58,6 +58,26 @@ func (m *Memory) Data() unsafe.Pointer {
 	return ret
 }
 
+// Returns the raw memory backed by this `Memory` as a byte slice (`[]byte`).
+//
+// This is not a safe method to call, hence the "unsafe" in the name. The byte
+// slice returned from this function is not managed by the Go garbage collector.
+// You need to ensure that `m`, the original `Memory`, lives longer than the
+// `[]byte` returned.
+//
+// Note that you may need to use `runtime.KeepAlive` to keep the original memory
+// `m` alive for long enough while you're using the `[]byte` slice. If the
+// `[]byte` slice is used after `m` is GC'd then that is undefined behavior.
+func (m *Memory) UnsafeData() []byte {
+	// see https://github.com/golang/go/wiki/cgo#turning-c-arrays-into-go-slices
+	const MAX_LEN = 1 << 32
+	length := m.DataSize()
+	if length >= MAX_LEN {
+		panic("memory is too big")
+	}
+	return (*[MAX_LEN]byte)(m.Data())[:length:length]
+}
+
 // Returns the size, in bytes, that `Data()` is valid for
 func (m *Memory) DataSize() uintptr {
 	ret := uintptr(C.wasm_memory_data_size(m.ptr()))

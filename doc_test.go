@@ -1,9 +1,9 @@
 package wasmtime
 
-import "fmt"
-import "unsafe"
-
-// import "unsafe"
+import (
+	"fmt"
+	"runtime"
+)
 
 // An example of instantiating a small wasm module which imports functionality
 // from the host, then calling into wasm which calls back into the host.
@@ -144,24 +144,15 @@ func Example_memory() {
 			panic("expected a trap")
 		}
 	}
-	readMemory := func(offset uintptr) uint8 {
-		// Note that `Data` returned is a raw `unsafe.Pointer` into
-		// wasm memory, care must be taken when using it!
-		assert(offset < memory.DataSize())
-		return *(*uint8)(unsafe.Pointer(uintptr(memory.Data()) + offset))
-	}
-	writeMemory := func(offset uintptr, val uint8) {
-		assert(offset < memory.DataSize())
-		*(*uint8)(unsafe.Pointer(uintptr(memory.Data()) + offset)) = val
-	}
 
 	// Check the initial memory sizes/contents
 	assert(memory.Size() == 2)
 	assert(memory.DataSize() == 0x20000)
+	buf := memory.UnsafeData()
 
-	assert(readMemory(0) == 0)
-	assert(readMemory(0x1000) == 1)
-	assert(readMemory(0x1003) == 4)
+	assert(buf[0] == 0)
+	assert(buf[0x1000] == 1)
+	assert(buf[0x1003] == 4)
 
 	assert(call32(size) == 2)
 	assert(call32(load, 0) == 0)
@@ -171,12 +162,12 @@ func Example_memory() {
 	assertTraps(load, 0x20000)
 
 	// We can mutate memory as well
-	writeMemory(0x1003, 5)
+	buf[0x1003] = 5
 	call(store, 0x1002, 6)
 	assertTraps(store, 0x20000, 0)
 
-	assert(readMemory(0x1002) == 6)
-	assert(readMemory(0x1003) == 5)
+	assert(buf[0x1002] == 6)
+	assert(buf[0x1003] == 5)
 	assert(call32(load, 0x1002) == 6)
 	assert(call32(load, 0x1003) == 5)
 
@@ -193,6 +184,10 @@ func Example_memory() {
 	// Memory can fail to grow
 	assert(!memory.Grow(1))
 	assert(memory.Grow(0))
+
+	// Ensure that `memory` lives long enough to cover all our usages of
+	// using its internal buffer we read from `UnsafeData()`
+	runtime.KeepAlive(memory)
 
 	// Finally we can also create standalone memories to get imported by
 	// wasm modules too.
