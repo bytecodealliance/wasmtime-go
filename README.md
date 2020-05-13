@@ -113,6 +113,14 @@ $ git clone https://github.com/bytecodealliance/wasmtime-go
 
 Next up you'll want to have a [local Wasmtime build
 available](https://bytecodealliance.github.io/wasmtime/contributing-building.html).
+
+You'll need to build at least the `wasmtime-c-api` crate, which, at the time of
+this writing, would be:
+
+```sh
+$ cargo build -p wasmtime-c-api
+```
+
 Once you've got that you can set up the environment of this library with:
 
 ```sh
