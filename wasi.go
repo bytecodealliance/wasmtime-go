@@ -3,9 +3,11 @@ package wasmtime
 // #include <wasi.h>
 // #include <stdlib.h>
 import "C"
-import "errors"
-import "runtime"
-import "unsafe"
+import (
+	"errors"
+	"runtime"
+	"unsafe"
+)
 
 type WasiConfig struct {
 	_ptr *C.wasi_config_t
@@ -57,7 +59,7 @@ func (c *WasiConfig) SetEnv(keys, values []string) {
 		name_ptrs[i] = C.CString(key)
 	}
 	for i, value := range values {
-		name_ptrs[i] = C.CString(value)
+		value_ptrs[i] = C.CString(value)
 	}
 	var names_raw, values_raw **C.char
 	if len(keys) > 0 {

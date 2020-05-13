@@ -4,6 +4,7 @@ import "testing"
 
 func TestWasiConfig(t *testing.T) {
 	config := NewWasiConfig()
+	config.SetEnv([]string{"WASMTIME"}, []string{"GO"})
 	store := NewStore(NewEngine())
 	instance, err := NewWasiInstance(store, config, "wasi_snapshot_preview1")
 	check(err)
@@ -20,6 +21,6 @@ func TestBadWasiName(t *testing.T) {
 		panic("expected an error")
 	}
 	if instance != nil {
-		panic("not-nil instnace")
+		panic("not-nil instance")
 	}
 }
