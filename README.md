@@ -33,12 +33,13 @@ Be sure to check out the [API documentation][api]!
 This Go library uses CGO to consume the C API of the [Wasmtime
 project][wasmtime] which is written in Rust. Precompiled binaries of Wasmtime
 are checked into this repository on tagged releases so you won't have to install
-Wasmtime locally, but it means that this project only works on Linux x86\_64 and
-macOS x86\_64 currently.
+Wasmtime locally, but it means that this project only works on Linux x86\_64,
+macOS x86\_64 , and Windows x86\_64 currently. Buliding on other platforms will
+need to arrange to build Wasmtime and use `CGO_*` env vars to compile correctly.
 
 Please note that currently this project requires Go 1.13.10 when run on macOS.
-There is a regression in Go 1.14 (see [issue #10][issue #10]) that causes a segfault when
-the garbage collector runs.
+There seems to be a regression in Go 1.14 (see [issue #10][issue #10]) that
+can cause a segfault.
 
 [api]: https://pkg.go.dev/github.com/bytecodealliance/wasmtime-go
 [wasmtime]: https://github.com/bytecodealliance/wasmtime
