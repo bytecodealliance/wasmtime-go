@@ -4,14 +4,14 @@ package wasmtime
 //
 // wasmtime_error_t *go_module_new(wasm_store_t *store, uint8_t *bytes, size_t len, wasm_module_t **ret) {
 //    wasm_byte_vec_t vec;
-//    vec.data = bytes;
+//    vec.data = (wasm_byte_t*) bytes;
 //    vec.size = len;
 //    return wasmtime_module_new(store, &vec, ret);
 // }
 //
 // wasmtime_error_t *go_module_validate(wasm_store_t *store, uint8_t *bytes, size_t len) {
 //    wasm_byte_vec_t vec;
-//    vec.data = bytes;
+//    vec.data = (wasm_byte_t*) bytes;
 //    vec.size = len;
 //    return wasmtime_module_validate(store, &vec);
 // }
