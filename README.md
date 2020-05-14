@@ -36,8 +36,13 @@ are checked into this repository on tagged releases so you won't have to install
 Wasmtime locally, but it means that this project only works on Linux x86\_64 and
 macOS x86\_64 currently.
 
+Please note that currently this project requires Go 1.13.10 when run on macOS.
+There is a regression in Go 1.14 (see [issue #10][issue #10]) that causes a segfault when
+the garbage collector runs.
+
 [api]: https://pkg.go.dev/github.com/bytecodealliance/wasmtime-go
 [wasmtime]: https://github.com/bytecodealliance/wasmtime
+[issue #10]: https://github.com/bytecodealliance/wasmtime-go/issues/10
 
 ## Usage
 
