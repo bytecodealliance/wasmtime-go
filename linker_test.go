@@ -33,7 +33,7 @@ func TestLinker(t *testing.T) {
 	assertNoError(err)
 	table_module, err := NewModule(store, table_wasm)
 	assertNoError(err)
-	instance, err := NewInstance(table_module, []*Extern{})
+	instance, err := NewInstance(store, table_module, []*Extern{})
 	assertNoError(err)
 	table := instance.Exports()[0].Table()
 	assertNoError(linker.Define("", "t", table))

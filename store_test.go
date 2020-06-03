@@ -52,7 +52,7 @@ func TestInterruptWasm(t *testing.T) {
 	f := WrapFunc(store, func() {
 		handle.Interrupt()
 	})
-	instance, err := NewInstance(module, []*Extern{f.AsExtern()})
+	instance, err := NewInstance(store, module, []*Extern{f.AsExtern()})
 	if instance != nil {
 		panic("expected nil instance")
 	}

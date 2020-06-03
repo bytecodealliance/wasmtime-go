@@ -37,7 +37,7 @@ func Example() {
 
 	// Next up we instantiate a module which is where we link in all our
 	// imports. We've got one import so we pass that in here.
-	instance, err := NewInstance(module, []*Extern{item.AsExtern()})
+	instance, err := NewInstance(store, module, []*Extern{item.AsExtern()})
 	check(err)
 
 	// After we've instantiated we can lookup our `run` function and call
@@ -86,7 +86,7 @@ func Example_gcd() {
 	check(err)
 	module, err := NewModule(store, wasm)
 	check(err)
-	instance, err := NewInstance(module, []*Extern{})
+	instance, err := NewInstance(store, module, []*Extern{})
 	check(err)
 	run := instance.GetExport("gcd").Func()
 	result, err := run.Call(6, 27)
@@ -118,7 +118,7 @@ func Example_memory() {
 	check(err)
 	module, err := NewModule(wasmtime_store, wasm)
 	check(err)
-	instance, err := NewInstance(module, []*Extern{})
+	instance, err := NewInstance(wasmtime_store, module, []*Extern{})
 	check(err)
 
 	// Load up our exports from the instance
@@ -242,7 +242,7 @@ func Example_multi() {
 		return b + 1, a + 1
 	})
 
-	instance, err := NewInstance(module, []*Extern{callback.AsExtern()})
+	instance, err := NewInstance(store, module, []*Extern{callback.AsExtern()})
 	check(err)
 
 	g := instance.GetExport("g").Func()
