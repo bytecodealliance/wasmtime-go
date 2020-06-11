@@ -4,18 +4,19 @@ package wasmtime
 import "C"
 import "runtime"
 
+// TableType is one of table types which classify tables over elements of element types within a size range.
 type TableType struct {
 	_ptr   *C.wasm_tabletype_t
 	_owner interface{}
 }
 
-// Creates a new `TableType` with the `element` type provided as well as
+// NewTableType creates a new `TableType` with the `element` type provided as well as
 // `limits` on its size.
 func NewTableType(element *ValType, limits Limits) *TableType {
 	valptr := C.wasm_valtype_new(C.wasm_valtype_kind(element.ptr()))
 	runtime.KeepAlive(element)
-	limits_ffi := limits.ffi()
-	ptr := C.wasm_tabletype_new(valptr, &limits_ffi)
+	limitsFFI := limits.ffi()
+	ptr := C.wasm_tabletype_new(valptr, &limitsFFI)
 
 	return mkTableType(ptr, nil)
 }
@@ -43,19 +44,19 @@ func (ty *TableType) owner() interface{} {
 	return ty
 }
 
-// Returns the type of value stored in this table
+// Element returns the type of value stored in this table
 func (ty *TableType) Element() *ValType {
 	ptr := C.wasm_tabletype_element(ty.ptr())
 	return mkValType(ptr, ty.owner())
 }
 
-// Returns limits on the size of this table type
+// Limits returns limits on the size of this table type
 func (ty *TableType) Limits() Limits {
 	ptr := C.wasm_tabletype_limits(ty.ptr())
 	return mkLimits(ptr, ty.owner())
 }
 
-// Converts this type to an instance of `ExternType`
+// AsExternType converts this type to an instance of `ExternType`
 func (ty *TableType) AsExternType() *ExternType {
 	ptr := C.wasm_tabletype_as_externtype_const(ty.ptr())
 	return mkExternType(ptr, ty.owner())

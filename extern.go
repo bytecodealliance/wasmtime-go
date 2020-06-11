@@ -4,12 +4,17 @@ package wasmtime
 import "C"
 import "runtime"
 
+// Extern is an external value, which is the runtime representation of an entity that can be imported or exported.
+// It is an address denoting either a function instance, table instance, memory instance, or global instances in the shared store.
+// Read more in [spec](https://webassembly.github.io/spec/core/exec/runtime.html#external-values)
+//
 type Extern struct {
 	_ptr     *C.wasm_extern_t
 	_owner   interface{}
 	freelist *freeList
 }
 
+// AsExtern is an interface for all types which can be imported or exported as an Extern
 type AsExtern interface {
 	AsExtern() *Extern
 }
@@ -39,51 +44,51 @@ func (e *Extern) owner() interface{} {
 	return e
 }
 
-// Returns the type of this export
+// Type returns the type of this export
 func (e *Extern) Type() *ExternType {
 	ptr := C.wasm_extern_type(e.ptr())
 	runtime.KeepAlive(e)
 	return mkExternType(ptr, nil)
 }
 
-// Returns a Func if this export is a function or nil otherwise
+// Func returns a Func if this export is a function or nil otherwise
 func (e *Extern) Func() *Func {
 	ret := C.wasm_extern_as_func(e.ptr())
 	if ret == nil {
 		return nil
-	} else {
-		return mkFunc(ret, e.freelist, e.owner())
 	}
+
+	return mkFunc(ret, e.freelist, e.owner())
 }
 
-// Returns a Global if this export is a global or nil otherwise
+// Global returns a Global if this export is a global or nil otherwise
 func (e *Extern) Global() *Global {
 	ret := C.wasm_extern_as_global(e.ptr())
 	if ret == nil {
 		return nil
-	} else {
-		return mkGlobal(ret, e.freelist, e.owner())
 	}
+
+	return mkGlobal(ret, e.freelist, e.owner())
 }
 
-// Returns a Memory if this export is a memory or nil otherwise
+// Memory returns a Memory if this export is a memory or nil otherwise
 func (e *Extern) Memory() *Memory {
 	ret := C.wasm_extern_as_memory(e.ptr())
 	if ret == nil {
 		return nil
-	} else {
-		return mkMemory(ret, e.freelist, e.owner())
 	}
+
+	return mkMemory(ret, e.freelist, e.owner())
 }
 
-// Returns a Table if this export is a table or nil otherwise
+// Table returns a Table if this export is a table or nil otherwise
 func (e *Extern) Table() *Table {
 	ret := C.wasm_extern_as_table(e.ptr())
 	if ret == nil {
 		return nil
-	} else {
-		return mkTable(ret, e.freelist, e.owner())
 	}
+
+	return mkTable(ret, e.freelist, e.owner())
 }
 
 func (e *Extern) AsExtern() *Extern {

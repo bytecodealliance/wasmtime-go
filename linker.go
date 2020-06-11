@@ -5,6 +5,9 @@ package wasmtime
 import "C"
 import "runtime"
 
+// Linker implements a wasmtime Linking module, which can link instantiated modules together.
+// More details you can see [examples for C](https://bytecodealliance.github.io/wasmtime/examples-c-linking.html) or
+// [examples for Rust](https://bytecodealliance.github.io/wasmtime/examples-rust-linking.html)
 type Linker struct {
 	_ptr  *C.wasmtime_linker_t
 	Store *Store
@@ -33,14 +36,14 @@ func (l *Linker) ptr() *C.wasmtime_linker_t {
 	return ret
 }
 
-// Configures whether names can be redefined after they've already been defined
+// AllowShadowing configures whether names can be redefined after they've already been defined
 // in this linker.
 func (l *Linker) AllowShadowing(allow bool) {
 	C.wasmtime_linker_allow_shadowing(l.ptr(), C.bool(allow))
 	runtime.KeepAlive(l)
 }
 
-// Defines a new item in this linker with the given module/name pair. Returns
+// Define defines a new item in this linker with the given module/name pair. Returns
 // an error if shadowing is disallowed and the module/name is already defined.
 func (l *Linker) Define(module, name string, item AsExtern) error {
 	extern := item.AsExtern()
@@ -58,19 +61,19 @@ func (l *Linker) Define(module, name string, item AsExtern) error {
 	runtime.KeepAlive(extern)
 	if err == nil {
 		return nil
-	} else {
-		return mkError(err)
 	}
+
+	return mkError(err)
 }
 
-// Convenience wrapper to calling Define and WrapFunc.
+// DefineFunc acts as a convenience wrapper to calling Define and WrapFunc.
 //
 // Returns an error if shadowing is disabled and the name is already defined.
 func (l *Linker) DefineFunc(module, name string, f interface{}) error {
 	return l.Define(module, name, WrapFunc(l.Store, f))
 }
 
-// Defines all exports of an instance provided under the module name provided.
+// DefineInstance defines all exports of an instance provided under the module name provided.
 //
 // Returns an error if shadowing is disabled and names are already defined.
 func (l *Linker) DefineInstance(module string, instance *Instance) error {
@@ -85,12 +88,12 @@ func (l *Linker) DefineInstance(module string, instance *Instance) error {
 	runtime.KeepAlive(instance)
 	if err == nil {
 		return nil
-	} else {
-		return mkError(err)
 	}
+
+	return mkError(err)
 }
 
-// Links a WASI module into this linker, ensuring that all exported functions
+// DefineWasi links a WASI module into this linker, ensuring that all exported functions
 // are available for linking.
 //
 // Returns an error if shadowing is disabled and names are already defined.
@@ -100,12 +103,12 @@ func (l *Linker) DefineWasi(instance *WasiInstance) error {
 	runtime.KeepAlive(instance)
 	if err == nil {
 		return nil
-	} else {
-		return mkError(err)
 	}
+
+	return mkError(err)
 }
 
-// Instantates a module with all imports defined in this linker.
+// Instantiate instantates a module with all imports defined in this linker.
 //
 // Returns an error if the instance's imports couldn't be satisfied, had the
 // wrong types, or if a trap happened executing the start function.

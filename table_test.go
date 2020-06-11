@@ -48,12 +48,12 @@ func TestTable(t *testing.T) {
 		panic("expected not nil")
 	}
 
-	prev_size, err := table.Grow(1, nil)
+	prevSize, err := table.Grow(1, nil)
 	if err != nil {
 		panic(err)
 	}
-	if prev_size != 1 {
-		print(prev_size)
+	if prevSize != 1 {
+		print(prevSize)
 		panic("bad prev")
 	}
 	f, err = table.Get(1)

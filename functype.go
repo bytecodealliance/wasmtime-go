@@ -2,20 +2,24 @@ package wasmtime
 
 // #include <wasm.h>
 import "C"
-import "runtime"
-import "unsafe"
+import (
+	"runtime"
+	"unsafe"
+)
 
+// FuncType is one of function types which classify the signature of functions, mapping a vector of parameters to a vector of results.
+// They are also used to classify the inputs and outputs of instructions.
 type FuncType struct {
 	_ptr   *C.wasm_functype_t
 	_owner interface{}
 }
 
-// Creates a new `FuncType` with the `kind` provided
+// NewFuncType creates a new `FuncType` with the `kind` provided
 func NewFuncType(params, results []*ValType) *FuncType {
-	param_vec := mkValTypeList(params)
-	result_vec := mkValTypeList(results)
+	paramVec := mkValTypeList(params)
+	resultVec := mkValTypeList(results)
 
-	ptr := C.wasm_functype_new(&param_vec, &result_vec)
+	ptr := C.wasm_functype_new(&paramVec, &resultVec)
 
 	return mkFuncType(ptr, nil)
 }
@@ -55,13 +59,13 @@ func (ty *FuncType) owner() interface{} {
 	return ty
 }
 
-// Returns the parameter types of this function type
+// Params returns the parameter types of this function type
 func (ty *FuncType) Params() []*ValType {
 	ptr := C.wasm_functype_params(ty.ptr())
 	return ty.convertTypeList(ptr)
 }
 
-// Returns the result types of this function type
+// Results returns the result types of this function type
 func (ty *FuncType) Results() []*ValType {
 	ptr := C.wasm_functype_results(ty.ptr())
 	return ty.convertTypeList(ptr)
@@ -80,7 +84,7 @@ func (ty *FuncType) convertTypeList(list *C.wasm_valtype_vec_t) []*ValType {
 	return ret
 }
 
-// Converts this type to an instance of `ExternType`
+// AsExternType converts this type to an instance of `ExternType`
 func (ty *FuncType) AsExternType() *ExternType {
 	ptr := C.wasm_functype_as_externtype_const(ty.ptr())
 	return mkExternType(ptr, ty.owner())

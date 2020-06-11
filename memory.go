@@ -2,16 +2,22 @@ package wasmtime
 
 // #include <wasm.h>
 import "C"
-import "runtime"
-import "unsafe"
+import (
+	"runtime"
+	"unsafe"
+)
 
+// Memory instance is the runtime representation of a linear memory.
+// It holds a vector of bytes and an optional maximum size, if one was specified at the definition site of the memory.
+// Read more in [spec](https://webassembly.github.io/spec/core/exec/runtime.html#memory-instances)
+// In wasmtime-go, you can get the vector of bytes by the unsafe pointer of memory from `Memory.Data()`, or go style byte slice from `Memory.UnsafeData()`
 type Memory struct {
 	_ptr     *C.wasm_memory_t
 	freelist *freeList
 	_owner   interface{}
 }
 
-// Creates a new `Memory` in the given `Store` with the specified `ty`.
+// NewMemory creates a new `Memory` in the given `Store` with the specified `ty`.
 func NewMemory(store *Store, ty *MemoryType) *Memory {
 	ptr := C.wasm_memory_new(store.ptr(), ty.ptr())
 	runtime.KeepAlive(store)
@@ -31,34 +37,34 @@ func mkMemory(ptr *C.wasm_memory_t, freelist *freeList, owner interface{}) *Memo
 	return f
 }
 
-func (f *Memory) ptr() *C.wasm_memory_t {
-	ret := f._ptr
+func (mem *Memory) ptr() *C.wasm_memory_t {
+	ret := mem._ptr
 	maybeGC()
 	return ret
 }
 
-func (f *Memory) owner() interface{} {
-	if f._owner != nil {
-		return f._owner
+func (mem *Memory) owner() interface{} {
+	if mem._owner != nil {
+		return mem._owner
 	}
-	return f
+	return mem
 }
 
-// Returns the type of this memory
-func (m *Memory) Type() *MemoryType {
-	ptr := C.wasm_memory_type(m.ptr())
-	runtime.KeepAlive(m)
+// Type returns the type of this memory
+func (mem *Memory) Type() *MemoryType {
+	ptr := C.wasm_memory_type(mem.ptr())
+	runtime.KeepAlive(mem)
 	return mkMemoryType(ptr, nil)
 }
 
-// Returns the raw pointer in memory of where this memory starts
-func (m *Memory) Data() unsafe.Pointer {
-	ret := unsafe.Pointer(C.wasm_memory_data(m.ptr()))
-	runtime.KeepAlive(m)
+// Data returns the raw pointer in memory of where this memory starts
+func (mem *Memory) Data() unsafe.Pointer {
+	ret := unsafe.Pointer(C.wasm_memory_data(mem.ptr()))
+	runtime.KeepAlive(mem)
 	return ret
 }
 
-// Returns the raw memory backed by this `Memory` as a byte slice (`[]byte`).
+// UnsafeData returns the raw memory backed by this `Memory` as a byte slice (`[]byte`).
 //
 // This is not a safe method to call, hence the "unsafe" in the name. The byte
 // slice returned from this function is not managed by the Go garbage collector.
@@ -68,38 +74,38 @@ func (m *Memory) Data() unsafe.Pointer {
 // Note that you may need to use `runtime.KeepAlive` to keep the original memory
 // `m` alive for long enough while you're using the `[]byte` slice. If the
 // `[]byte` slice is used after `m` is GC'd then that is undefined behavior.
-func (m *Memory) UnsafeData() []byte {
+func (mem *Memory) UnsafeData() []byte {
 	// see https://github.com/golang/go/wiki/cgo#turning-c-arrays-into-go-slices
-	const MAX_LEN = 1 << 32
-	length := m.DataSize()
-	if length >= MAX_LEN {
+	const MaxLen = 1 << 32
+	length := mem.DataSize()
+	if length >= MaxLen {
 		panic("memory is too big")
 	}
-	return (*[MAX_LEN]byte)(m.Data())[:length:length]
+	return (*[MaxLen]byte)(mem.Data())[:length:length]
 }
 
-// Returns the size, in bytes, that `Data()` is valid for
-func (m *Memory) DataSize() uintptr {
-	ret := uintptr(C.wasm_memory_data_size(m.ptr()))
-	runtime.KeepAlive(m)
+// DataSize returns the size, in bytes, that `Data()` is valid for
+func (mem *Memory) DataSize() uintptr {
+	ret := uintptr(C.wasm_memory_data_size(mem.ptr()))
+	runtime.KeepAlive(mem)
 	return ret
 }
 
-// Returns the size, in wasm pages, of this memory
-func (m *Memory) Size() uint32 {
-	ret := uint32(C.wasm_memory_size(m.ptr()))
-	runtime.KeepAlive(m)
+// Size returns the size, in wasm pages, of this memory
+func (mem *Memory) Size() uint32 {
+	ret := uint32(C.wasm_memory_size(mem.ptr()))
+	runtime.KeepAlive(mem)
 	return ret
 }
 
-// Grows this memory by `delta` pages
-func (m *Memory) Grow(delta uint) bool {
-	ret := C.wasm_memory_grow(m.ptr(), C.wasm_memory_pages_t(delta))
-	runtime.KeepAlive(m)
+// Grow grows this memory by `delta` pages
+func (mem *Memory) Grow(delta uint) bool {
+	ret := C.wasm_memory_grow(mem.ptr(), C.wasm_memory_pages_t(delta))
+	runtime.KeepAlive(mem)
 	return bool(ret)
 }
 
-func (m *Memory) AsExtern() *Extern {
-	ptr := C.wasm_memory_as_extern(m.ptr())
-	return mkExtern(ptr, m.freelist, m.owner())
+func (mem *Memory) AsExtern() *Extern {
+	ptr := C.wasm_memory_as_extern(mem.ptr())
+	return mkExtern(ptr, mem.freelist, mem.owner())
 }

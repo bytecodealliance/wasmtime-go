@@ -29,11 +29,11 @@ func TestLinker(t *testing.T) {
 	assertNoError(linker.Define("", "m", m))
 	assertNoError(linker.Define("other", "m", m.AsExtern()))
 
-	table_wasm, err := Wat2Wasm(`(module (table (export "") 1 funcref))`)
+	tableWasm, err := Wat2Wasm(`(module (table (export "") 1 funcref))`)
 	assertNoError(err)
-	table_module, err := NewModule(store, table_wasm)
+	tableModule, err := NewModule(store, tableWasm)
 	assertNoError(err)
-	instance, err := NewInstance(store, table_module, []*Extern{})
+	instance, err := NewInstance(store, tableModule, []*Extern{})
 	assertNoError(err)
 	table := instance.Exports()[0].Table()
 	assertNoError(linker.Define("", "t", table))
@@ -135,8 +135,8 @@ func ExampleLinker() {
 	// afterwards
 	instance1, err := linker.Instantiate(module1)
 	check(err)
-	double_and_add := instance1.GetExport("double_and_add").Func()
-	result, err := double_and_add.Call(2, 3)
+	doubleAndAdd := instance1.GetExport("double_and_add").Func()
+	result, err := doubleAndAdd.Call(2, 3)
 	check(err)
 	fmt.Print(result.(int32))
 	// Output: 7

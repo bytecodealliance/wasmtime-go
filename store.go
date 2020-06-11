@@ -8,14 +8,14 @@ import (
 	"runtime"
 )
 
-// A `Store` is a general group of wasm instances, and many objects
+// Store is a general group of wasm instances, and many objects
 // must all be created with and reference the same `Store`
 type Store struct {
 	_ptr     *C.wasm_store_t
 	freelist *freeList
 }
 
-// Creates a new `Store` from the configuration provided in `engine`
+// NewStore creates a new `Store` from the configuration provided in `engine`
 func NewStore(engine *Engine) *Store {
 	store := &Store{
 		_ptr:     C.wasm_store_new(engine.ptr()),
@@ -52,7 +52,7 @@ func (store *Store) ptr() *C.wasm_store_t {
 	return ret
 }
 
-// An `InterruptHandle` is used to interrupt the execution of currently running
+// InterruptHandle is used to interrupt the execution of currently running
 // wasm code.
 //
 // For more information see
@@ -61,7 +61,7 @@ type InterruptHandle struct {
 	_ptr *C.wasmtime_interrupt_handle_t
 }
 
-// Interrupts currently executing WebAssembly code, if it's currently running,
+// Interrupt interrupts currently executing WebAssembly code, if it's currently running,
 // or interrupts wasm the next time it starts running.
 //
 // For more information see

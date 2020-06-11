@@ -2,16 +2,20 @@ package wasmtime
 
 // #include <wasmtime.h>
 import "C"
-import "runtime"
-import "unsafe"
+import (
+	"runtime"
+	"unsafe"
+)
 
+// Instance is an instantiated module instance.
+// Once a module has been instantiated as an Instance, any exported function can be invoked externally via its function address funcaddr in the store S and an appropriate list val∗ of argument values.
 type Instance struct {
 	_ptr     *C.wasm_instance_t
 	exports  map[string]*Extern
 	freelist *freeList
 }
 
-// Instantiates a WebAssembly `module` with the `imports` provided.
+// NewInstance instantiates a WebAssembly `module` with the `imports` provided.
 //
 // This function will attempt to create a new wasm instance given the provided
 // imports. This can fail if the wrong number of imports are specified, the
@@ -20,20 +24,20 @@ type Instance struct {
 // This will also run the `start` function of the instance, returning an error
 // if it traps.
 func NewInstance(store *Store, module *Module, imports []*Extern) (*Instance, error) {
-	imports_raw := make([]*C.wasm_extern_t, len(imports))
+	importsRaw := make([]*C.wasm_extern_t, len(imports))
 	for i, imp := range imports {
-		imports_raw[i] = imp.ptr()
+		importsRaw[i] = imp.ptr()
 	}
-	var imports_raw_ptr **C.wasm_extern_t
+	var importsRawPtr **C.wasm_extern_t
 	if len(imports) > 0 {
-		imports_raw_ptr = &imports_raw[0]
+		importsRawPtr = &importsRaw[0]
 	}
 	var trap *C.wasm_trap_t
 	var ptr *C.wasm_instance_t
 	err := C.wasmtime_instance_new(
 		store.ptr(),
 		module.ptr(),
-		imports_raw_ptr,
+		importsRawPtr,
 		C.size_t(len(imports)),
 		&ptr,
 		&trap,
@@ -41,7 +45,7 @@ func NewInstance(store *Store, module *Module, imports []*Extern) (*Instance, er
 	runtime.KeepAlive(store)
 	runtime.KeepAlive(module)
 	runtime.KeepAlive(imports)
-	runtime.KeepAlive(imports_raw)
+	runtime.KeepAlive(importsRaw)
 	if err != nil {
 		return nil, mkError(err)
 	}
@@ -70,8 +74,8 @@ func mkInstance(ptr *C.wasm_instance_t, module *Module) *Instance {
 	return instance
 }
 
-func (m *Instance) ptr() *C.wasm_instance_t {
-	ret := m._ptr
+func (i *Instance) ptr() *C.wasm_instance_t {
+	ret := i._ptr
 	maybeGC()
 	return ret
 }
@@ -80,7 +84,7 @@ type externList struct {
 	vec C.wasm_extern_vec_t
 }
 
-// Returns a list of exports from this instance.
+// Exports returns a list of exports from this instance.
 //
 // Each export is returned as a `*Extern` and lines up with the exports list of
 // the associated `Module`.
@@ -92,7 +96,7 @@ func (i *Instance) Exports() []*Extern {
 	runtime.SetFinalizer(externs, func(externs *externList) {
 		freelist.lock.Lock()
 		defer freelist.lock.Unlock()
-		freelist.extern_vecs = append(freelist.extern_vecs, &externs.vec)
+		freelist.externVecs = append(freelist.externVecs, &externs.vec)
 	})
 
 	ret := make([]*Extern, int(externs.vec.size))
@@ -106,7 +110,7 @@ func (i *Instance) Exports() []*Extern {
 	return ret
 }
 
-// Attempts to find an export on this instance by `name`
+// GetExport attempts to find an export on this instance by `name`
 //
 // May return `nil` if this instance has no export named `name`
 func (i *Instance) GetExport(name string) *Extern {

@@ -28,16 +28,18 @@ func (c *WasiConfig) ptr() *C.wasi_config_t {
 	return ret
 }
 
+// SetArgv will explicitly configure the argv for this WASI configuration.
+// Note that this field can only be set, it cannot be read
 func (c *WasiConfig) SetArgv(argv []string) {
 	ptrs := make([]*C.char, len(argv))
 	for i, arg := range argv {
 		ptrs[i] = C.CString(arg)
 	}
-	var argv_raw **C.char
+	var argvRaw **C.char
 	if len(ptrs) > 0 {
-		argv_raw = &ptrs[0]
+		argvRaw = &ptrs[0]
 	}
-	C.wasi_config_set_argv(c.ptr(), C.int(len(argv)), argv_raw)
+	C.wasi_config_set_argv(c.ptr(), C.int(len(argv)), argvRaw)
 	runtime.KeepAlive(c)
 	for _, ptr := range ptrs {
 		C.free(unsafe.Pointer(ptr))
@@ -49,28 +51,31 @@ func (c *WasiConfig) InheritArgv() {
 	runtime.KeepAlive(c)
 }
 
+// SetEnv configures environment variables to be returned for this WASI configuration.
+// The pairs provided must be an iterable list of key/value pairs of environment variables.
+// Note that this field can only be set, it cannot be read
 func (c *WasiConfig) SetEnv(keys, values []string) {
 	if len(keys) != len(values) {
 		panic("mismatched numbers of keys and values")
 	}
-	name_ptrs := make([]*C.char, len(values))
-	value_ptrs := make([]*C.char, len(values))
+	namePtrs := make([]*C.char, len(values))
+	valuePtrs := make([]*C.char, len(values))
 	for i, key := range keys {
-		name_ptrs[i] = C.CString(key)
+		namePtrs[i] = C.CString(key)
 	}
 	for i, value := range values {
-		value_ptrs[i] = C.CString(value)
+		valuePtrs[i] = C.CString(value)
 	}
-	var names_raw, values_raw **C.char
+	var namesRaw, valuesRaw **C.char
 	if len(keys) > 0 {
-		names_raw = &name_ptrs[0]
-		values_raw = &value_ptrs[0]
+		namesRaw = &namePtrs[0]
+		valuesRaw = &valuePtrs[0]
 	}
-	C.wasi_config_set_env(c.ptr(), C.int(len(keys)), names_raw, values_raw)
+	C.wasi_config_set_env(c.ptr(), C.int(len(keys)), namesRaw, valuesRaw)
 	runtime.KeepAlive(c)
-	for i, ptr := range name_ptrs {
+	for i, ptr := range namePtrs {
 		C.free(unsafe.Pointer(ptr))
-		C.free(unsafe.Pointer(value_ptrs[i]))
+		C.free(unsafe.Pointer(valuePtrs[i]))
 	}
 }
 
@@ -80,15 +85,15 @@ func (c *WasiConfig) InheritEnv() {
 }
 
 func (c *WasiConfig) SetStdinFile(path string) error {
-	path_c := C.CString(path)
-	ok := C.wasi_config_set_stdin_file(c.ptr(), path_c)
+	pathC := C.CString(path)
+	ok := C.wasi_config_set_stdin_file(c.ptr(), pathC)
 	runtime.KeepAlive(c)
-	C.free(unsafe.Pointer(path_c))
+	C.free(unsafe.Pointer(pathC))
 	if ok {
 		return nil
-	} else {
-		return errors.New("failed to open file")
 	}
+
+	return errors.New("failed to open file")
 }
 
 func (c *WasiConfig) InheritStdin() {
@@ -97,15 +102,15 @@ func (c *WasiConfig) InheritStdin() {
 }
 
 func (c *WasiConfig) SetStdoutFile(path string) error {
-	path_c := C.CString(path)
-	ok := C.wasi_config_set_stdout_file(c.ptr(), path_c)
+	pathC := C.CString(path)
+	ok := C.wasi_config_set_stdout_file(c.ptr(), pathC)
 	runtime.KeepAlive(c)
-	C.free(unsafe.Pointer(path_c))
+	C.free(unsafe.Pointer(pathC))
 	if ok {
 		return nil
-	} else {
-		return errors.New("failed to open file")
 	}
+
+	return errors.New("failed to open file")
 }
 
 func (c *WasiConfig) InheritStdout() {
@@ -114,15 +119,15 @@ func (c *WasiConfig) InheritStdout() {
 }
 
 func (c *WasiConfig) SetStderrFile(path string) error {
-	path_c := C.CString(path)
-	ok := C.wasi_config_set_stderr_file(c.ptr(), path_c)
+	pathC := C.CString(path)
+	ok := C.wasi_config_set_stderr_file(c.ptr(), pathC)
 	runtime.KeepAlive(c)
-	C.free(unsafe.Pointer(path_c))
+	C.free(unsafe.Pointer(pathC))
 	if ok {
 		return nil
-	} else {
-		return errors.New("failed to open file")
 	}
+
+	return errors.New("failed to open file")
 }
 
 func (c *WasiConfig) InheritStderr() {
@@ -130,18 +135,18 @@ func (c *WasiConfig) InheritStderr() {
 	runtime.KeepAlive(c)
 }
 
-func (c *WasiConfig) PreopenDir(path, guest_path string) error {
-	path_c := C.CString(path)
-	guest_path_c := C.CString(guest_path)
-	ok := C.wasi_config_preopen_dir(c.ptr(), path_c, guest_path_c)
+func (c *WasiConfig) PreopenDir(path, guestPath string) error {
+	pathC := C.CString(path)
+	guestPathC := C.CString(guestPath)
+	ok := C.wasi_config_preopen_dir(c.ptr(), pathC, guestPathC)
 	runtime.KeepAlive(c)
-	C.free(unsafe.Pointer(path_c))
-	C.free(unsafe.Pointer(guest_path_c))
+	C.free(unsafe.Pointer(pathC))
+	C.free(unsafe.Pointer(guestPathC))
 	if ok {
 		return nil
-	} else {
-		return errors.New("failed to preopen directory")
 	}
+
+	return errors.New("failed to preopen directory")
 }
 
 type WasiInstance struct {
@@ -149,7 +154,7 @@ type WasiInstance struct {
 	freelist *freeList
 }
 
-// Creates a new instance of WASI with the given configuration.
+// NewWasiInstance creates a new instance of WASI with the given configuration.
 //
 // The version of WASI must be explicitly requested via `name`.
 func NewWasiInstance(store *Store, config *WasiConfig, name string) (*WasiInstance, error) {
@@ -157,17 +162,17 @@ func NewWasiInstance(store *Store, config *WasiConfig, name string) (*WasiInstan
 		panic("config already used to create wasi instance")
 	}
 	var trap *C.wasm_trap_t
-	name_ptr := C.CString(name)
+	namePtr := C.CString(name)
 	ptr := C.wasi_instance_new(
 		store.ptr(),
-		name_ptr,
+		namePtr,
 		config.ptr(),
 		&trap,
 	)
 	runtime.KeepAlive(store)
 	config._ptr = nil
 	runtime.SetFinalizer(config, nil)
-	C.free(unsafe.Pointer(name_ptr))
+	C.free(unsafe.Pointer(namePtr))
 
 	if ptr == nil {
 		if trap != nil {
@@ -184,7 +189,7 @@ func NewWasiInstance(store *Store, config *WasiConfig, name string) (*WasiInstan
 		freelist := instance.freelist
 		freelist.lock.Lock()
 		defer freelist.lock.Unlock()
-		freelist.wasi_instances = append(freelist.wasi_instances, instance._ptr)
+		freelist.wasiInstances = append(freelist.wasiInstances, instance._ptr)
 	})
 	return instance, nil
 }
@@ -195,7 +200,7 @@ func (i *WasiInstance) ptr() *C.wasi_instance_t {
 	return ret
 }
 
-// Attempts to bind the `imp` import provided, returning an Extern suitable for
+// BindImport attempts to bind the `imp` import provided, returning an Extern suitable for
 // satisfying the import if one can be found.
 //
 // If `imp` isn't defined by this instance of WASI then `nil` is returned.
@@ -205,7 +210,7 @@ func (i *WasiInstance) BindImport(imp *ImportType) *Extern {
 	runtime.KeepAlive(imp)
 	if ret == nil {
 		return nil
-	} else {
-		return mkExtern(ret, i.freelist, nil)
 	}
+
+	return mkExtern(ret, i.freelist, nil)
 }

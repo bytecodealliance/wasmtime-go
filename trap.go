@@ -5,26 +5,33 @@ package wasmtime
 // #include <wasmtime.h>
 import "C"
 
-import "runtime"
-import "unsafe"
+import (
+	"runtime"
+	"unsafe"
+)
 
+// Trap is the trap instruction which represents the occurrence of a trap.
+// Traps are bubbled up through nested instruction sequences, ultimately reducing the entire program to a single trap instruction, signalling abrupt termination.
 type Trap struct {
 	_ptr *C.wasm_trap_t
 }
 
+// Frame is one of activation frames which carry the return arity n of the respective function,
+// hold the values of its locals (including arguments) in the order corresponding to their static local indices,
+// and a reference to the function’s own module instance
 type Frame struct {
 	_ptr   *C.wasm_frame_t
 	_owner interface{}
 }
 
-// Creates a new `Trap` with the `name` and the type provided.
+// NewTrap creates a new `Trap` with the `name` and the type provided.
 func NewTrap(store *Store, message string) *Trap {
 	cs := C.CString(message)
-	message_vec := C.wasm_byte_vec_t{
+	messageVec := C.wasm_byte_vec_t{
 		data: cs,
 		size: C.size_t(len(message) + 1),
 	}
-	ptr := C.wasm_trap_new(store.ptr(), &message_vec)
+	ptr := C.wasm_trap_new(store.ptr(), &messageVec)
 	C.free(unsafe.Pointer(cs))
 	runtime.KeepAlive(store)
 	return mkTrap(ptr)
@@ -44,7 +51,7 @@ func (t *Trap) ptr() *C.wasm_trap_t {
 	return ret
 }
 
-// Returns the name in the module this export type is exporting
+// Message returns the name in the module this export type is exporting
 func (t *Trap) Message() string {
 	message := C.wasm_byte_vec_t{}
 	C.wasm_trap_message(t.ptr(), &message)
@@ -61,16 +68,16 @@ func (t *Trap) Error() string {
 func unwrapStrOr(s *string, other string) string {
 	if s == nil {
 		return other
-	} else {
-		return *s
 	}
+
+	return *s
 }
 
 type frameList struct {
 	vec C.wasm_frame_vec_t
 }
 
-// Returns the wasm function frames that make up this trap
+// Frames returns the wasm function frames that make up this trap
 func (t *Trap) Frames() []*Frame {
 	frames := &frameList{}
 	C.wasm_trap_trace(t.ptr(), &frames.vec)
@@ -98,14 +105,14 @@ func (f *Frame) ptr() *C.wasm_frame_t {
 	return ret
 }
 
-// Returns the function index in the wasm module that this frame represents
+// FuncIndex returns the function index in the wasm module that this frame represents
 func (f *Frame) FuncIndex() uint32 {
 	ret := C.wasm_frame_func_index(f.ptr())
 	runtime.KeepAlive(f)
 	return uint32(ret)
 }
 
-// Returns the name, if available, for this frame's function
+// FuncName returns the name, if available, for this frame's function
 func (f *Frame) FuncName() *string {
 	ret := C.wasmtime_frame_func_name(f.ptr())
 	if ret == nil {
@@ -117,7 +124,7 @@ func (f *Frame) FuncName() *string {
 	return &str
 }
 
-// Returns the name, if available, for this frame's module
+// ModuleName returns the name, if available, for this frame's module
 func (f *Frame) ModuleName() *string {
 	ret := C.wasmtime_frame_module_name(f.ptr())
 	if ret == nil {
@@ -129,14 +136,14 @@ func (f *Frame) ModuleName() *string {
 	return &str
 }
 
-// Returns offset of this frame's instruction into the original module
+// ModuleOffset returns offset of this frame's instruction into the original module
 func (f *Frame) ModuleOffset() uint {
 	ret := uint(C.wasm_frame_module_offset(f.ptr()))
 	runtime.KeepAlive(f)
 	return ret
 }
 
-// Returns offset of this frame's instruction into the original function
+// FuncOffset returns offset of this frame's instruction into the original function
 func (f *Frame) FuncOffset() uint {
 	ret := uint(C.wasm_frame_func_offset(f.ptr()))
 	runtime.KeepAlive(f)
