@@ -1,9 +1,9 @@
 name: CI
 on:
   push:
-    branches: [master]
+    branches: [main]
   pull_request:
-    branches: [master]
+    branches: [main]
   schedule:
     - cron: '0 0 * * *' # run at 00:00 UTC
 
@@ -78,7 +78,7 @@ jobs:
     - run: find .
     - name: Push to gh-pages
       run: curl -LsSf https://git.io/fhJ8n | rustc - && (cd coverage && ../rust_out)
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       env:
         GITHUB_DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
         BUILD_REPOSITORY_ID: ${{ github.repository }}
