@@ -16,7 +16,7 @@
       <img src="https://godoc.org/github.com/bytecodealliance/wasmtime-go?status.svg" alt="Documentation"/>
     </a>
     <a href="https://bytecodealliance.github.io/wasmtime-go/coverage.html">
-      <img src="https://img.shields.io/badge/coverage-master-green" alt="Code Coverage"/>
+      <img src="https://img.shields.io/badge/coverage-main-green" alt="Code Coverage"/>
     </a>
   </p>
 
