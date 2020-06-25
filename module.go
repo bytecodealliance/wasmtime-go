@@ -22,7 +22,7 @@ import (
 	"unsafe"
 )
 
-// Module is a module which collects definitions for types, functions, tables, memories, and globals. 
+// Module is a module which collects definitions for types, functions, tables, memories, and globals.
 // In addition, it can declare imports and exports and provide initialization logic in the form of data and element segments or a start function.
 // Modules organized WebAssembly programs as the unit of deployment, loading, and compilation.
 type Module struct {
