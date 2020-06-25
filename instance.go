@@ -35,7 +35,7 @@ func NewInstance(store *Store, module *Module, imports []*Extern) (*Instance, er
 	var trap *C.wasm_trap_t
 	var ptr *C.wasm_instance_t
 	err := C.wasmtime_instance_new(
-		store.ptr(),
+		module.Store.ptr(),
 		module.ptr(),
 		importsRawPtr,
 		C.size_t(len(imports)),
