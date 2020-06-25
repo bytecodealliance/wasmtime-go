@@ -14,11 +14,12 @@ func TestInstance(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	module, err := NewModule(NewStore(NewEngine()), wasm)
+	store := NewStore(NewEngine())
+	module, err := NewModule(store, wasm)
 	if err != nil {
 		panic(err)
 	}
-	instance, err := NewInstance(module, []*Extern{})
+	instance, err := NewInstance(store, module, []*Extern{})
 	if err != nil {
 		panic(err)
 	}
@@ -96,7 +97,7 @@ func TestInstanceBad(t *testing.T) {
 	assertNoError(err)
 
 	// wrong number of imports
-	instance, err := NewInstance(module, []*Extern{})
+	instance, err := NewInstance(store, module, []*Extern{})
 	if instance != nil {
 		panic("expected nil instance")
 	}
@@ -106,7 +107,7 @@ func TestInstanceBad(t *testing.T) {
 
 	// wrong types of imports
 	f := WrapFunc(store, func(a int32) {})
-	instance, err = NewInstance(module, []*Extern{f.AsExtern()})
+	instance, err = NewInstance(store, module, []*Extern{f.AsExtern()})
 	if instance != nil {
 		panic("expected nil instance")
 	}

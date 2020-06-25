@@ -13,40 +13,46 @@ package wasmtime
 // double go_get_f64(wasm_val_t *val) { return val->of.f64; }
 import "C"
 
+// Val is a primitive numeric value.
+// Moreover, in the definition of programs, immutable sequences of values occur to represent more complex data, such as text strings or other vectors.
 type Val struct {
 	raw C.wasm_val_t
 }
 
+// ValI32 converts a go favor int32 to a i32 Val
 func ValI32(val int32) Val {
 	ret := Val{raw: C.wasm_val_t{kind: C.WASM_I32}}
 	C.go_init_i32(&ret.raw, C.int32_t(val))
 	return ret
 }
 
+// ValI64 converts a go favor int64 to a i64 Val
 func ValI64(val int64) Val {
 	ret := Val{raw: C.wasm_val_t{kind: C.WASM_I64}}
 	C.go_init_i64(&ret.raw, C.int64_t(val))
 	return ret
 }
 
+// ValF32 converts a go favor float32 to a f32 Val
 func ValF32(val float32) Val {
 	ret := Val{raw: C.wasm_val_t{kind: C.WASM_F32}}
 	C.go_init_f32(&ret.raw, C.float(val))
 	return ret
 }
 
+// ValF64 converts a go favor float64 to a f64 Val
 func ValF64(val float64) Val {
 	ret := Val{raw: C.wasm_val_t{kind: C.WASM_F64}}
 	C.go_init_f64(&ret.raw, C.double(val))
 	return ret
 }
 
-// Returns the kind of value that this `Val` contains.
+// Kind returns the kind of value that this `Val` contains.
 func (v Val) Kind() ValKind {
 	return ValKind(v.raw.kind)
 }
 
-// Returns the underlying 32-bit integer if this is an `i32`, or panics.
+// I32 returns the underlying 32-bit integer if this is an `i32`, or panics.
 func (v Val) I32() int32 {
 	if v.Kind() != KindI32 {
 		panic("not an i32")
@@ -54,7 +60,7 @@ func (v Val) I32() int32 {
 	return int32(C.go_get_i32(&v.raw))
 }
 
-// Returns the underlying 64-bit integer if this is an `i64`, or panics.
+// I64 returns the underlying 64-bit integer if this is an `i64`, or panics.
 func (v Val) I64() int64 {
 	if v.Kind() != KindI64 {
 		panic("not an i64")
@@ -62,7 +68,7 @@ func (v Val) I64() int64 {
 	return int64(C.go_get_i64(&v.raw))
 }
 
-// Returns the underlying 32-bit float if this is an `f32`, or panics.
+// F32 returns the underlying 32-bit float if this is an `f32`, or panics.
 func (v Val) F32() float32 {
 	if v.Kind() != KindF32 {
 		panic("not an f32")
@@ -70,7 +76,7 @@ func (v Val) F32() float32 {
 	return float32(C.go_get_f32(&v.raw))
 }
 
-// Returns the underlying 64-bit float if this is an `f64`, or panics.
+// F64 returns the underlying 64-bit float if this is an `f64`, or panics.
 func (v Val) F64() float64 {
 	if v.Kind() != KindF64 {
 		panic("not an f64")
@@ -78,7 +84,7 @@ func (v Val) F64() float64 {
 	return float64(C.go_get_f64(&v.raw))
 }
 
-// Returns the underlying 64-bit float if this is an `f64`, or panics.
+// Get returns the underlying 64-bit float if this is an `f64`, or panics.
 func (v Val) Get() interface{} {
 	switch v.Kind() {
 	case KindI32:

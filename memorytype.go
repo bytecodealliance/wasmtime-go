@@ -4,15 +4,17 @@ package wasmtime
 import "C"
 import "runtime"
 
+// MemoryType is one of Memory types which classify linear memories and their size range.
+// The limits constrain the minimum and optionally the maximum size of a memory. The limits are given in units of page size.
 type MemoryType struct {
 	_ptr   *C.wasm_memorytype_t
 	_owner interface{}
 }
 
-// Creates a new `MemoryType` with the `limits` on size provided
+// NewMemoryType creates a new `MemoryType` with the `limits` on size provided
 func NewMemoryType(limits Limits) *MemoryType {
-	limits_ffi := limits.ffi()
-	ptr := C.wasm_memorytype_new(&limits_ffi)
+	limitsFFI := limits.ffi()
+	ptr := C.wasm_memorytype_new(&limitsFFI)
 	return mkMemoryType(ptr, nil)
 }
 
@@ -39,13 +41,13 @@ func (ty *MemoryType) owner() interface{} {
 	return ty
 }
 
-// Returns the limits on the size of this memory type
+// Limits returns the limits on the size of this memory type
 func (ty *MemoryType) Limits() Limits {
 	ptr := C.wasm_memorytype_limits(ty.ptr())
 	return mkLimits(ptr, ty.owner())
 }
 
-// Converts this type to an instance of `ExternType`
+// AsExternType converts this type to an instance of `ExternType`
 func (ty *MemoryType) AsExternType() *ExternType {
 	ptr := C.wasm_memorytype_as_externtype_const(ty.ptr())
 	return mkExternType(ptr, ty.owner())

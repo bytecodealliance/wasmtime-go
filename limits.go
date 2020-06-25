@@ -4,10 +4,10 @@ package wasmtime
 import "C"
 import "runtime"
 
-// Value for the Max field in Limits
-const LIMITS_MAX_NONE = 0xffffffff
+// LimitsMaxNone is the value for the Max field in Limits
+const LimitsMaxNone = 0xffffffff
 
-// Resource limits specified for a TableType and MemoryType
+// Limits is the resource limits specified for a TableType and MemoryType
 type Limits struct {
 	// The minimum size of this resource, in units specified by the resource
 	// itself.
@@ -15,8 +15,17 @@ type Limits struct {
 	// The maximum size of this resource, in units specified by the resource
 	// itself.
 	//
-	// A value of LIMITS_MAX_NONE will mean that there is no maximum.
+	// A value of LimitsMaxNone will mean that there is no maximum.
 	Max uint32
+}
+
+// NewLimits creates a new resource limits specified for a TableType and MemoryType,
+// in which min and max are the minimum and maximum size of this resource.
+func NewLimits(min, max uint32) *Limits {
+	return &Limits{
+		Min: min,
+		Max: max,
+	}
 }
 
 func (limits Limits) ffi() C.wasm_limits_t {

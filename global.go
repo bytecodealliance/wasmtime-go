@@ -4,13 +4,16 @@ package wasmtime
 import "C"
 import "runtime"
 
+// Global is a global instance, which is the runtime representation of a global variable.
+// It holds an individual value and a flag indicating whether it is mutable.
+// Read more in [spec](https://webassembly.github.io/spec/core/exec/runtime.html#global-instances)
 type Global struct {
 	_ptr     *C.wasm_global_t
 	_owner   interface{}
 	freelist *freeList
 }
 
-// Creates a new `Global` in the given `Store` with the specified `ty` and
+// NewGlobal creates a new `Global` in the given `Store` with the specified `ty` and
 // initial value `val`.
 func NewGlobal(
 	store *Store,
@@ -45,27 +48,27 @@ func mkGlobal(ptr *C.wasm_global_t, freelist *freeList, owner interface{}) *Glob
 	return f
 }
 
-func (f *Global) ptr() *C.wasm_global_t {
-	ret := f._ptr
+func (g *Global) ptr() *C.wasm_global_t {
+	ret := g._ptr
 	maybeGC()
 	return ret
 }
 
-func (f *Global) owner() interface{} {
-	if f._owner != nil {
-		return f._owner
+func (g *Global) owner() interface{} {
+	if g._owner != nil {
+		return g._owner
 	}
-	return f
+	return g
 }
 
-// Returns the type of this global
+// Type returns the type of this global
 func (g *Global) Type() *GlobalType {
 	ptr := C.wasm_global_type(g.ptr())
 	runtime.KeepAlive(g)
 	return mkGlobalType(ptr, nil)
 }
 
-// Gets the value of this global
+// Get gets the value of this global
 func (g *Global) Get() Val {
 	ret := Val{}
 	C.wasm_global_get(g.ptr(), &ret.raw)
@@ -73,15 +76,15 @@ func (g *Global) Get() Val {
 	return ret
 }
 
-// Sets the value of this global
+// Set sets the value of this global
 func (g *Global) Set(val Val) error {
 	err := C.wasmtime_global_set(g.ptr(), &val.raw)
 	runtime.KeepAlive(g)
 	if err == nil {
 		return nil
-	} else {
-		return mkError(err)
 	}
+
+	return mkError(err)
 }
 
 func (g *Global) AsExtern() *Extern {

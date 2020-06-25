@@ -22,12 +22,15 @@ import (
 	"unsafe"
 )
 
+// Module is a module which collects definitions for types, functions, tables, memories, and globals.
+// In addition, it can declare imports and exports and provide initialization logic in the form of data and element segments or a start function.
+// Modules organized WebAssembly programs as the unit of deployment, loading, and compilation.
 type Module struct {
 	_ptr  *C.wasm_module_t
 	Store *Store
 }
 
-// Compiles a new `Module` from the `wasm` provided with the given configuration
+// NewModule compiles a new `Module` from the `wasm` provided with the given configuration
 // in `store`.
 func NewModule(store *Store, wasm []byte) (*Module, error) {
 	// We can't create the `wasm_byte_vec_t` here and pass it in because
@@ -35,23 +38,23 @@ func NewModule(store *Store, wasm []byte) (*Module, error) {
 	// the vec itself is passed by pointer and it contains a pointer to
 	// `wasm`. To work around this we insert some C shims above and call
 	// them.
-	var wasm_ptr *C.uint8_t
+	var wasmPtr *C.uint8_t
 	if len(wasm) > 0 {
-		wasm_ptr = (*C.uint8_t)(unsafe.Pointer(&wasm[0]))
+		wasmPtr = (*C.uint8_t)(unsafe.Pointer(&wasm[0]))
 	}
 	var ptr *C.wasm_module_t
-	err := C.go_module_new(store.ptr(), wasm_ptr, C.size_t(len(wasm)), &ptr)
+	err := C.go_module_new(store.ptr(), wasmPtr, C.size_t(len(wasm)), &ptr)
 	runtime.KeepAlive(store)
 	runtime.KeepAlive(wasm)
 
 	if err != nil {
 		return nil, mkError(err)
-	} else {
-		return mkModule(ptr, store), nil
 	}
+
+	return mkModule(ptr, store), nil
 }
 
-// Reads the contents of the `file` provided and interprets them as either the
+// NewModuleFromFile reads the contents of the `file` provided and interprets them as either the
 // text format or the binary format for WebAssembly.
 //
 // Afterwards delegates to the `NewModule` constructor with the contents read.
@@ -72,21 +75,21 @@ func NewModuleFromFile(store *Store, file string) (*Module, error) {
 
 }
 
-// Validates whether `wasm` would be a valid wasm module according to the
+// ModuleValidate validates whether `wasm` would be a valid wasm module according to the
 // configuration in `store`
 func ModuleValidate(store *Store, wasm []byte) error {
-	var wasm_ptr *C.uint8_t
+	var wasmPtr *C.uint8_t
 	if len(wasm) > 0 {
-		wasm_ptr = (*C.uint8_t)(unsafe.Pointer(&wasm[0]))
+		wasmPtr = (*C.uint8_t)(unsafe.Pointer(&wasm[0]))
 	}
-	err := C.go_module_validate(store.ptr(), wasm_ptr, C.size_t(len(wasm)))
+	err := C.go_module_validate(store.ptr(), wasmPtr, C.size_t(len(wasm)))
 	runtime.KeepAlive(store)
 	runtime.KeepAlive(wasm)
 	if err == nil {
 		return nil
-	} else {
-		return mkError(err)
 	}
+
+	return mkError(err)
 }
 
 func mkModule(ptr *C.wasm_module_t, store *Store) *Module {
@@ -110,7 +113,7 @@ type importTypeList struct {
 	vec C.wasm_importtype_vec_t
 }
 
-// Returns a list of `ImportType` items which are the items imported by this
+// Imports returns a list of `ImportType` items which are the items imported by this
 // module and are required for instantiation.
 func (m *Module) Imports() []*ImportType {
 	imports := &importTypeList{}
@@ -135,7 +138,7 @@ type exportTypeList struct {
 	vec C.wasm_exporttype_vec_t
 }
 
-// Returns a list of `ExportType` items which are the items that will
+// Exports returns a list of `ExportType` items which are the items that will
 // be exported by this module after instantiation.
 func (m *Module) Exports() []*ExportType {
 	exports := &exportTypeList{}

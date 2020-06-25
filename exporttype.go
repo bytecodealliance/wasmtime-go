@@ -4,14 +4,16 @@ package wasmtime
 import "C"
 import "runtime"
 
+// ExportType is one of the exports component.
+// A module defines a set of exports that become accessible to the host environment once the module has been instantiated.
 type ExportType struct {
 	_ptr   *C.wasm_exporttype_t
 	_owner interface{}
 }
 
-// Creates a new `ExportType` with the `name` and the type provided.
+// NewExportType creates a new `ExportType` with the `name` and the type provided.
 func NewExportType(name string, ty AsExternType) *ExportType {
-	name_vec := stringToByteVec(name)
+	nameVec := stringToByteVec(name)
 
 	// Creating an export type requires taking ownership, so create a copy
 	// so we don't have to invalidate pointers here. Shouldn't be too
@@ -21,9 +23,9 @@ func NewExportType(name string, ty AsExternType) *ExportType {
 	runtime.KeepAlive(extern)
 
 	// And once we've got all that create the export type!
-	export_ptr := C.wasm_exporttype_new(&name_vec, ptr)
+	exportPtr := C.wasm_exporttype_new(&nameVec, ptr)
 
-	return mkExportType(export_ptr, nil)
+	return mkExportType(exportPtr, nil)
 }
 
 func mkExportType(ptr *C.wasm_exporttype_t, owner interface{}) *ExportType {
@@ -49,7 +51,7 @@ func (ty *ExportType) owner() interface{} {
 	return ty
 }
 
-// Returns the name in the module this export type is exporting
+// Name returns the name in the module this export type is exporting
 func (ty *ExportType) Name() string {
 	ptr := C.wasm_exporttype_name(ty.ptr())
 	ret := C.GoStringN(ptr.data, C.int(ptr.size))
@@ -57,7 +59,7 @@ func (ty *ExportType) Name() string {
 	return ret
 }
 
-// Returns the type of item this export type expects
+// Type returns the type of item this export type expects
 func (ty *ExportType) Type() *ExternType {
 	ptr := C.wasm_exporttype_type(ty.ptr())
 	return mkExternType(ptr, ty.owner())

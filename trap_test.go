@@ -21,7 +21,7 @@ func TestTrapFrames(t *testing.T) {
 	module, err := NewModule(store, wasm)
 	assertNoError(err)
 
-	i, err := NewInstance(module, []*Extern{})
+	i, err := NewInstance(store, module, []*Extern{})
 	if i != nil {
 		panic("expected failure")
 	}
@@ -73,7 +73,7 @@ func TestTrapModuleName(t *testing.T) {
 	module, err := NewModule(store, wasm)
 	assertNoError(err)
 
-	i, err := NewInstance(module, []*Extern{})
+	i, err := NewInstance(store, module, []*Extern{})
 	if i != nil {
 		panic("expected failure")
 	}

@@ -35,17 +35,17 @@ type freeList struct {
 	// All the various kinds of pointers that we'll store to get deallocated
 	// here.
 
-	stores         []*C.wasm_store_t
-	memories       []*C.wasm_memory_t
-	funcs          []*C.wasm_func_t
-	tables         []*C.wasm_table_t
-	globals        []*C.wasm_global_t
-	instances      []*C.wasm_instance_t
-	modules        []*C.wasm_module_t
-	externs        []*C.wasm_extern_t
-	linkers        []*C.wasmtime_linker_t
-	wasi_instances []*C.wasi_instance_t
-	extern_vecs    []*C.wasm_extern_vec_t
+	stores        []*C.wasm_store_t
+	memories      []*C.wasm_memory_t
+	funcs         []*C.wasm_func_t
+	tables        []*C.wasm_table_t
+	globals       []*C.wasm_global_t
+	instances     []*C.wasm_instance_t
+	modules       []*C.wasm_module_t
+	externs       []*C.wasm_extern_t
+	linkers       []*C.wasmtime_linker_t
+	wasiInstances []*C.wasi_instance_t
+	externVecs    []*C.wasm_extern_vec_t
 }
 
 func newFreeList() *freeList {
@@ -111,13 +111,13 @@ func (f *freeList) clear() {
 	}
 	f.linkers = nil
 
-	for _, p := range f.wasi_instances {
+	for _, p := range f.wasiInstances {
 		C.wasi_instance_delete(p)
 	}
-	f.wasi_instances = nil
+	f.wasiInstances = nil
 
-	for _, p := range f.extern_vecs {
+	for _, p := range f.externVecs {
 		C.wasm_extern_vec_delete(p)
 	}
-	f.extern_vecs = nil
+	f.externVecs = nil
 }

@@ -10,12 +10,17 @@ import (
 	"unsafe"
 )
 
+// Func is a function instance, which is the runtime representation of a function.
+// It effectively is a closure of the original function over the runtime module instance of its originating module.
+// The module instance is used to resolve references to other definitions during execution of the function.
+// Read more in [spec](https://webassembly.github.io/spec/core/exec/runtime.html#function-instances)
 type Func struct {
 	_ptr     *C.wasm_func_t
 	_owner   interface{}
 	freelist *freeList
 }
 
+// TODO
 type Caller struct {
 	ptr   *C.wasmtime_caller_t
 	store *Store
@@ -33,14 +38,14 @@ type wrapMapEntry struct {
 	callback reflect.Value
 }
 
-var gLOCK sync.Mutex
-var gNEW_MAP = make(map[int]newMapEntry)
-var gNEW_MAP_SLAB slab
-var gWRAP_MAP = make(map[int]wrapMapEntry)
-var gWRAP_MAP_SLAB slab
-var gCALLER_PANICS = make(map[*freeList]interface{})
+var gLock sync.Mutex
+var gNewMap = make(map[int]newMapEntry)
+var gNewMapSlab slab
+var gWrapMap = make(map[int]wrapMapEntry)
+var gWrapMapSlab slab
+var gCallerPanics = make(map[*freeList]interface{})
 
-// Creates a new `Func` with the given `ty` which, when called, will call `f`
+// NewFunc creates a new `Func` with the given `ty` which, when called, will call `f`
 //
 // The `ty` given is the wasm type signature of the `Func` to create. When called
 // the `f` callback receives two arguments. The first is a `Caller` to learn
@@ -61,15 +66,15 @@ func NewFunc(
 	ty *FuncType,
 	f func(*Caller, []Val) ([]Val, *Trap),
 ) *Func {
-	gLOCK.Lock()
-	idx := gNEW_MAP_SLAB.allocate()
-	gNEW_MAP[idx] = newMapEntry{
+	gLock.Lock()
+	idx := gNewMapSlab.allocate()
+	gNewMap[idx] = newMapEntry{
 		store:    store,
 		callback: f,
 		nparams:  len(ty.Params()),
 		results:  ty.Results(),
 	}
-	gLOCK.Unlock()
+	gLock.Unlock()
 
 	ptr := C.c_func_new_with_env(
 		store.ptr(),
@@ -85,22 +90,22 @@ func NewFunc(
 
 //export goTrampolineNew
 func goTrampolineNew(
-	caller_ptr *C.wasmtime_caller_t,
+	callerPtr *C.wasmtime_caller_t,
 	env C.size_t,
-	args_ptr *C.wasm_val_t,
-	results_ptr *C.wasm_val_t,
+	argsPtr *C.wasm_val_t,
+	resultsPtr *C.wasm_val_t,
 ) *C.wasm_trap_t {
 	idx := int(env)
-	gLOCK.Lock()
-	entry := gNEW_MAP[idx]
-	gLOCK.Unlock()
+	gLock.Lock()
+	entry := gNewMap[idx]
+	gLock.Unlock()
 
-	caller := &Caller{ptr: caller_ptr, store: entry.store}
+	caller := &Caller{ptr: callerPtr, store: entry.store}
 	defer func() { caller.ptr = nil }()
 
 	params := make([]Val, entry.nparams)
 	var val C.wasm_val_t
-	base := unsafe.Pointer(args_ptr)
+	base := unsafe.Pointer(argsPtr)
 	for i := 0; i < len(params); i++ {
 		ptr := (*C.wasm_val_t)(unsafe.Pointer(uintptr(base) + uintptr(i)*unsafe.Sizeof(val)))
 		params[i] = Val{raw: *ptr}
@@ -125,9 +130,9 @@ func goTrampolineNew(
 		}
 	}()
 	if trap == nil && lastPanic != nil {
-		gLOCK.Lock()
-		gCALLER_PANICS[entry.store.freelist] = lastPanic
-		gLOCK.Unlock()
+		gLock.Lock()
+		gCallerPanics[entry.store.freelist] = lastPanic
+		gLock.Unlock()
 		trap = NewTrap(entry.store, "go panicked")
 	}
 	if trap != nil {
@@ -135,7 +140,7 @@ func goTrampolineNew(
 		return trap.ptr()
 	}
 
-	base = unsafe.Pointer(results_ptr)
+	base = unsafe.Pointer(resultsPtr)
 	for i := 0; i < len(results); i++ {
 		ptr := (*C.wasm_val_t)(unsafe.Pointer(uintptr(base) + uintptr(i)*unsafe.Sizeof(val)))
 		*ptr = results[i].raw
@@ -146,13 +151,13 @@ func goTrampolineNew(
 //export goFinalizeNew
 func goFinalizeNew(env unsafe.Pointer) {
 	idx := int(uintptr(env))
-	gLOCK.Lock()
-	defer gLOCK.Unlock()
-	delete(gNEW_MAP, idx)
-	gNEW_MAP_SLAB.deallocate(idx)
+	gLock.Lock()
+	defer gLock.Unlock()
+	delete(gNewMap, idx)
+	gNewMapSlab.deallocate(idx)
 }
 
-// Wraps a native Go function, `f`, as a wasm `Func`.
+// WrapFunc wraps a native Go function, `f`, as a wasm `Func`.
 //
 // This function differs from `NewFunc` in that it will determine the type
 // signature of the wasm function given the input value `f`. The `f` value
@@ -192,9 +197,9 @@ func WrapFunc(
 	params := make([]*ValType, 0, ty.NumIn())
 	var caller *Caller
 	for i := 0; i < ty.NumIn(); i++ {
-		param_ty := ty.In(i)
-		if param_ty != reflect.TypeOf(caller) {
-			params = append(params, typeToValType(param_ty))
+		paramTy := ty.In(i)
+		if paramTy != reflect.TypeOf(caller) {
+			params = append(params, typeToValType(paramTy))
 		}
 	}
 
@@ -203,32 +208,32 @@ func WrapFunc(
 	results := make([]*ValType, 0, ty.NumOut())
 	var trap *Trap
 	for i := 0; i < ty.NumOut(); i++ {
-		result_ty := ty.Out(i)
-		if i == ty.NumOut()-1 && result_ty == reflect.TypeOf(trap) {
+		resultTy := ty.Out(i)
+		if i == ty.NumOut()-1 && resultTy == reflect.TypeOf(trap) {
 			continue
 		}
-		results = append(results, typeToValType(result_ty))
+		results = append(results, typeToValType(resultTy))
 	}
-	wasm_ty := NewFuncType(params, results)
+	wasmTy := NewFuncType(params, results)
 
 	// Store our `f` callback into the slab for wrapped functions, and now
 	// we've got everything necessary to make thw asm handle.
-	gLOCK.Lock()
-	idx := gWRAP_MAP_SLAB.allocate()
-	gWRAP_MAP[idx] = wrapMapEntry{
+	gLock.Lock()
+	idx := gWrapMapSlab.allocate()
+	gWrapMap[idx] = wrapMapEntry{
 		callback: val,
 		store:    store,
 	}
-	gLOCK.Unlock()
+	gLock.Unlock()
 
 	ptr := C.c_func_new_with_env(
 		store.ptr(),
-		wasm_ty.ptr(),
+		wasmTy.ptr(),
 		C.size_t(idx),
 		1, // this is `WrapFunc`, not `NewFunc`
 	)
 	runtime.KeepAlive(store)
-	runtime.KeepAlive(wasm_ty)
+	runtime.KeepAlive(wasmTy)
 	return mkFunc(ptr, store.freelist, nil)
 }
 
@@ -248,25 +253,25 @@ func typeToValType(ty reflect.Type) *ValType {
 
 //export goTrampolineWrap
 func goTrampolineWrap(
-	caller_ptr *C.wasmtime_caller_t,
+	callerPtr *C.wasmtime_caller_t,
 	env C.size_t,
-	args_ptr *C.wasm_val_t,
-	results_ptr *C.wasm_val_t,
+	argsPtr *C.wasm_val_t,
+	resultsPtr *C.wasm_val_t,
 ) *C.wasm_trap_t {
 	// Convert all our parameters to `[]reflect.Value`, taking special care
 	// for `*Caller` but otherwise reading everything through `Val`.
 	idx := int(env)
-	gLOCK.Lock()
-	entry := gWRAP_MAP[idx]
-	gLOCK.Unlock()
+	gLock.Lock()
+	entry := gWrapMap[idx]
+	gLock.Unlock()
 
 	// Wrap our `Caller` argument in case it's needed
-	caller := &Caller{ptr: caller_ptr, store: entry.store}
+	caller := &Caller{ptr: callerPtr, store: entry.store}
 	defer func() { caller.ptr = nil }()
 
 	ty := entry.callback.Type()
 	params := make([]reflect.Value, ty.NumIn())
-	base := unsafe.Pointer(args_ptr)
+	base := unsafe.Pointer(argsPtr)
 	var raw C.wasm_val_t
 	for i := 0; i < len(params); i++ {
 		if ty.In(i) == reflect.TypeOf(caller) {
@@ -288,9 +293,9 @@ func goTrampolineWrap(
 		results = entry.callback.Call(params)
 	}()
 	if lastPanic != nil {
-		gLOCK.Lock()
-		gCALLER_PANICS[entry.store.freelist] = lastPanic
-		gLOCK.Unlock()
+		gLock.Lock()
+		gCallerPanics[entry.store.freelist] = lastPanic
+		gLock.Unlock()
 		trap := NewTrap(entry.store, "go panicked")
 		runtime.SetFinalizer(trap, nil)
 		return trap.ptr()
@@ -298,7 +303,7 @@ func goTrampolineWrap(
 
 	// And now we write all the results into memory depending on the type
 	// of value that was returned.
-	base = unsafe.Pointer(results_ptr)
+	base = unsafe.Pointer(resultsPtr)
 	for _, result := range results {
 		ptr := (*C.wasm_val_t)(base)
 		switch val := result.Interface().(type) {
@@ -324,10 +329,10 @@ func goTrampolineWrap(
 //export goFinalizeWrap
 func goFinalizeWrap(env unsafe.Pointer) {
 	idx := int(uintptr(env))
-	gLOCK.Lock()
-	defer gLOCK.Unlock()
-	delete(gWRAP_MAP, idx)
-	gWRAP_MAP_SLAB.deallocate(idx)
+	gLock.Lock()
+	defer gLock.Unlock()
+	delete(gWrapMap, idx)
+	gWrapMapSlab.deallocate(idx)
 }
 
 func mkFunc(ptr *C.wasm_func_t, freelist *freeList, owner interface{}) *Func {
@@ -356,28 +361,28 @@ func (f *Func) owner() interface{} {
 	return f
 }
 
-// Returns the type of this func
+// Type returns the type of this func
 func (f *Func) Type() *FuncType {
 	ptr := C.wasm_func_type(f.ptr())
 	runtime.KeepAlive(f)
 	return mkFuncType(ptr, nil)
 }
 
-// Returns the numer of parameters this function expects
+// ParamArity returns the numer of parameters this function expects
 func (f *Func) ParamArity() int {
 	ret := C.wasm_func_param_arity(f.ptr())
 	runtime.KeepAlive(f)
 	return int(ret)
 }
 
-// Returns the numer of results this function produces
+// ResultArity returns the numer of results this function produces
 func (f *Func) ResultArity() int {
 	ret := C.wasm_func_result_arity(f.ptr())
 	runtime.KeepAlive(f)
 	return int(ret)
 }
 
-// Invokes this function with the provided `args`.
+// Call invokes this function with the provided `args`.
 //
 // This variadic function must be invoked with the correct number and type of
 // `args` as specified by the type of this function. This property is checked
@@ -413,55 +418,55 @@ func (f *Func) Call(args ...interface{}) (interface{}, error) {
 	if len(args) > len(params) {
 		return nil, errors.New("too many arguments provided")
 	}
-	params_raw := make([]C.wasm_val_t, len(args))
+	paramsRaw := make([]C.wasm_val_t, len(args))
 	for i, param := range args {
 		switch val := param.(type) {
 		case int:
 			switch params[i].Kind() {
 			case KindI32:
-				params_raw[i] = ValI32(int32(val)).raw
+				paramsRaw[i] = ValI32(int32(val)).raw
 			case KindI64:
-				params_raw[i] = ValI64(int64(val)).raw
+				paramsRaw[i] = ValI64(int64(val)).raw
 			default:
 				return nil, errors.New("integer provided for non-integer argument")
 			}
 		case int32:
-			params_raw[i] = ValI32(val).raw
+			paramsRaw[i] = ValI32(val).raw
 		case int64:
-			params_raw[i] = ValI64(val).raw
+			paramsRaw[i] = ValI64(val).raw
 		case float32:
-			params_raw[i] = ValF32(val).raw
+			paramsRaw[i] = ValF32(val).raw
 		case float64:
-			params_raw[i] = ValF64(val).raw
+			paramsRaw[i] = ValF64(val).raw
 		case Val:
-			params_raw[i] = val.raw
+			paramsRaw[i] = val.raw
 
 		default:
 			return nil, errors.New("couldn't convert provided argument to wasm type")
 		}
 	}
 
-	results_raw := make([]C.wasm_val_t, f.ResultArity())
+	resultsRaw := make([]C.wasm_val_t, f.ResultArity())
 
-	var params_ptr, results_ptr *C.wasm_val_t
+	var paramsPtr, resultsPtr *C.wasm_val_t
 	var trap *C.wasm_trap_t
-	if len(params_raw) > 0 {
-		params_ptr = &params_raw[0]
+	if len(paramsRaw) > 0 {
+		paramsPtr = &paramsRaw[0]
 	}
-	if len(results_raw) > 0 {
-		results_ptr = &results_raw[0]
+	if len(resultsRaw) > 0 {
+		resultsPtr = &resultsRaw[0]
 	}
 
 	err := C.wasmtime_func_call(
 		f.ptr(),
-		params_ptr,
-		C.size_t(len(params_raw)),
-		results_ptr,
-		C.size_t(len(results_raw)),
+		paramsPtr,
+		C.size_t(len(paramsRaw)),
+		resultsPtr,
+		C.size_t(len(resultsRaw)),
 		&trap,
 	)
 	runtime.KeepAlive(f)
-	runtime.KeepAlive(params_raw)
+	runtime.KeepAlive(paramsRaw)
 
 	if err != nil {
 		return nil, mkError(err)
@@ -469,24 +474,24 @@ func (f *Func) Call(args ...interface{}) (interface{}, error) {
 
 	if trap != nil {
 		trap := mkTrap(trap)
-		gLOCK.Lock()
-		defer gLOCK.Unlock()
-		lastPanic := gCALLER_PANICS[f.freelist]
-		delete(gCALLER_PANICS, f.freelist)
+		gLock.Lock()
+		defer gLock.Unlock()
+		lastPanic := gCallerPanics[f.freelist]
+		delete(gCallerPanics, f.freelist)
 		if lastPanic != nil {
 			panic(lastPanic)
 		}
 		return nil, trap
 	}
 
-	if len(results_raw) == 0 {
+	if len(resultsRaw) == 0 {
 		return nil, nil
-	} else if len(results_raw) == 1 {
-		val := Val{raw: results_raw[0]}
+	} else if len(resultsRaw) == 1 {
+		val := Val{raw: resultsRaw[0]}
 		return val.Get(), nil
 	} else {
-		results := make([]Val, len(results_raw))
-		for i, raw := range results_raw {
+		results := make([]Val, len(resultsRaw))
+		for i, raw := range resultsRaw {
 			results[i] = Val{raw}
 		}
 		return results, nil
@@ -499,7 +504,7 @@ func (f *Func) AsExtern() *Extern {
 	return mkExtern(ptr, f.freelist, f.owner())
 }
 
-// Gets an exported item from the caller's module.
+// GetExport gets an exported item from the caller's module.
 //
 // May return `nil` if the export doesn't, if it's not a memory, if there isn't
 // a caller, etc.
@@ -516,7 +521,7 @@ func (c *Caller) GetExport(name string) *Extern {
 	runtime.KeepAlive(c)
 	if ptr == nil {
 		return nil
-	} else {
-		return mkExtern(ptr, c.store.freelist, nil)
 	}
+
+	return mkExtern(ptr, c.store.freelist, nil)
 }

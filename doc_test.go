@@ -37,7 +37,7 @@ func Example() {
 
 	// Next up we instantiate a module which is where we link in all our
 	// imports. We've got one import so we pass that in here.
-	instance, err := NewInstance(module, []*Extern{item.AsExtern()})
+	instance, err := NewInstance(store, module, []*Extern{item.AsExtern()})
 	check(err)
 
 	// After we've instantiated we can lookup our `run` function and call
@@ -49,7 +49,7 @@ func Example() {
 	// Output: Hello from Go!
 }
 
-const GCD_WAT = `
+const GcdWat = `
 (module
   (func $gcd (param i32 i32) (result i32)
     (local i32)
@@ -82,11 +82,11 @@ const GCD_WAT = `
 // An example of a wasm module which calculates the GCD of two numbers
 func Example_gcd() {
 	store := NewStore(NewEngine())
-	wasm, err := Wat2Wasm(GCD_WAT)
+	wasm, err := Wat2Wasm(GcdWat)
 	check(err)
 	module, err := NewModule(store, wasm)
 	check(err)
-	instance, err := NewInstance(module, []*Extern{})
+	instance, err := NewInstance(store, module, []*Extern{})
 	check(err)
 	run := instance.GetExport("gcd").Func()
 	result, err := run.Call(6, 27)
@@ -99,7 +99,7 @@ func Example_gcd() {
 func Example_memory() {
 	// Create our `Store` context and then compile a module and create an
 	// instance from the compiled module all in one go.
-	wasmtime_store := NewStore(NewEngine())
+	wasmtimeStore := NewStore(NewEngine())
 	wasm, err := Wat2Wasm(`
           (module
             (memory (export "memory") 2 3)
@@ -116,9 +116,9 @@ func Example_memory() {
           )
         `)
 	check(err)
-	module, err := NewModule(wasmtime_store, wasm)
+	module, err := NewModule(wasmtimeStore, wasm)
 	check(err)
-	instance, err := NewInstance(module, []*Extern{})
+	instance, err := NewInstance(wasmtimeStore, module, []*Extern{})
 	check(err)
 
 	// Load up our exports from the instance
@@ -192,7 +192,7 @@ func Example_memory() {
 	// Finally we can also create standalone memories to get imported by
 	// wasm modules too.
 	memorytype := NewMemoryType(Limits{Min: 5, Max: 5})
-	memory2 := NewMemory(wasmtime_store, memorytype)
+	memory2 := NewMemory(wasmtimeStore, memorytype)
 	assert(memory2.Size() == 5)
 	assert(!memory2.Grow(1))
 	assert(memory2.Grow(0))
@@ -242,7 +242,7 @@ func Example_multi() {
 		return b + 1, a + 1
 	})
 
-	instance, err := NewInstance(module, []*Extern{callback.AsExtern()})
+	instance, err := NewInstance(store, module, []*Extern{callback.AsExtern()})
 	check(err)
 
 	g := instance.GetExport("g").Func()
@@ -257,8 +257,8 @@ func Example_multi() {
 	assert(a == 4)
 	assert(b == 2)
 
-	round_trip_many := instance.GetExport("round_trip_many").Func()
-	results, err = round_trip_many.Call(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+	roundTripMany := instance.GetExport("round_trip_many").Func()
+	results, err = roundTripMany.Call(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
 	check(err)
 	arr = results.([]Val)
 
