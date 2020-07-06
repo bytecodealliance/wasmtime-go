@@ -4,6 +4,17 @@ load("@bazel_gazelle//:def.bzl", "gazelle")
 # gazelle:prefix github.com/bytecodealliance/wasmtime-go
 gazelle(name = "gazelle")
 
+cc_import(
+    name = "wasmtime",
+    static_library = select({
+        "@io_bazel_rules_go//go/platform:darwin": "build/macos-x86_64/libwasmtime.a",
+        "@io_bazel_rules_go//go/platform:linux_amd64": "build/linux-x86_64/libwasmtime.a",
+        "@io_bazel_rules_go//go/platform:windows_amd64": "build/windows-x86_64/libwasmtime.a",
+    }),
+    hdrs = glob(["build/include/*.h"]),
+    visibility = ["//visibility:public"]
+)
+
 go_library(
     name = "go_default_library",
     srcs = [
@@ -106,6 +117,7 @@ go_library(
         ],
         "//conditions:default": [],
     }),
+    cdeps = [":wasmtime"], # add wasmtime dep
     copts = [
         "-Ibuild/include",
     ] + select({
