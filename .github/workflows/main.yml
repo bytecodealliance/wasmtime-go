@@ -46,6 +46,7 @@ jobs:
         export GOOS=$(go env GOHOSTOS)
         go get github.com/bazelbuild/bazelisk
         export PATH=$PATH:$(go env GOPATH)/bin
+        export MSYS2_ARG_CONV_EXCL="//"
         bazelisk build //...
         bazelisk test //...
 
