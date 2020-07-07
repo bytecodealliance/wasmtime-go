@@ -40,6 +40,16 @@ jobs:
       env:
         GODEBUG: cgocheck=2
         GOGC: 1
+    - name: Test bazel build
+      shell: bash
+      run: |
+        export GOOS=$(go env GOHOSTOS)
+        curl -LO "https://github.com/bazelbuild/bazelisk/releases/download/v1.5.0/bazelisk-${GOOS}-amd64"
+        mkdir -p "${GITHUB_WORKSPACE}/bin/"
+        mv "bazelisk-${GOOS}-amd64" "${GITHUB_WORKSPACE}/bin/bazel"
+        chmod +x "${GITHUB_WORKSPACE}/bin/bazel"
+        "${GITHUB_WORKSPACE}/bin/bazel" build //...
+        "${GITHUB_WORKSPACE}/bin/bazel" test //...
 
   coverage:
     runs-on: ubuntu-latest
