@@ -45,10 +45,10 @@ jobs:
       with:
         version: 3.3.1
     - name: Use Bazel (Windows only)
-      shell: bash
       if: matrix.os == 'windows-latest'
       run: |
-        pacman -S git --noconfirm
+        Move-Item -Path "C:\Program Files\Git" -Destination C:\git -force
+        $env:Path += ";C:\git\bin"
         ./bazel.exe build //...e
         ./bazel test //... 
     - name: Use Bazel
