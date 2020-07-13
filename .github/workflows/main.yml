@@ -49,7 +49,7 @@ jobs:
       run: |
         Move-Item -Path "C:\Program Files\Git" -Destination C:\git -force
         $env:Path += ";C:\git\bin"
-        ./bazel.exe build //...e
+        ./bazel.exe build //...
         ./bazel test //... 
     - name: Use Bazel
       if: matrix.os != 'windows-latest'
