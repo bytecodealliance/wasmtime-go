@@ -40,20 +40,24 @@ jobs:
       env:
         GODEBUG: cgocheck=2
         GOGC: 1
-    - name: Setup Bazel
-      uses: abhinavsingh/setup-bazel@v3
-      with:
-        version: 3.3.1
-    - name: Use Bazel (Windows only)
-      if: matrix.os == 'windows-latest'
+    - name: Test bazel build on *nix
+      shell: bash
+      run: |
+        export GOOS=$(go env GOHOSTOS)
+        go get github.com/bazelbuild/bazelisk
+        export PATH=$PATH:$(go env GOPATH)/bin
+        bazelisk build //...
+        bazelisk test //...
+      if: matrix.os != "windows-latest"
+    - name: Test bazel build on Windows
+      shell: pwsh
       run: |
         Move-Item -Path "C:\Program Files\Git" -Destination C:\git -force
         $env:Path += ";C:\git\bin"
-        ./bazel.exe build //...
-        ./bazel test //... 
-    - name: Use Bazel
-      if: matrix.os != 'windows-latest'
-      run: bazel build //... && bazel test //...
+        go get github.com/bazelbuild/bazelisk
+        bazelisk build //...
+        bazelisk test //...
+      if: matrix.os == "windows-latest"
 
   coverage:
     runs-on: ubuntu-latest
