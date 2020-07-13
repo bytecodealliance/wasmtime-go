@@ -50,7 +50,6 @@ jobs:
         bazelisk test //...
       if: matrix.os != "windows-latest"
     - name: Test bazel build on Windows
-      shell: pwsh
       run: |
         Move-Item -Path "C:\Program Files\Git" -Destination C:\git -force
         $env:Path += ";C:\git\bin"
