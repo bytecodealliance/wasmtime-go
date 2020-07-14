@@ -52,7 +52,7 @@ jobs:
     - name: Test bazel build on Windows
       run: |
         Move-Item -Path "C:\Program Files\Git" -Destination C:\git -force
-        $env:Path += ";C:\git\bin"
+        $env:Path += ";C:\git\cmd;C:\msys64\bin;C:\msys64\usr\bin"
         git config --global http.sslverify "false"
         go get github.com/bazelbuild/bazelisk
         bazelisk build //...
