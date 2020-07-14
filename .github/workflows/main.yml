@@ -57,7 +57,7 @@ jobs:
         path-type: inherit
       if: matrix.os == 'windows-latest'
     - name: Test bazel build on Windows  
-      shell: msys2
+      shell: msys2 {0}
       run: |
         go get github.com/bazelbuild/bazelisk
         bazelisk build --compiler=msys-gcc :go_default_library
