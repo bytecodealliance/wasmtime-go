@@ -48,7 +48,7 @@ jobs:
         export PATH=$PATH:$(go env GOPATH)/bin
         bazelisk build //...
         bazelisk test //...
-      if: matrix.os != "windows-latest"
+      if: matrix.os != 'windows-latest'
     - name: Test bazel build on Windows
       run: |
         Move-Item -Path "C:\Program Files\Git" -Destination C:\git -force
@@ -56,7 +56,7 @@ jobs:
         go get github.com/bazelbuild/bazelisk
         bazelisk build //...
         bazelisk test //...
-      if: matrix.os == "windows-latest"
+      if: matrix.os == 'windows-latest'
 
   coverage:
     runs-on: ubuntu-latest
