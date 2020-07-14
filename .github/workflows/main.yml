@@ -49,11 +49,19 @@ jobs:
         bazelisk build :go_default_library
         bazelisk test :go_default_test
       if: matrix.os != 'windows-latest'
-    - name: Test bazel build on Windows
+    - name: Ready msys2
+      uses: msys2/setup-msys2@v1
+      with:
+        update: true
+        install: base-devel git
+        path-type: inherit
+      if: matrix.os == 'windows-latest'
+    - name: Test bazel build on Windows  
+      shell: msys2
       run: |
         go get github.com/bazelbuild/bazelisk
-        bazelisk build :go_default_library
-        bazelisk test :go_default_test
+        bazelisk build --compiler=msys-gcc :go_default_library
+        bazelisk test --compiler=msys-gcc :go_default_test
       if: matrix.os == 'windows-latest'
 
   coverage:
