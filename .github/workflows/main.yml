@@ -53,6 +53,7 @@ jobs:
       run: |
         Move-Item -Path "C:\Program Files\Git" -Destination C:\git -force
         $env:Path += ";C:\git\bin"
+        git config --global http.sslverify "false"
         go get github.com/bazelbuild/bazelisk
         bazelisk build //...
         bazelisk test //...
