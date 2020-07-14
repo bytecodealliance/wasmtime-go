@@ -53,7 +53,7 @@ jobs:
       uses: msys2/setup-msys2@v1
       with:
         update: true
-        install: base-devel git
+        install: git gcc
         path-type: inherit
       if: matrix.os == 'windows-latest'
     - name: Test bazel build on Windows  
