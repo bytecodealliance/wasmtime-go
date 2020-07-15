@@ -41,7 +41,6 @@ type freeList struct {
 	tables        []*C.wasm_table_t
 	globals       []*C.wasm_global_t
 	instances     []*C.wasm_instance_t
-	modules       []*C.wasm_module_t
 	externs       []*C.wasm_extern_t
 	linkers       []*C.wasmtime_linker_t
 	wasiInstances []*C.wasi_instance_t
@@ -95,11 +94,6 @@ func (f *freeList) clear() {
 		C.wasm_instance_delete(p)
 	}
 	f.instances = nil
-
-	for _, p := range f.modules {
-		C.wasm_module_delete(p)
-	}
-	f.modules = nil
 
 	for _, p := range f.externs {
 		C.wasm_extern_delete(p)

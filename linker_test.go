@@ -1,7 +1,9 @@
 package wasmtime
 
-import "fmt"
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 func TestLinker(t *testing.T) {
 	wasm, err := Wat2Wasm(`
@@ -16,11 +18,11 @@ func TestLinker(t *testing.T) {
 		panic(err)
 	}
 	store := NewStore(NewEngine())
-	module, err := NewModule(store, wasm)
+	module, err := NewModule(store.Engine, wasm)
 	if err != nil {
 		panic(err)
 	}
-	linker := NewLinker(module.Store)
+	linker := NewLinker(store)
 	assertNoError(linker.Define("", "f", WrapFunc(store, func() {})))
 	g, err := NewGlobal(store, NewGlobalType(NewValType(KindI32), false), ValI32(0))
 	assertNoError(err)
@@ -31,7 +33,7 @@ func TestLinker(t *testing.T) {
 
 	tableWasm, err := Wat2Wasm(`(module (table (export "") 1 funcref))`)
 	assertNoError(err)
-	tableModule, err := NewModule(store, tableWasm)
+	tableModule, err := NewModule(store.Engine, tableWasm)
 	assertNoError(err)
 	instance, err := NewInstance(store, tableModule, []*Extern{})
 	assertNoError(err)
@@ -76,7 +78,7 @@ func TestLinkerTrap(t *testing.T) {
 	store := NewStore(NewEngine())
 	wasm, err := Wat2Wasm(`(func unreachable) (start 0)`)
 	assertNoError(err)
-	module, err := NewModule(store, wasm)
+	module, err := NewModule(store.Engine, wasm)
 	assertNoError(err)
 
 	linker := NewLinker(store)
@@ -116,9 +118,9 @@ func ExampleLinker() {
 	check(err)
 
 	// Next compile both modules
-	module1, err := NewModule(store, wasm1)
+	module1, err := NewModule(store.Engine, wasm1)
 	check(err)
-	module2, err := NewModule(store, wasm2)
+	module2, err := NewModule(store.Engine, wasm2)
 	check(err)
 
 	linker := NewLinker(store)

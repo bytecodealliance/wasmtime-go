@@ -45,7 +45,7 @@ func TestInterruptWasm(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	module, err := NewModule(store, wasm)
+	module, err := NewModule(store.Engine, wasm)
 	if err != nil {
 		panic(err)
 	}

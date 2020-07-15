@@ -18,7 +18,7 @@ func TestTrapFrames(t *testing.T) {
 	  (start 0)
 	`)
 	assertNoError(err)
-	module, err := NewModule(store, wasm)
+	module, err := NewModule(store.Engine, wasm)
 	assertNoError(err)
 
 	i, err := NewInstance(store, module, []*Extern{})
@@ -70,7 +70,7 @@ func TestTrapModuleName(t *testing.T) {
 	  (start 0)
 	)`)
 	assertNoError(err)
-	module, err := NewModule(store, wasm)
+	module, err := NewModule(store.Engine, wasm)
 	assertNoError(err)
 
 	i, err := NewInstance(store, module, []*Extern{})

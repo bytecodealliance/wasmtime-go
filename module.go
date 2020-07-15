@@ -2,11 +2,11 @@ package wasmtime
 
 // #include <wasmtime.h>
 //
-// wasmtime_error_t *go_module_new(wasm_store_t *store, uint8_t *bytes, size_t len, wasm_module_t **ret) {
+// wasmtime_error_t *go_module_new(wasm_engine_t *engine, uint8_t *bytes, size_t len, wasm_module_t **ret) {
 //    wasm_byte_vec_t vec;
 //    vec.data = (wasm_byte_t*) bytes;
 //    vec.size = len;
-//    return wasmtime_module_new(store, &vec, ret);
+//    return wasmtime_module_new(engine, &vec, ret);
 // }
 //
 // wasmtime_error_t *go_module_validate(wasm_store_t *store, uint8_t *bytes, size_t len) {
@@ -26,13 +26,13 @@ import (
 // In addition, it can declare imports and exports and provide initialization logic in the form of data and element segments or a start function.
 // Modules organized WebAssembly programs as the unit of deployment, loading, and compilation.
 type Module struct {
-	_ptr  *C.wasm_module_t
-	Store *Store
+	_ptr   *C.wasm_module_t
+	Engine *Engine
 }
 
 // NewModule compiles a new `Module` from the `wasm` provided with the given configuration
-// in `store`.
-func NewModule(store *Store, wasm []byte) (*Module, error) {
+// in `engine`.
+func NewModule(engine *Engine, wasm []byte) (*Module, error) {
 	// We can't create the `wasm_byte_vec_t` here and pass it in because
 	// that runs into the error of "passed a pointer to a pointer" because
 	// the vec itself is passed by pointer and it contains a pointer to
@@ -43,22 +43,22 @@ func NewModule(store *Store, wasm []byte) (*Module, error) {
 		wasmPtr = (*C.uint8_t)(unsafe.Pointer(&wasm[0]))
 	}
 	var ptr *C.wasm_module_t
-	err := C.go_module_new(store.ptr(), wasmPtr, C.size_t(len(wasm)), &ptr)
-	runtime.KeepAlive(store)
+	err := C.go_module_new(engine.ptr(), wasmPtr, C.size_t(len(wasm)), &ptr)
+	runtime.KeepAlive(engine)
 	runtime.KeepAlive(wasm)
 
 	if err != nil {
 		return nil, mkError(err)
 	}
 
-	return mkModule(ptr, store), nil
+	return mkModule(ptr, engine), nil
 }
 
 // NewModuleFromFile reads the contents of the `file` provided and interprets them as either the
 // text format or the binary format for WebAssembly.
 //
 // Afterwards delegates to the `NewModule` constructor with the contents read.
-func NewModuleFromFile(store *Store, file string) (*Module, error) {
+func NewModuleFromFile(engine *Engine, file string) (*Module, error) {
 	wasm, err := ioutil.ReadFile(file)
 	if err != nil {
 		return nil, err
@@ -71,7 +71,7 @@ func NewModuleFromFile(store *Store, file string) (*Module, error) {
 			return nil, err
 		}
 	}
-	return NewModule(store, wasm)
+	return NewModule(engine, wasm)
 
 }
 
@@ -92,13 +92,10 @@ func ModuleValidate(store *Store, wasm []byte) error {
 	return mkError(err)
 }
 
-func mkModule(ptr *C.wasm_module_t, store *Store) *Module {
-	module := &Module{_ptr: ptr, Store: store}
+func mkModule(ptr *C.wasm_module_t, engine *Engine) *Module {
+	module := &Module{_ptr: ptr, Engine: engine}
 	runtime.SetFinalizer(module, func(module *Module) {
-		freelist := module.Store.freelist
-		freelist.lock.Lock()
-		defer freelist.lock.Unlock()
-		freelist.modules = append(freelist.modules, module._ptr)
+		C.wasm_module_delete(module._ptr)
 	})
 	return module
 }
