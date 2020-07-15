@@ -13,6 +13,7 @@ import (
 type Store struct {
 	_ptr     *C.wasm_store_t
 	freelist *freeList
+	Engine   *Engine
 }
 
 // NewStore creates a new `Store` from the configuration provided in `engine`
@@ -20,6 +21,7 @@ func NewStore(engine *Engine) *Store {
 	store := &Store{
 		_ptr:     C.wasm_store_new(engine.ptr()),
 		freelist: newFreeList(),
+		Engine:   engine,
 	}
 	runtime.KeepAlive(engine)
 	runtime.SetFinalizer(store, func(store *Store) {

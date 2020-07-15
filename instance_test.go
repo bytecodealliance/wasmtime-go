@@ -15,7 +15,7 @@ func TestInstance(t *testing.T) {
 		panic(err)
 	}
 	store := NewStore(NewEngine())
-	module, err := NewModule(store, wasm)
+	module, err := NewModule(store.Engine, wasm)
 	if err != nil {
 		panic(err)
 	}
@@ -93,7 +93,7 @@ func TestInstanceBad(t *testing.T) {
 	store := NewStore(NewEngine())
 	wasm, err := Wat2Wasm(`(module (import "" "" (func)))`)
 	assertNoError(err)
-	module, err := NewModule(NewStore(NewEngine()), wasm)
+	module, err := NewModule(NewEngine(), wasm)
 	assertNoError(err)
 
 	// wrong number of imports

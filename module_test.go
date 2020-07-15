@@ -3,11 +3,11 @@ package wasmtime
 import "testing"
 
 func TestModule(t *testing.T) {
-	_, err := NewModule(NewStore(NewEngine()), []byte{})
+	_, err := NewModule(NewEngine(), []byte{})
 	if err == nil {
 		panic("expected an error")
 	}
-	_, err = NewModule(NewStore(NewEngine()), []byte{1})
+	_, err = NewModule(NewEngine(), []byte{1})
 	if err == nil {
 		panic("expected an error")
 	}
@@ -41,7 +41,7 @@ func TestModuleImports(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	module, err := NewModule(NewStore(NewEngine()), wasm)
+	module, err := NewModule(NewEngine(), wasm)
 	if err != nil {
 		panic(err)
 	}
@@ -117,7 +117,7 @@ func TestModuleExports(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	module, err := NewModule(NewStore(NewEngine()), wasm)
+	module, err := NewModule(NewEngine(), wasm)
 	if err != nil {
 		panic(err)
 	}

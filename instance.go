@@ -35,7 +35,7 @@ func NewInstance(store *Store, module *Module, imports []*Extern) (*Instance, er
 	var trap *C.wasm_trap_t
 	var ptr *C.wasm_instance_t
 	err := C.wasmtime_instance_new(
-		module.Store.ptr(),
+		store.ptr(),
 		module.ptr(),
 		importsRawPtr,
 		C.size_t(len(imports)),
@@ -52,14 +52,14 @@ func NewInstance(store *Store, module *Module, imports []*Extern) (*Instance, er
 	if trap != nil {
 		return nil, mkTrap(trap)
 	}
-	return mkInstance(ptr, module), nil
+	return mkInstance(ptr, store, module), nil
 }
 
-func mkInstance(ptr *C.wasm_instance_t, module *Module) *Instance {
+func mkInstance(ptr *C.wasm_instance_t, store *Store, module *Module) *Instance {
 	instance := &Instance{
 		_ptr:     ptr,
 		exports:  make(map[string]*Extern),
-		freelist: module.Store.freelist,
+		freelist: store.freelist,
 	}
 	runtime.SetFinalizer(instance, func(instance *Instance) {
 		freelist := instance.freelist

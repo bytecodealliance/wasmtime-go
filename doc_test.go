@@ -26,7 +26,7 @@ func Example() {
 
 	// Once we have our binary `wasm` we can compile that into a `*Module`
 	// which represents compiled JIT code.
-	module, err := NewModule(store, wasm)
+	module, err := NewModule(store.Engine, wasm)
 	check(err)
 
 	// Our `hello.wat` file imports one item, so we create that function
@@ -84,7 +84,7 @@ func Example_gcd() {
 	store := NewStore(NewEngine())
 	wasm, err := Wat2Wasm(GcdWat)
 	check(err)
-	module, err := NewModule(store, wasm)
+	module, err := NewModule(store.Engine, wasm)
 	check(err)
 	instance, err := NewInstance(store, module, []*Extern{})
 	check(err)
@@ -116,7 +116,7 @@ func Example_memory() {
           )
         `)
 	check(err)
-	module, err := NewModule(wasmtimeStore, wasm)
+	module, err := NewModule(wasmtimeStore.Engine, wasm)
 	check(err)
 	instance, err := NewInstance(wasmtimeStore, module, []*Extern{})
 	check(err)
@@ -235,7 +235,7 @@ func Example_multi() {
 	  )
         `)
 	check(err)
-	module, err := NewModule(store, wasm)
+	module, err := NewModule(store.Engine, wasm)
 	check(err)
 
 	callback := WrapFunc(store, func(a int32, b int64) (int64, int32) {

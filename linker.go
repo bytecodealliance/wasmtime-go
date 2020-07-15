@@ -124,5 +124,5 @@ func (l *Linker) Instantiate(module *Module) (*Instance, error) {
 	if trap != nil {
 		return nil, mkTrap(trap)
 	}
-	return mkInstance(ret, module), nil
+	return mkInstance(ret, l.Store, module), nil
 }
