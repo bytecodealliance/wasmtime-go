@@ -24,11 +24,12 @@ func NewGlobal(
 	err := C.wasmtime_global_new(
 		store.ptr(),
 		ty.ptr(),
-		&val.raw,
+		val.ptr(),
 		&ptr,
 	)
 	runtime.KeepAlive(store)
 	runtime.KeepAlive(ty)
+	runtime.KeepAlive(val)
 	if err != nil {
 		return nil, mkError(err)
 	}
@@ -70,16 +71,17 @@ func (g *Global) Type() *GlobalType {
 
 // Get gets the value of this global
 func (g *Global) Get() Val {
-	ret := Val{}
-	C.wasm_global_get(g.ptr(), &ret.raw)
+	ret := C.wasm_val_t{}
+	C.wasm_global_get(g.ptr(), &ret)
 	runtime.KeepAlive(g)
-	return ret
+	return takeVal(&ret, g.freelist)
 }
 
 // Set sets the value of this global
 func (g *Global) Set(val Val) error {
-	err := C.wasmtime_global_set(g.ptr(), &val.raw)
+	err := C.wasmtime_global_set(g.ptr(), val.ptr())
 	runtime.KeepAlive(g)
+	runtime.KeepAlive(val)
 	if err == nil {
 		return nil
 	}

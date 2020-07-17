@@ -1,8 +1,10 @@
 package wasmtime
 
-import "testing"
-import "fmt"
-import "strings"
+import (
+	"fmt"
+	"strings"
+	"testing"
+)
 
 func TestFunc(t *testing.T) {
 	store := NewStore(NewEngine())
@@ -461,8 +463,8 @@ func TestNotCallable(t *testing.T) {
 	assertPanic(func() { WrapFunc(store, 1) })
 }
 
-func TestBadTypes(t *testing.T) {
+func TestInterestingTypes(t *testing.T) {
 	store := NewStore(NewEngine())
-	assertPanic(func() { WrapFunc(store, func(*Store) {}) })
-	assertPanic(func() { WrapFunc(store, func() *Store { return nil }) })
+	WrapFunc(store, func(*Store) {})
+	WrapFunc(store, func() *Store { return nil })
 }

@@ -17,7 +17,7 @@ const (
 	// KindF64 is the types f64 classify 64 bit floating-point data. They correspond to the respective binary floating-point representations, also known as single and double precision, as defined by the IEEE 754-2019 standard.
 	KindF64 ValKind = C.WASM_F64
 	// TODO: Unknown
-	KindAnyref ValKind = C.WASM_ANYREF
+	KindExternref ValKind = C.WASM_ANYREF
 	// KindFuncref is the infinite union of all function types.
 	KindFuncref ValKind = C.WASM_FUNCREF
 )
@@ -33,8 +33,8 @@ func (ty ValKind) String() string {
 		return "f32"
 	case KindF64:
 		return "f64"
-	case KindAnyref:
-		return "anyref"
+	case KindExternref:
+		return "externref"
 	case KindFuncref:
 		return "funcref"
 	}

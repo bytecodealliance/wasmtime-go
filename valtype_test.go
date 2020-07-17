@@ -7,7 +7,7 @@ func TestValType(t *testing.T) {
 	NewValType(KindI64)
 	NewValType(KindF32)
 	NewValType(KindF64)
-	NewValType(KindAnyref)
+	NewValType(KindExternref)
 	NewValType(KindFuncref)
 }
 
@@ -24,7 +24,7 @@ func TestValTypeKind(t *testing.T) {
 	if NewValType(KindF64).Kind() != KindF64 {
 		t.Fatalf("wrong kind")
 	}
-	if NewValType(KindAnyref).Kind() != KindAnyref {
+	if NewValType(KindExternref).Kind() != KindExternref {
 		t.Fatalf("wrong kind")
 	}
 	if NewValType(KindFuncref).Kind() != KindFuncref {
