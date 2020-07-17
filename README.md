@@ -25,7 +25,7 @@
 ## Installation
 
 ```sh
-go get -u github.com/bytecodealliance/wasmtime-go@v0.17.0
+go get -u github.com/bytecodealliance/wasmtime-go@v0.19.0
 ```
 
 Be sure to check out the [API documentation][api]!
@@ -44,6 +44,17 @@ can cause a segfault.
 [api]: https://pkg.go.dev/github.com/bytecodealliance/wasmtime-go
 [wasmtime]: https://github.com/bytecodealliance/wasmtime
 [issue #10]: https://github.com/bytecodealliance/wasmtime-go/issues/10
+
+
+If you are a bazel user, add following to your WORKSPACE file and modify the the version. (bazel is supported since `v0.19.0`)
+
+```
+go_repository(
+    name = "com_github_bytecodealliance_wasmtime_go",
+    importpath = "github.com/bytecodealliance/wasmtime-go",
+    version = "v0.19.0",
+)
+```
 
 ## Usage
 
