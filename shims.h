@@ -17,3 +17,17 @@ wasmtime_error_t* go_linker_define_instance(
     size_t name_len,
     wasm_instance_t *item
 );
+void go_externref_new_with_finalizer(
+    size_t env,
+    wasm_val_t *valp
+);
+
+void go_init_i32(wasm_val_t *val, int32_t i);
+void go_init_i64(wasm_val_t *val, int64_t i);
+void go_init_f32(wasm_val_t *val, float i);
+void go_init_f64(wasm_val_t *val, double i);
+
+int32_t go_get_i32(wasm_val_t *val);
+int64_t go_get_i64(wasm_val_t *val);
+float go_get_f32(wasm_val_t *val);
+double go_get_f64(wasm_val_t *val);

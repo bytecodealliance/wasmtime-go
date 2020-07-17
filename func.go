@@ -108,7 +108,7 @@ func goTrampolineNew(
 	base := unsafe.Pointer(argsPtr)
 	for i := 0; i < len(params); i++ {
 		ptr := (*C.wasm_val_t)(unsafe.Pointer(uintptr(base) + uintptr(i)*unsafe.Sizeof(val)))
-		params[i] = Val{raw: *ptr}
+		params[i] = mkVal(ptr, entry.store.freelist)
 	}
 
 	var results []Val
@@ -143,8 +143,9 @@ func goTrampolineNew(
 	base = unsafe.Pointer(resultsPtr)
 	for i := 0; i < len(results); i++ {
 		ptr := (*C.wasm_val_t)(unsafe.Pointer(uintptr(base) + uintptr(i)*unsafe.Sizeof(val)))
-		*ptr = results[i].raw
+		C.wasm_val_copy(ptr, results[i].ptr())
 	}
+	runtime.KeepAlive(results)
 	return nil
 }
 
@@ -173,6 +174,10 @@ func goFinalizeNew(env unsafe.Pointer) {
 // `float64` - a wasm `f32`
 //
 // `*Caller` - information about the caller's instance
+//
+// `*Func` - a wasm `funcref`
+//
+// anything else - a wasm `externref`
 //
 // The Go function may return any number of values. It can return any number of
 // primitive wasm values (integers/floats), and the last return value may
@@ -248,7 +253,11 @@ func typeToValType(ty reflect.Type) *ValType {
 	case reflect.Float64:
 		return NewValType(KindF64)
 	}
-	panic("invalid type in callback that couldn't be converted to wasm type")
+	var f *Func
+	if ty == reflect.TypeOf(f) {
+		return NewValType(KindFuncref)
+	}
+	return NewValType(KindExternref)
 }
 
 //export goTrampolineWrap
@@ -278,7 +287,7 @@ func goTrampolineWrap(
 			params[i] = reflect.ValueOf(caller)
 		} else {
 			ptr := (*C.wasm_val_t)(base)
-			val := Val{raw: *ptr}
+			val := mkVal(ptr, entry.store.freelist)
 			params[i] = reflect.ValueOf(val.Get())
 			base = unsafe.Pointer(uintptr(base) + unsafe.Sizeof(raw))
 		}
@@ -308,18 +317,26 @@ func goTrampolineWrap(
 		ptr := (*C.wasm_val_t)(base)
 		switch val := result.Interface().(type) {
 		case int32:
-			*ptr = ValI32(val).raw
+			*ptr = *ValI32(val).ptr()
 		case int64:
-			*ptr = ValI64(val).raw
+			*ptr = *ValI64(val).ptr()
 		case float32:
-			*ptr = ValF32(val).raw
+			*ptr = *ValF32(val).ptr()
 		case float64:
-			*ptr = ValF64(val).raw
+			*ptr = *ValF64(val).ptr()
+		case *Func:
+			raw := ValFuncref(val)
+			C.wasm_val_copy(ptr, raw.ptr())
+			runtime.KeepAlive(raw)
 		case *Trap:
 			if val != nil {
 				runtime.SetFinalizer(val, nil)
 				return val.ptr()
 			}
+		default:
+			raw := ValExternref(val)
+			C.wasm_val_copy(ptr, raw.ptr())
+			runtime.KeepAlive(raw)
 		}
 		base = unsafe.Pointer(uintptr(base) + unsafe.Sizeof(raw))
 	}
@@ -398,7 +415,9 @@ func (f *Func) ResultArity() int {
 //
 // `Val` - correspond to a wasm value
 //
-// Any other types of `args` will cause this function to panic.
+// `*Func` - a wasm `funcref`
+//
+// anything else - a wasm `externref`
 //
 // This function will have one of three results:
 //
@@ -419,30 +438,37 @@ func (f *Func) Call(args ...interface{}) (interface{}, error) {
 		return nil, errors.New("too many arguments provided")
 	}
 	paramsRaw := make([]C.wasm_val_t, len(args))
+	synthesizedParams := make([]Val, 0)
 	for i, param := range args {
 		switch val := param.(type) {
 		case int:
 			switch params[i].Kind() {
 			case KindI32:
-				paramsRaw[i] = ValI32(int32(val)).raw
+				paramsRaw[i] = *ValI32(int32(val)).ptr()
 			case KindI64:
-				paramsRaw[i] = ValI64(int64(val)).raw
+				paramsRaw[i] = *ValI64(int64(val)).ptr()
 			default:
 				return nil, errors.New("integer provided for non-integer argument")
 			}
 		case int32:
-			paramsRaw[i] = ValI32(val).raw
+			paramsRaw[i] = *ValI32(val).ptr()
 		case int64:
-			paramsRaw[i] = ValI64(val).raw
+			paramsRaw[i] = *ValI64(val).ptr()
 		case float32:
-			paramsRaw[i] = ValF32(val).raw
+			paramsRaw[i] = *ValF32(val).ptr()
 		case float64:
-			paramsRaw[i] = ValF64(val).raw
+			paramsRaw[i] = *ValF64(val).ptr()
+		case *Func:
+			ffi := ValFuncref(val)
+			paramsRaw[i] = *ffi.ptr()
+			synthesizedParams = append(synthesizedParams, ffi)
 		case Val:
-			paramsRaw[i] = val.raw
+			paramsRaw[i] = *val.ptr()
 
 		default:
-			return nil, errors.New("couldn't convert provided argument to wasm type")
+			ffi := ValExternref(val)
+			paramsRaw[i] = *ffi.ptr()
+			synthesizedParams = append(synthesizedParams, ffi)
 		}
 	}
 
@@ -467,6 +493,8 @@ func (f *Func) Call(args ...interface{}) (interface{}, error) {
 	)
 	runtime.KeepAlive(f)
 	runtime.KeepAlive(paramsRaw)
+	runtime.KeepAlive(args)
+	runtime.KeepAlive(synthesizedParams)
 
 	if err != nil {
 		return nil, mkError(err)
@@ -487,12 +515,11 @@ func (f *Func) Call(args ...interface{}) (interface{}, error) {
 	if len(resultsRaw) == 0 {
 		return nil, nil
 	} else if len(resultsRaw) == 1 {
-		val := Val{raw: resultsRaw[0]}
-		return val.Get(), nil
+		return takeVal(&resultsRaw[0], f.freelist).Get(), nil
 	} else {
 		results := make([]Val, len(resultsRaw))
-		for i, raw := range resultsRaw {
-			results[i] = Val{raw}
+		for i := 0; i < len(resultsRaw); i++ {
+			results[i] = takeVal(&resultsRaw[i], f.freelist)
 		}
 		return results, nil
 	}

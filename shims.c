@@ -64,3 +64,20 @@ wasmtime_error_t* go_linker_define_instance(
   name.size = name_len;
   return wasmtime_linker_define_instance(linker, &name, instance);
 }
+
+void go_externref_new_with_finalizer(
+    size_t env,
+    wasm_val_t *valp
+) {
+  wasmtime_externref_new_with_finalizer((void*) env, goFinalizeExternref, valp);
+}
+
+void go_init_i32(wasm_val_t *val, int32_t i) { val->of.i32 = i; }
+void go_init_i64(wasm_val_t *val, int64_t i) { val->of.i64 = i; }
+void go_init_f32(wasm_val_t *val, float i) { val->of.f32 = i; }
+void go_init_f64(wasm_val_t *val, double i) { val->of.f64 = i; }
+
+int32_t go_get_i32(wasm_val_t *val) { return val->of.i32; }
+int64_t go_get_i64(wasm_val_t *val) { return val->of.i64; }
+float go_get_f32(wasm_val_t *val) { return val->of.f32; }
+double go_get_f64(wasm_val_t *val) { return val->of.f64; }

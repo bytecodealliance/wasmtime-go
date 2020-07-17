@@ -45,6 +45,7 @@ type freeList struct {
 	linkers       []*C.wasmtime_linker_t
 	wasiInstances []*C.wasi_instance_t
 	externVecs    []*C.wasm_extern_vec_t
+	vals          []*C.wasm_val_t
 }
 
 func newFreeList() *freeList {
@@ -114,4 +115,9 @@ func (f *freeList) clear() {
 		C.wasm_extern_vec_delete(p)
 	}
 	f.externVecs = nil
+
+	for _, p := range f.vals {
+		C.wasm_val_delete(p)
+	}
+	f.vals = nil
 }
