@@ -2,6 +2,7 @@ package wasmtime
 
 import (
 	"errors"
+	"runtime"
 	"testing"
 )
 
@@ -265,5 +266,62 @@ func TestRefTypesWrap(t *testing.T) {
 	arr := ret.([]Val)
 	if len(arr) != 2 {
 		panic("bad ret")
+	}
+}
+
+type GcHit struct {
+	hit bool
+}
+
+type ObjToDrop struct {
+	ptr *GcHit
+}
+
+func newObjToDrop() (*ObjToDrop, *GcHit) {
+	gc := &GcHit{hit: false}
+	obj := &ObjToDrop{ptr: gc}
+	runtime.SetFinalizer(obj, func(obj *ObjToDrop) {
+		obj.ptr.hit = true
+	})
+	return obj, gc
+}
+
+func TestGlobalFinalizer(t *testing.T) {
+	store := refTypesStore()
+	global, err := NewGlobal(
+		store,
+		NewGlobalType(NewValType(KindExternref), true),
+		ValExternref(nil),
+	)
+	if err != nil {
+		panic(err)
+	}
+	obj, gc := newObjToDrop()
+	global.Set(ValExternref(obj))
+	runtime.GC()
+	if gc.hit {
+		panic("gc too early")
+	}
+	global.Set(ValExternref(nil))
+	runtime.GC()
+	if !gc.hit {
+		panic("dtor not run")
+	}
+}
+
+func TestFuncFinalizer(t *testing.T) {
+	instance, store := refTypesInstance(`
+	      (module (func (export "f") (param externref)))
+	`)
+	f := instance.GetExport("f").Func()
+	obj, gc := newObjToDrop()
+	_, err := f.Call(obj)
+	if err != nil {
+		panic(err)
+	}
+	store.GC()
+	runtime.GC()
+	if !gc.hit {
+		panic("dtor not run")
 	}
 }
