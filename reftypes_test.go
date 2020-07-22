@@ -303,7 +303,10 @@ func TestGlobalFinalizer(t *testing.T) {
 		panic("gc too early")
 	}
 	global.Set(ValExternref(nil))
-	runtime.GC()
+	// try real hard to get the Go GC to run the destructor
+	for i := 0; i < 10; i++ {
+		runtime.GC()
+	}
 	if !gc.hit {
 		panic("dtor not run")
 	}
@@ -320,7 +323,10 @@ func TestFuncFinalizer(t *testing.T) {
 		panic(err)
 	}
 	store.GC()
-	runtime.GC()
+	// try real hard to get the Go GC to run the destructor
+	for i := 0; i < 10; i++ {
+		runtime.GC()
+	}
 	if !gc.hit {
 		panic("dtor not run")
 	}
