@@ -15,6 +15,13 @@ package wasmtime
 //    vec.size = len;
 //    return wasmtime_module_validate(store, &vec);
 // }
+//
+// wasmtime_error_t *go_module_deserialize(wasm_engine_t *engine, uint8_t *bytes, size_t len, wasm_module_t **ret) {
+//    wasm_byte_vec_t vec;
+//    vec.data = (wasm_byte_t*) bytes;
+//    vec.size = len;
+//    return wasmtime_module_deserialize(engine, &vec, ret);
+// }
 import "C"
 import (
 	"io/ioutil"
@@ -154,4 +161,59 @@ func (m *Module) Exports() []*ExportType {
 		ret[i] = ty
 	}
 	return ret
+}
+
+// NewModuleDeserialize decodes and deserializes in-memory bytes previously
+// produced by `module.Serialize()`.
+//
+// This function does not take a WebAssembly binary as input. It takes
+// as input the results of a previous call to `Serialize()`, and only takes
+// that as input.
+//
+// If deserialization is successful then a compiled module is returned,
+// otherwise nil and an error are returned.
+//
+// Note that to deserialize successfully the bytes provided must have beeen
+// produced with an `Engine` that has the same commpilation options as the
+// provided engine, and from the same version of this library.
+func NewModuleDeserialize(engine *Engine, encoded []byte) (*Module, error) {
+	var encodedPtr *C.uint8_t
+	var ptr *C.wasm_module_t
+	if len(encoded) > 0 {
+		encodedPtr = (*C.uint8_t)(unsafe.Pointer(&encoded[0]))
+	}
+	err := C.go_module_deserialize(
+		engine.ptr(),
+		encodedPtr,
+		C.size_t(len(encoded)),
+		&ptr,
+	)
+	runtime.KeepAlive(engine)
+	runtime.KeepAlive(encoded)
+
+	if err != nil {
+		return nil, mkError(err)
+	}
+
+	return mkModule(ptr, engine), nil
+}
+
+// Serialize will convert this in-memory compiled module into a list of bytes.
+//
+// The purpose of this method is to extract an artifact which can be stored
+// elsewhere from this `Module`. The returned bytes can, for example, be stored
+// on disk or in an object store. The `NewModuleDeserialize` function can be
+// used to deserialize the returned bytes at a later date to get the module
+// back.
+func (m *Module) Serialize() ([]byte, error) {
+	retVec := C.wasm_byte_vec_t{}
+	err := C.wasmtime_module_serialize(m.ptr(), &retVec)
+	runtime.KeepAlive(m)
+
+	if err != nil {
+		return nil, mkError(err)
+	}
+	ret := C.GoBytes(unsafe.Pointer(retVec.data), C.int(retVec.size))
+	C.wasm_byte_vec_delete(&retVec)
+	return ret, nil
 }
