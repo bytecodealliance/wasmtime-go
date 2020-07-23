@@ -168,3 +168,31 @@ func TestModuleExports(t *testing.T) {
 		panic("wrong export type")
 	}
 }
+
+func TestModuleSerialize(t *testing.T) {
+	engine := NewEngine()
+	wasm, err := Wat2Wasm(`
+          (module
+            (func (export "f"))
+            (global (export "g") i32 (i32.const 0))
+            (table (export "t") 1 funcref)
+            (memory (export "m") 1)
+          )
+        `)
+	if err != nil {
+		panic(err)
+	}
+	module, err := NewModule(engine, wasm)
+	if err != nil {
+		panic(err)
+	}
+	bytes, err := module.Serialize()
+	if err != nil {
+		panic(err)
+	}
+
+	_, err = NewModuleDeserialize(engine, bytes)
+	if err != nil {
+		panic(err)
+	}
+}
