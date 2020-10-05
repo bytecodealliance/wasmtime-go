@@ -37,13 +37,12 @@ Wasmtime locally, but it means that this project only works on Linux x86\_64,
 macOS x86\_64 , and Windows x86\_64 currently. Buliding on other platforms will
 need to arrange to build Wasmtime and use `CGO_*` env vars to compile correctly.
 
-Please note that currently this project requires Go 1.13.10 when run on macOS.
-There seems to be a regression in Go 1.14 (see [issue #10][issue #10]) that
-can cause a segfault.
+This project has been tested with Go 1.13 or later. It is not recommended to
+use Go 1.14 on macOS due to a [bug in the Go runtime][bug].
 
 [api]: https://pkg.go.dev/github.com/bytecodealliance/wasmtime-go
 [wasmtime]: https://github.com/bytecodealliance/wasmtime
-[issue #10]: https://github.com/bytecodealliance/wasmtime-go/issues/10
+[bug]: https://github.com/golang/go/issues/39079
 
 
 If you are a bazel user, add following to your WORKSPACE file and modify the the version. (bazel is supported since `v0.19.0`)
