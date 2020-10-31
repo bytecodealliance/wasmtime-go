@@ -86,7 +86,7 @@ func main() {
 
     // Once we have our binary `wasm` we can compile that into a `*Module`
     // which represents compiled JIT code.
-    module, err := wasmtime.NewModule(store, wasm)
+    module, err := wasmtime.NewModule(store.Engine, wasm)
     check(err)
 
     // Our `hello.wat` file imports one item, so we create that function
