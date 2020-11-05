@@ -25,7 +25,7 @@
 ## Installation
 
 ```sh
-go get -u github.com/bytecodealliance/wasmtime-go@v0.19.0
+go get -u github.com/bytecodealliance/wasmtime-go@v0.21.0
 ```
 
 Be sure to check out the [API documentation][api]!
@@ -45,13 +45,13 @@ use Go 1.14 on macOS due to a [bug in the Go runtime][bug].
 [bug]: https://github.com/golang/go/issues/39079
 
 
-If you are a bazel user, add following to your WORKSPACE file and modify the the version. (bazel is supported since `v0.19.0`)
+If you are a bazel user, add following to your WORKSPACE file:
 
 ```
 go_repository(
     name = "com_github_bytecodealliance_wasmtime_go",
     importpath = "github.com/bytecodealliance/wasmtime-go",
-    version = "v0.19.0",
+    version = "v0.21.0",
 )
 ```
 
