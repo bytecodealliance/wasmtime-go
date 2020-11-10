@@ -15,11 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        go: ['1.13.10', '1.14.2', '1.15.2']
-        exclude:
-        # This is known to segfault (golang/go#39079)
-        - os: macos-latest
-          go: 1.14.2
+        go: ['1.13.15', '1.14.11', '1.15.4']
     steps:
     - uses: actions/checkout@v2
 
