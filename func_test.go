@@ -283,6 +283,35 @@ func TestFuncWrapRet2(t *testing.T) {
 	}
 }
 
+type i32alias int32
+
+const (
+	i32_0 i32alias = 0
+	i32_1 i32alias = 1
+	i32_2 i32alias = 2
+)
+
+func TestFuncWrapAliasRet(t *testing.T) {
+	store := NewStore(NewEngine())
+	f := WrapFunc(store, func(which int32) i32alias {
+		if which == 1 {
+			return i32_1
+		} else if which == 2 {
+			return i32_2
+		}
+
+		return i32_0
+	})
+	result, trap := f.Call(1)
+	if trap != nil {
+		panic(trap)
+	}
+
+	if result != i32_1 {
+		panic(fmt.Sprintf("wrong result, expected %q, got %q", i32_1, result))
+	}
+}
+
 func TestFuncWrapRetError(t *testing.T) {
 	store := NewStore(NewEngine())
 	f := WrapFunc(store, func(c *Caller) *Trap {
