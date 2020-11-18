@@ -468,3 +468,26 @@ func TestInterestingTypes(t *testing.T) {
 	WrapFunc(store, func(*Store) {})
 	WrapFunc(store, func() *Store { return nil })
 }
+
+type i32alias int32
+
+const (
+	i32_0 i32alias = 0
+	i32_1 i32alias = 1
+	i32_2 i32alias = 2
+)
+
+func TestFuncWrapAliasRet(t *testing.T) {
+	store := NewStore(NewEngine())
+	f := WrapFunc(store, func(which i32alias) i32alias {
+		return which
+	})
+	result, trap := f.Call(i32_1)
+	if trap != nil {
+		panic(trap)
+	}
+
+	if result != i32_1 {
+		panic(fmt.Sprintf("wrong result, expected %q, got %q", i32_1, result))
+	}
+}
