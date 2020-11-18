@@ -46,7 +46,7 @@ jobs:
         bazelisk test :go_default_test
       if: matrix.os != 'windows-latest'
     - name: Ready msys2
-      uses: msys2/setup-msys2@v1
+      uses: msys2/setup-msys2@v2
       with:
         msystem: MINGW64
         update: true

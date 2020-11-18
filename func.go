@@ -243,14 +243,20 @@ func WrapFunc(
 }
 
 func typeToValType(ty reflect.Type) *ValType {
-	switch ty.Kind() {
-	case reflect.Int32:
+	var a int32
+	if ty == reflect.TypeOf(a) {
 		return NewValType(KindI32)
-	case reflect.Int64:
+	}
+	var b int64
+	if ty == reflect.TypeOf(b) {
 		return NewValType(KindI64)
-	case reflect.Float32:
+	}
+	var c float32
+	if ty == reflect.TypeOf(c) {
 		return NewValType(KindF32)
-	case reflect.Float64:
+	}
+	var d float64
+	if ty == reflect.TypeOf(d) {
 		return NewValType(KindF64)
 	}
 	var f *Func
