@@ -21,7 +21,15 @@ void go_externref_new_with_finalizer(
     size_t env,
     wasm_val_t *valp
 );
-
+wasmtime_error_t *go_wasmtime_func_call(
+    wasm_func_t *func,
+    const wasm_val_t *args,
+    size_t num_args,
+    wasm_val_t *results,
+    size_t num_results,
+    wasm_trap_t **trap,
+    size_t go_id
+);
 void go_init_i32(wasm_val_t *val, int32_t i);
 void go_init_i64(wasm_val_t *val, int64_t i);
 void go_init_f32(wasm_val_t *val, float i);

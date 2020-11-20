@@ -22,19 +22,21 @@ type Func struct {
 
 // TODO
 type Caller struct {
-	ptr   *C.wasmtime_caller_t
-	store *Store
+	ptr      *C.wasmtime_caller_t
+	freelist *freeList
 }
 
+// Note that `newMapEntry` and `wrapMapEntry` here need to be careful to not
+// close over any state that can retain the `freelist` or other wasmtime
+// objects. Otherwise that'll create a cycle between the Rust and Go heaps
+// which can't be garbage collected.
 type newMapEntry struct {
-	store    *Store
 	callback func(*Caller, []Val) ([]Val, *Trap)
 	nparams  int
 	results  []*ValType
 }
 
 type wrapMapEntry struct {
-	store    *Store
 	callback reflect.Value
 }
 
@@ -43,7 +45,8 @@ var gNewMap = make(map[int]newMapEntry)
 var gNewMapSlab slab
 var gWrapMap = make(map[int]wrapMapEntry)
 var gWrapMapSlab slab
-var gCallerPanics = make(map[*freeList]interface{})
+var gCallerPanics = make(map[C.size_t]interface{})
+var gCallerFreeLists = make(map[C.size_t]*freeList)
 
 // NewFunc creates a new `Func` with the given `ty` which, when called, will call `f`
 //
@@ -69,7 +72,6 @@ func NewFunc(
 	gLock.Lock()
 	idx := gNewMapSlab.allocate()
 	gNewMap[idx] = newMapEntry{
-		store:    store,
 		callback: f,
 		nparams:  len(ty.Params()),
 		results:  ty.Results(),
@@ -90,6 +92,7 @@ func NewFunc(
 
 //export goTrampolineNew
 func goTrampolineNew(
+	caller_id C.size_t,
 	callerPtr *C.wasmtime_caller_t,
 	env C.size_t,
 	argsPtr *C.wasm_val_t,
@@ -98,9 +101,10 @@ func goTrampolineNew(
 	idx := int(env)
 	gLock.Lock()
 	entry := gNewMap[idx]
+	freelist := gCallerFreeLists[caller_id]
 	gLock.Unlock()
 
-	caller := &Caller{ptr: callerPtr, store: entry.store}
+	caller := &Caller{ptr: callerPtr, freelist: freelist}
 	defer func() { caller.ptr = nil }()
 
 	params := make([]Val, entry.nparams)
@@ -108,7 +112,7 @@ func goTrampolineNew(
 	base := unsafe.Pointer(argsPtr)
 	for i := 0; i < len(params); i++ {
 		ptr := (*C.wasm_val_t)(unsafe.Pointer(uintptr(base) + uintptr(i)*unsafe.Sizeof(val)))
-		params[i] = mkVal(ptr, entry.store.freelist)
+		params[i] = mkVal(ptr, freelist)
 	}
 
 	var results []Val
@@ -131,9 +135,9 @@ func goTrampolineNew(
 	}()
 	if trap == nil && lastPanic != nil {
 		gLock.Lock()
-		gCallerPanics[entry.store.freelist] = lastPanic
+		gCallerPanics[caller_id] = lastPanic
 		gLock.Unlock()
-		trap = NewTrap(entry.store, "go panicked")
+		return nil
 	}
 	if trap != nil {
 		runtime.SetFinalizer(trap, nil)
@@ -227,7 +231,6 @@ func WrapFunc(
 	idx := gWrapMapSlab.allocate()
 	gWrapMap[idx] = wrapMapEntry{
 		callback: val,
-		store:    store,
 	}
 	gLock.Unlock()
 
@@ -268,6 +271,7 @@ func typeToValType(ty reflect.Type) *ValType {
 
 //export goTrampolineWrap
 func goTrampolineWrap(
+	caller_id C.size_t,
 	callerPtr *C.wasmtime_caller_t,
 	env C.size_t,
 	argsPtr *C.wasm_val_t,
@@ -278,10 +282,11 @@ func goTrampolineWrap(
 	idx := int(env)
 	gLock.Lock()
 	entry := gWrapMap[idx]
+	freelist := gCallerFreeLists[caller_id]
 	gLock.Unlock()
 
 	// Wrap our `Caller` argument in case it's needed
-	caller := &Caller{ptr: callerPtr, store: entry.store}
+	caller := &Caller{ptr: callerPtr, freelist: freelist}
 	defer func() { caller.ptr = nil }()
 
 	ty := entry.callback.Type()
@@ -293,7 +298,7 @@ func goTrampolineWrap(
 			params[i] = reflect.ValueOf(caller)
 		} else {
 			ptr := (*C.wasm_val_t)(base)
-			val := mkVal(ptr, entry.store.freelist)
+			val := mkVal(ptr, freelist)
 			params[i] = reflect.ValueOf(val.Get())
 			base = unsafe.Pointer(uintptr(base) + unsafe.Sizeof(raw))
 		}
@@ -309,11 +314,9 @@ func goTrampolineWrap(
 	}()
 	if lastPanic != nil {
 		gLock.Lock()
-		gCallerPanics[entry.store.freelist] = lastPanic
+		gCallerPanics[caller_id] = lastPanic
 		gLock.Unlock()
-		trap := NewTrap(entry.store, "go panicked")
-		runtime.SetFinalizer(trap, nil)
-		return trap.ptr()
+		return nil
 	}
 
 	// And now we write all the results into memory depending on the type
@@ -362,9 +365,9 @@ func mkFunc(ptr *C.wasm_func_t, freelist *freeList, owner interface{}) *Func {
 	f := &Func{_ptr: ptr, _owner: owner, freelist: freelist}
 	if owner == nil {
 		runtime.SetFinalizer(f, func(f *Func) {
-			freelist.lock.Lock()
-			defer freelist.lock.Unlock()
-			freelist.funcs = append(freelist.funcs, f._ptr)
+			f.freelist.lock.Lock()
+			defer f.freelist.lock.Unlock()
+			f.freelist.funcs = append(f.freelist.funcs, f._ptr)
 		})
 	}
 	return f
@@ -489,33 +492,55 @@ func (f *Func) Call(args ...interface{}) (interface{}, error) {
 		resultsPtr = &resultsRaw[0]
 	}
 
-	err := C.wasmtime_func_call(
+	// Use our `freelist` as an anchor to get an identifier which our C
+	// shim shoves into thread-local storage and then pops out on the
+	// other side when a host function is called.
+	gLock.Lock()
+	caller_id := C.size_t(uintptr(unsafe.Pointer(f.freelist)))
+	gCallerFreeLists[caller_id] = f.freelist
+	gLock.Unlock()
+
+	err := C.go_wasmtime_func_call(
 		f.ptr(),
 		paramsPtr,
 		C.size_t(len(paramsRaw)),
 		resultsPtr,
 		C.size_t(len(resultsRaw)),
 		&trap,
+		caller_id,
 	)
 	runtime.KeepAlive(f)
 	runtime.KeepAlive(paramsRaw)
 	runtime.KeepAlive(args)
 	runtime.KeepAlive(synthesizedParams)
 
+	// Clear our thread's caller id from the global maps now that the call
+	// is finished.
+	gLock.Lock()
+	lastPanic := gCallerPanics[caller_id]
+	delete(gCallerPanics, caller_id)
+	delete(gCallerFreeLists, caller_id)
+	gLock.Unlock()
+
 	if err != nil {
 		return nil, mkError(err)
 	}
 
+	// Take ownership of the return trapped pointer
+	var wrappedTrap *Trap
 	if trap != nil {
-		trap := mkTrap(trap)
-		gLock.Lock()
-		defer gLock.Unlock()
-		lastPanic := gCallerPanics[f.freelist]
-		delete(gCallerPanics, f.freelist)
-		if lastPanic != nil {
-			panic(lastPanic)
-		}
-		return nil, trap
+		wrappedTrap = mkTrap(trap)
+	}
+
+	// Check to see if we called a Go host function which panicked.
+	if lastPanic != nil {
+		panic(lastPanic)
+	}
+
+	// Return the trap if one happened, but note that this comes after the
+	// panic check since that takes priority.
+	if trap != nil {
+		return nil, wrappedTrap
 	}
 
 	if len(resultsRaw) == 0 {
@@ -556,5 +581,5 @@ func (c *Caller) GetExport(name string) *Extern {
 		return nil
 	}
 
-	return mkExtern(ptr, c.store.freelist, nil)
+	return mkExtern(ptr, c.freelist, nil)
 }
