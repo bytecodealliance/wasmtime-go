@@ -10,9 +10,11 @@ import (
 // Instance is an instantiated module instance.
 // Once a module has been instantiated as an Instance, any exported function can be invoked externally via its function address funcaddr in the store S and an appropriate list val∗ of argument values.
 type Instance struct {
-	_ptr     *C.wasm_instance_t
-	exports  map[string]*Extern
-	freelist *freeList
+	_ptr             *C.wasm_instance_t
+	exports          map[string]*Extern
+	exportsPopulated bool
+	freelist         *freeList
+	_owner           interface{}
 }
 
 // NewInstance instantiates a WebAssembly `module` with the `imports` provided.
@@ -52,24 +54,24 @@ func NewInstance(store *Store, module *Module, imports []*Extern) (*Instance, er
 	if trap != nil {
 		return nil, mkTrap(trap)
 	}
-	return mkInstance(ptr, store, module), nil
+	return mkInstance(ptr, store.freelist, nil), nil
 }
 
-func mkInstance(ptr *C.wasm_instance_t, store *Store, module *Module) *Instance {
+func mkInstance(ptr *C.wasm_instance_t, freelist *freeList, owner interface{}) *Instance {
 	instance := &Instance{
-		_ptr:     ptr,
-		exports:  make(map[string]*Extern),
-		freelist: store.freelist,
+		_ptr:             ptr,
+		exports:          make(map[string]*Extern),
+		exportsPopulated: false,
+		freelist:         freelist,
+		_owner:           owner,
 	}
-	runtime.SetFinalizer(instance, func(instance *Instance) {
-		freelist := instance.freelist
-		freelist.lock.Lock()
-		defer freelist.lock.Unlock()
-		freelist.instances = append(freelist.instances, instance._ptr)
-	})
-	exports := instance.Exports()
-	for i, ty := range module.Exports() {
-		instance.exports[ty.Name()] = exports[i]
+	if owner == nil {
+		runtime.SetFinalizer(instance, func(instance *Instance) {
+			freelist := instance.freelist
+			freelist.lock.Lock()
+			defer freelist.lock.Unlock()
+			freelist.instances = append(freelist.instances, instance._ptr)
+		})
 	}
 	return instance
 }
@@ -78,6 +80,20 @@ func (i *Instance) ptr() *C.wasm_instance_t {
 	ret := i._ptr
 	maybeGC()
 	return ret
+}
+
+func (i *Instance) owner() interface{} {
+	if i._owner != nil {
+		return i._owner
+	}
+	return i
+}
+
+// Type returns an `InstanceType` that corresponds for this instance.
+func (i *Instance) Type() *InstanceType {
+	ptr := C.wasm_instance_type(i.ptr())
+	runtime.KeepAlive(i)
+	return mkInstanceType(ptr, nil)
 }
 
 type externList struct {
@@ -114,5 +130,20 @@ func (i *Instance) Exports() []*Extern {
 //
 // May return `nil` if this instance has no export named `name`
 func (i *Instance) GetExport(name string) *Extern {
+	if !i.exportsPopulated {
+		i.populateExports()
+	}
 	return i.exports[name]
+}
+
+func (i *Instance) populateExports() {
+	exports := i.Exports()
+	for j, ty := range i.Type().Exports() {
+		i.exports[ty.Name()] = exports[j]
+	}
+}
+
+func (i *Instance) AsExtern() *Extern {
+	ptr := C.wasm_instance_as_extern(i.ptr())
+	return mkExtern(ptr, i.freelist, i.owner())
 }

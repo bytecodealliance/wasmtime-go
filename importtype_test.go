@@ -8,7 +8,7 @@ func TestImportType(t *testing.T) {
 	if ty.Module() != "a" {
 		panic("invalid module")
 	}
-	if ty.Name() != "b" {
+	if *ty.Name() != "b" {
 		panic("invalid name")
 	}
 	if ty.Type().FuncType() == nil {
@@ -20,7 +20,7 @@ func TestImportType(t *testing.T) {
 	if ty.Module() != "" {
 		panic("invalid module")
 	}
-	if ty.Name() != "" {
+	if *ty.Name() != "" {
 		panic("invalid name")
 	}
 	if ty.Type().GlobalType() == nil {

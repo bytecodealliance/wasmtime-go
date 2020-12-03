@@ -34,7 +34,7 @@ import (
 // Modules organized WebAssembly programs as the unit of deployment, loading, and compilation.
 type Module struct {
 	_ptr   *C.wasm_module_t
-	Engine *Engine
+	_owner interface{}
 }
 
 // NewModule compiles a new `Module` from the `wasm` provided with the given configuration
@@ -58,7 +58,7 @@ func NewModule(engine *Engine, wasm []byte) (*Module, error) {
 		return nil, mkError(err)
 	}
 
-	return mkModule(ptr, engine), nil
+	return mkModule(ptr, nil), nil
 }
 
 // NewModuleFromFile reads the contents of the `file` provided and interprets them as either the
@@ -99,11 +99,13 @@ func ModuleValidate(store *Store, wasm []byte) error {
 	return mkError(err)
 }
 
-func mkModule(ptr *C.wasm_module_t, engine *Engine) *Module {
-	module := &Module{_ptr: ptr, Engine: engine}
-	runtime.SetFinalizer(module, func(module *Module) {
-		C.wasm_module_delete(module._ptr)
-	})
+func mkModule(ptr *C.wasm_module_t, owner interface{}) *Module {
+	module := &Module{_ptr: ptr}
+	if owner == nil {
+		runtime.SetFinalizer(module, func(module *Module) {
+			C.wasm_module_delete(module._ptr)
+		})
+	}
 	return module
 }
 
@@ -113,8 +115,38 @@ func (m *Module) ptr() *C.wasm_module_t {
 	return ret
 }
 
+func (m *Module) owner() interface{} {
+	if m._owner != nil {
+		return m._owner
+	}
+	return m
+}
+
+// Type returns a `ModuleType` that corresponds for this module.
+func (m *Module) Type() *ModuleType {
+	ptr := C.wasm_module_type(m.ptr())
+	runtime.KeepAlive(m)
+	return mkModuleType(ptr, nil)
+}
+
 type importTypeList struct {
 	vec C.wasm_importtype_vec_t
+}
+
+func (list *importTypeList) mkGoList() []*ImportType {
+	runtime.SetFinalizer(list, func(imports *importTypeList) {
+		C.wasm_importtype_vec_delete(&imports.vec)
+	})
+
+	ret := make([]*ImportType, int(list.vec.size))
+	base := unsafe.Pointer(list.vec.data)
+	var ptr *C.wasm_importtype_t
+	for i := 0; i < int(list.vec.size); i++ {
+		ptr := *(**C.wasm_importtype_t)(unsafe.Pointer(uintptr(base) + unsafe.Sizeof(ptr)*uintptr(i)))
+		ty := mkImportType(ptr, list)
+		ret[i] = ty
+	}
+	return ret
 }
 
 // Imports returns a list of `ImportType` items which are the items imported by this
@@ -142,25 +174,29 @@ type exportTypeList struct {
 	vec C.wasm_exporttype_vec_t
 }
 
+func (list *exportTypeList) mkGoList() []*ExportType {
+	runtime.SetFinalizer(list, func(exports *exportTypeList) {
+		C.wasm_exporttype_vec_delete(&exports.vec)
+	})
+
+	ret := make([]*ExportType, int(list.vec.size))
+	base := unsafe.Pointer(list.vec.data)
+	var ptr *C.wasm_exporttype_t
+	for i := 0; i < int(list.vec.size); i++ {
+		ptr := *(**C.wasm_exporttype_t)(unsafe.Pointer(uintptr(base) + unsafe.Sizeof(ptr)*uintptr(i)))
+		ty := mkExportType(ptr, list)
+		ret[i] = ty
+	}
+	return ret
+}
+
 // Exports returns a list of `ExportType` items which are the items that will
 // be exported by this module after instantiation.
 func (m *Module) Exports() []*ExportType {
 	exports := &exportTypeList{}
 	C.wasm_module_exports(m.ptr(), &exports.vec)
 	runtime.KeepAlive(m)
-	runtime.SetFinalizer(exports, func(exports *exportTypeList) {
-		C.wasm_exporttype_vec_delete(&exports.vec)
-	})
-
-	ret := make([]*ExportType, int(exports.vec.size))
-	base := unsafe.Pointer(exports.vec.data)
-	var ptr *C.wasm_exporttype_t
-	for i := 0; i < int(exports.vec.size); i++ {
-		ptr := *(**C.wasm_exporttype_t)(unsafe.Pointer(uintptr(base) + unsafe.Sizeof(ptr)*uintptr(i)))
-		ty := mkExportType(ptr, exports)
-		ret[i] = ty
-	}
-	return ret
+	return exports.mkGoList()
 }
 
 // NewModuleDeserialize decodes and deserializes in-memory bytes previously
@@ -195,7 +231,7 @@ func NewModuleDeserialize(engine *Engine, encoded []byte) (*Module, error) {
 		return nil, mkError(err)
 	}
 
-	return mkModule(ptr, engine), nil
+	return mkModule(ptr, nil), nil
 }
 
 // Serialize will convert this in-memory compiled module into a list of bytes.
@@ -216,4 +252,9 @@ func (m *Module) Serialize() ([]byte, error) {
 	ret := C.GoBytes(unsafe.Pointer(retVec.data), C.int(retVec.size))
 	C.wasm_byte_vec_delete(&retVec)
 	return ret, nil
+}
+
+func (m *Module) AsExtern() *Extern {
+	ptr := C.wasm_module_as_extern(m.ptr())
+	return mkExtern(ptr, nil, m.owner())
 }

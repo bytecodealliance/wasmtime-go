@@ -94,6 +94,12 @@ func (cfg *Config) SetWasmMultiValue(enabled bool) {
 	runtime.KeepAlive(cfg)
 }
 
+// SetWasmModuleLinking configures whether the wasm module linking proposal is enabled
+func (cfg *Config) SetWasmModuleLinking(enabled bool) {
+	C.wasmtime_config_wasm_module_linking_set(cfg.ptr(), C.bool(enabled))
+	runtime.KeepAlive(cfg)
+}
+
 // SetStrategy configures what compilation strategy is used to compile wasm code
 func (cfg *Config) SetStrategy(strat Strategy) error {
 	err := C.wasmtime_config_strategy_set(cfg.ptr(), C.wasmtime_strategy_t(strat))

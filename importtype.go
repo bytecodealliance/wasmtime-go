@@ -61,12 +61,18 @@ func (ty *ImportType) Module() string {
 	return ret
 }
 
-// Name returns the name in the module this import type is importing
-func (ty *ImportType) Name() string {
+// Name returns the name in the module this import type is importing.
+//
+// Note that the returned string may be `nil` with the module linking proposal
+// where this field is optional in the import type.
+func (ty *ImportType) Name() *string {
 	ptr := C.wasm_importtype_name(ty.ptr())
+	if ptr == nil {
+		return nil
+	}
 	ret := C.GoStringN(ptr.data, C.int(ptr.size))
 	runtime.KeepAlive(ty)
-	return ret
+	return &ret
 }
 
 // Type returns the type of item this import type expects

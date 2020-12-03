@@ -52,7 +52,7 @@ func TestModuleImports(t *testing.T) {
 	if imports[0].Module() != "" {
 		panic("wrong import module")
 	}
-	if imports[0].Name() != "f" {
+	if *imports[0].Name() != "f" {
 		panic("wrong import name")
 	}
 	if imports[0].Type().FuncType() == nil {
@@ -68,7 +68,7 @@ func TestModuleImports(t *testing.T) {
 	if imports[1].Module() != "a" {
 		panic("wrong import module")
 	}
-	if imports[1].Name() != "g" {
+	if *imports[1].Name() != "g" {
 		panic("wrong import name")
 	}
 	if imports[1].Type().GlobalType() == nil {
@@ -81,7 +81,7 @@ func TestModuleImports(t *testing.T) {
 	if imports[2].Module() != "" {
 		panic("wrong import module")
 	}
-	if imports[2].Name() != "" {
+	if *imports[2].Name() != "" {
 		panic("wrong import name")
 	}
 	if imports[2].Type().TableType() == nil {
@@ -94,7 +94,7 @@ func TestModuleImports(t *testing.T) {
 	if imports[3].Module() != "" {
 		panic("wrong import module")
 	}
-	if imports[3].Name() != "" {
+	if *imports[3].Name() != "" {
 		panic("wrong import name")
 	}
 	if imports[3].Type().MemoryType() == nil {
