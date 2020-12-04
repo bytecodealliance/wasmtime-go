@@ -1,6 +1,6 @@
 package wasmtime
 
-// #include <wasm.h>
+// #include <wasmtime.h>
 import "C"
 import "runtime"
 
@@ -89,6 +89,26 @@ func (e *Extern) Table() *Table {
 	}
 
 	return mkTable(ret, e.freelist, e.owner())
+}
+
+// Module returns a Module if this export is a module or nil otherwise
+func (e *Extern) Module() *Module {
+	ret := C.wasm_extern_as_module(e.ptr())
+	if ret == nil {
+		return nil
+	}
+
+	return mkModule(ret, e.owner())
+}
+
+// Instance returns a Instance if this export is a module or nil otherwise
+func (e *Extern) Instance() *Instance {
+	ret := C.wasm_extern_as_instance(e.ptr())
+	if ret == nil {
+		return nil
+	}
+
+	return mkInstance(ret, e.freelist, e.owner())
 }
 
 func (e *Extern) AsExtern() *Extern {
