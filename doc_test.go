@@ -2,6 +2,9 @@ package wasmtime
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"runtime"
 )
 
@@ -269,6 +272,83 @@ func Example_multi() {
 
 	// Output: > 4 2
 	//  0 1 2 3 4 5 6 7 8 9
+}
+
+const TextWat = `
+(module
+    ;; Import the required fd_write WASI function which will write the given io vectors to stdout
+    ;; The function signature for fd_write is:
+    ;; (File Descriptor, *iovs, iovs_len, nwritten) -> Returns number of bytes written
+    (import "wasi_snapshot_preview1" "fd_write" (func $fd_write (param i32 i32 i32 i32) (result i32)))
+
+    (memory 1)
+    (export "memory" (memory 0))
+
+    ;; Write 'hello world\n' to memory at an offset of 8 bytes
+    ;; Note the trailing newline which is required for the text to appear
+    (data (i32.const 8) "hello world\n")
+
+    (func $main (export "_start")
+        ;; Creating a new io vector within linear memory
+        (i32.store (i32.const 0) (i32.const 8))  ;; iov.iov_base - This is a pointer to the start of the 'hello world\n' string
+        (i32.store (i32.const 4) (i32.const 12))  ;; iov.iov_len - The length of the 'hello world\n' string
+
+        (call $fd_write
+            (i32.const 1) ;; file_descriptor - 1 for stdout
+            (i32.const 0) ;; *iovs - The pointer to the iov array, which is stored at memory location 0
+            (i32.const 1) ;; iovs_len - We're printing 1 string stored in an iov - so one.
+            (i32.const 20) ;; nwritten - A place in memory to store the number of bytes written
+        )
+        drop ;; Discard the number of bytes written from the top of the stack
+    )
+)
+`
+
+// An example of linking WASI to the runtime in order to interact with the system.
+// It uses the WAT code from https://github.com/bytecodealliance/wasmtime/blob/main/docs/WASI-tutorial.md#web-assembly-text-example
+func Example_wasi() {
+
+	dir, err := ioutil.TempDir("", "out")
+	check(err)
+	defer os.RemoveAll(dir)
+	stdoutPath := filepath.Join(dir, "stdout")
+
+	engine := NewEngine()
+	store := NewStore(engine)
+
+	linker := NewLinker(store)
+
+	// Configure WASI imports to write stdout into a file.
+	wasiConfig := NewWasiConfig()
+	wasiConfig.SetStdoutFile(stdoutPath)
+
+	// Set the version to the same as in the WAT.
+	wasi, err := NewWasiInstance(store, wasiConfig, "wasi_snapshot_preview1")
+	check(err)
+
+	// Link WASI
+	err = linker.DefineWasi(wasi)
+	check(err)
+
+	// Create our module
+	wasm, err := Wat2Wasm(TextWat)
+	check(err)
+	module, err := NewModule(store.Engine, wasm)
+	check(err)
+	instance, err := linker.Instantiate(module)
+	check(err)
+
+	// Run the function
+	nom := instance.GetExport("_start").Func()
+	_, err = nom.Call()
+	check(err)
+
+	// Print WASM stdout
+	out, err := ioutil.ReadFile(stdoutPath)
+	check(err)
+	fmt.Print(string(out))
+
+	// Output: hello world
 }
 
 func check(e error) {
