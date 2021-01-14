@@ -26,28 +26,25 @@ type Instance struct {
 // This will also run the `start` function of the instance, returning an error
 // if it traps.
 func NewInstance(store *Store, module *Module, imports []*Extern) (*Instance, error) {
-	importsRaw := make([]*C.wasm_extern_t, len(imports))
+	importsRaw := C.wasm_extern_vec_t{}
+	C.wasm_extern_vec_new_uninitialized(&importsRaw, C.size_t(len(imports)))
+	base := unsafe.Pointer(importsRaw.data)
 	for i, imp := range imports {
-		importsRaw[i] = imp.ptr()
-	}
-	var importsRawPtr **C.wasm_extern_t
-	if len(imports) > 0 {
-		importsRawPtr = &importsRaw[0]
+		ptr := C.wasm_extern_copy(imp.ptr())
+		*(**C.wasm_extern_t)(unsafe.Pointer(uintptr(base) + unsafe.Sizeof(ptr)*uintptr(i))) = ptr
 	}
 	var trap *C.wasm_trap_t
 	var ptr *C.wasm_instance_t
 	err := C.wasmtime_instance_new(
 		store.ptr(),
 		module.ptr(),
-		importsRawPtr,
-		C.size_t(len(imports)),
+		&importsRaw,
 		&ptr,
 		&trap,
 	)
 	runtime.KeepAlive(store)
 	runtime.KeepAlive(module)
-	runtime.KeepAlive(imports)
-	runtime.KeepAlive(importsRaw)
+	C.wasm_extern_vec_delete(&importsRaw)
 	if err != nil {
 		return nil, mkError(err)
 	}

@@ -23,10 +23,8 @@ void go_externref_new_with_finalizer(
 );
 wasmtime_error_t *go_wasmtime_func_call(
     wasm_func_t *func,
-    const wasm_val_t *args,
-    size_t num_args,
-    wasm_val_t *results,
-    size_t num_results,
+    const wasm_val_vec_t *args,
+    wasm_val_vec_t *results,
     wasm_trap_t **trap,
     size_t go_id
 );
