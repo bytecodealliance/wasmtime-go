@@ -32,7 +32,6 @@ type Caller struct {
 // which can't be garbage collected.
 type newMapEntry struct {
 	callback func(*Caller, []Val) ([]Val, *Trap)
-	nparams  int
 	results  []*ValType
 }
 
@@ -73,7 +72,6 @@ func NewFunc(
 	idx := gNewMapSlab.allocate()
 	gNewMap[idx] = newMapEntry{
 		callback: f,
-		nparams:  len(ty.Params()),
 		results:  ty.Results(),
 	}
 	gLock.Unlock()
@@ -95,8 +93,8 @@ func goTrampolineNew(
 	caller_id C.size_t,
 	callerPtr *C.wasmtime_caller_t,
 	env C.size_t,
-	argsPtr *C.wasm_val_t,
-	resultsPtr *C.wasm_val_t,
+	argsPtr *C.wasm_val_vec_t,
+	resultsPtr *C.wasm_val_vec_t,
 ) *C.wasm_trap_t {
 	idx := int(env)
 	gLock.Lock()
@@ -107,9 +105,9 @@ func goTrampolineNew(
 	caller := &Caller{ptr: callerPtr, freelist: freelist}
 	defer func() { caller.ptr = nil }()
 
-	params := make([]Val, entry.nparams)
+	params := make([]Val, int(argsPtr.size))
 	var val C.wasm_val_t
-	base := unsafe.Pointer(argsPtr)
+	base := unsafe.Pointer(argsPtr.data)
 	for i := 0; i < len(params); i++ {
 		ptr := (*C.wasm_val_t)(unsafe.Pointer(uintptr(base) + uintptr(i)*unsafe.Sizeof(val)))
 		params[i] = mkVal(ptr, freelist)
@@ -144,7 +142,7 @@ func goTrampolineNew(
 		return trap.ptr()
 	}
 
-	base = unsafe.Pointer(resultsPtr)
+	base = unsafe.Pointer(resultsPtr.data)
 	for i := 0; i < len(results); i++ {
 		ptr := (*C.wasm_val_t)(unsafe.Pointer(uintptr(base) + uintptr(i)*unsafe.Sizeof(val)))
 		C.wasm_val_copy(ptr, results[i].ptr())
@@ -274,8 +272,8 @@ func goTrampolineWrap(
 	caller_id C.size_t,
 	callerPtr *C.wasmtime_caller_t,
 	env C.size_t,
-	argsPtr *C.wasm_val_t,
-	resultsPtr *C.wasm_val_t,
+	argsPtr *C.wasm_val_vec_t,
+	resultsPtr *C.wasm_val_vec_t,
 ) *C.wasm_trap_t {
 	// Convert all our parameters to `[]reflect.Value`, taking special care
 	// for `*Caller` but otherwise reading everything through `Val`.
@@ -291,7 +289,7 @@ func goTrampolineWrap(
 
 	ty := entry.callback.Type()
 	params := make([]reflect.Value, ty.NumIn())
-	base := unsafe.Pointer(argsPtr)
+	base := unsafe.Pointer(argsPtr.data)
 	var raw C.wasm_val_t
 	for i := 0; i < len(params); i++ {
 		if ty.In(i) == reflect.TypeOf(caller) {
@@ -321,7 +319,7 @@ func goTrampolineWrap(
 
 	// And now we write all the results into memory depending on the type
 	// of value that was returned.
-	base = unsafe.Pointer(resultsPtr)
+	base = unsafe.Pointer(resultsPtr.data)
 	for _, result := range results {
 		ptr := (*C.wasm_val_t)(base)
 		switch val := result.Interface().(type) {
@@ -446,51 +444,49 @@ func (f *Func) Call(args ...interface{}) (interface{}, error) {
 	if len(args) > len(params) {
 		return nil, errors.New("too many arguments provided")
 	}
-	paramsRaw := make([]C.wasm_val_t, len(args))
-	synthesizedParams := make([]Val, 0)
+	paramsVec := C.wasm_val_vec_t{}
+	C.wasm_val_vec_new_uninitialized(&paramsVec, C.size_t(len(args)))
 	for i, param := range args {
+		var rawVal Val
 		switch val := param.(type) {
 		case int:
 			switch params[i].Kind() {
 			case KindI32:
-				paramsRaw[i] = *ValI32(int32(val)).ptr()
+				rawVal = ValI32(int32(val))
 			case KindI64:
-				paramsRaw[i] = *ValI64(int64(val)).ptr()
+				rawVal = ValI64(int64(val))
 			default:
 				return nil, errors.New("integer provided for non-integer argument")
 			}
 		case int32:
-			paramsRaw[i] = *ValI32(val).ptr()
+			rawVal = ValI32(val)
 		case int64:
-			paramsRaw[i] = *ValI64(val).ptr()
+			rawVal = ValI64(val)
 		case float32:
-			paramsRaw[i] = *ValF32(val).ptr()
+			rawVal = ValF32(val)
 		case float64:
-			paramsRaw[i] = *ValF64(val).ptr()
+			rawVal = ValF64(val)
 		case *Func:
-			ffi := ValFuncref(val)
-			paramsRaw[i] = *ffi.ptr()
-			synthesizedParams = append(synthesizedParams, ffi)
+			rawVal = ValFuncref(val)
 		case Val:
-			paramsRaw[i] = *val.ptr()
+			rawVal = val
 
 		default:
-			ffi := ValExternref(val)
-			paramsRaw[i] = *ffi.ptr()
-			synthesizedParams = append(synthesizedParams, ffi)
+			rawVal = ValExternref(val)
 		}
+
+		base := uintptr(unsafe.Pointer(paramsVec.data))
+		ptr := rawVal.ptr()
+		C.wasm_val_copy(
+			(*C.wasm_val_t)(unsafe.Pointer(base+unsafe.Sizeof(*ptr)*uintptr(i))),
+			ptr,
+		)
+		runtime.KeepAlive(rawVal)
 	}
 
-	resultsRaw := make([]C.wasm_val_t, f.ResultArity())
-
-	var paramsPtr, resultsPtr *C.wasm_val_t
+	resultsVec := C.wasm_val_vec_t{}
+	C.wasm_val_vec_new_uninitialized(&resultsVec, C.size_t(f.ResultArity()))
 	var trap *C.wasm_trap_t
-	if len(paramsRaw) > 0 {
-		paramsPtr = &paramsRaw[0]
-	}
-	if len(resultsRaw) > 0 {
-		resultsPtr = &resultsRaw[0]
-	}
 
 	// Use our `freelist` as an anchor to get an identifier which our C
 	// shim shoves into thread-local storage and then pops out on the
@@ -502,17 +498,14 @@ func (f *Func) Call(args ...interface{}) (interface{}, error) {
 
 	err := C.go_wasmtime_func_call(
 		f.ptr(),
-		paramsPtr,
-		C.size_t(len(paramsRaw)),
-		resultsPtr,
-		C.size_t(len(resultsRaw)),
+		&paramsVec,
+		&resultsVec,
 		&trap,
 		caller_id,
 	)
 	runtime.KeepAlive(f)
-	runtime.KeepAlive(paramsRaw)
 	runtime.KeepAlive(args)
-	runtime.KeepAlive(synthesizedParams)
+	C.wasm_val_vec_delete(&paramsVec)
 
 	// Clear our thread's caller id from the global maps now that the call
 	// is finished.
@@ -543,15 +536,21 @@ func (f *Func) Call(args ...interface{}) (interface{}, error) {
 		return nil, wrappedTrap
 	}
 
-	if len(resultsRaw) == 0 {
+	if resultsVec.size == 0 {
 		return nil, nil
-	} else if len(resultsRaw) == 1 {
-		return takeVal(&resultsRaw[0], f.freelist).Get(), nil
+	} else if resultsVec.size == 1 {
+		ret := mkVal(resultsVec.data, f.freelist).Get()
+		C.wasm_val_vec_delete(&resultsVec)
+		return ret, nil
 	} else {
-		results := make([]Val, len(resultsRaw))
-		for i := 0; i < len(resultsRaw); i++ {
-			results[i] = takeVal(&resultsRaw[i], f.freelist)
+		results := make([]Val, int(resultsVec.size))
+		base := uintptr(unsafe.Pointer(resultsVec.data))
+		var val C.wasm_val_t
+		for i := 0; i < int(resultsVec.size); i++ {
+			ptr := (*C.wasm_val_t)(unsafe.Pointer(base + unsafe.Sizeof(val)*uintptr(i)))
+			results[i] = mkVal(ptr, f.freelist)
 		}
+		C.wasm_val_vec_delete(&resultsVec)
 		return results, nil
 	}
 
