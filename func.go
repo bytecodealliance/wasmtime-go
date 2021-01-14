@@ -475,10 +475,10 @@ func (f *Func) Call(args ...interface{}) (interface{}, error) {
 			rawVal = ValExternref(val)
 		}
 
-		base := uintptr(unsafe.Pointer(paramsVec.data))
+		base := unsafe.Pointer(paramsVec.data)
 		ptr := rawVal.ptr()
 		C.wasm_val_copy(
-			(*C.wasm_val_t)(unsafe.Pointer(base+unsafe.Sizeof(*ptr)*uintptr(i))),
+			(*C.wasm_val_t)(unsafe.Pointer(uintptr(base)+unsafe.Sizeof(*ptr)*uintptr(i))),
 			ptr,
 		)
 		runtime.KeepAlive(rawVal)
@@ -544,10 +544,10 @@ func (f *Func) Call(args ...interface{}) (interface{}, error) {
 		return ret, nil
 	} else {
 		results := make([]Val, int(resultsVec.size))
-		base := uintptr(unsafe.Pointer(resultsVec.data))
+		base := unsafe.Pointer(resultsVec.data)
 		var val C.wasm_val_t
 		for i := 0; i < int(resultsVec.size); i++ {
-			ptr := (*C.wasm_val_t)(unsafe.Pointer(base + unsafe.Sizeof(val)*uintptr(i)))
+			ptr := (*C.wasm_val_t)(unsafe.Pointer(uintptr(base) + unsafe.Sizeof(val)*uintptr(i)))
 			results[i] = mkVal(ptr, f.freelist)
 		}
 		C.wasm_val_vec_delete(&resultsVec)

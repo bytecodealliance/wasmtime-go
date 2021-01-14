@@ -28,10 +28,10 @@ type Instance struct {
 func NewInstance(store *Store, module *Module, imports []*Extern) (*Instance, error) {
 	importsRaw := C.wasm_extern_vec_t{}
 	C.wasm_extern_vec_new_uninitialized(&importsRaw, C.size_t(len(imports)))
-	base := uintptr(unsafe.Pointer(importsRaw.data))
+	base := unsafe.Pointer(importsRaw.data)
 	for i, imp := range imports {
 		ptr := C.wasm_extern_copy(imp.ptr())
-		*(**C.wasm_extern_t)(unsafe.Pointer(base + unsafe.Sizeof(ptr)*uintptr(i))) = ptr
+		*(**C.wasm_extern_t)(unsafe.Pointer(uintptr(base) + unsafe.Sizeof(ptr)*uintptr(i))) = ptr
 	}
 	var trap *C.wasm_trap_t
 	var ptr *C.wasm_instance_t
