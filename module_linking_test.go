@@ -13,8 +13,8 @@ func TestModuleType(t *testing.T) {
           (module
             (import "" "f" (func))
             (import "a" "g" (global i32))
-            (import "" (table 1 funcref))
-            (import "" "" (memory 1))
+            (import "b" (table 1 funcref))
+            (import "c" "" (memory 1))
 
 	    (func (export "y"))
 	    (global (export "z") i32 (i32.const 0))
