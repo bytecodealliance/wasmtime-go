@@ -34,7 +34,7 @@ This Go library uses CGO to consume the C API of the [Wasmtime
 project][wasmtime] which is written in Rust. Precompiled binaries of Wasmtime
 are checked into this repository on tagged releases so you won't have to install
 Wasmtime locally, but it means that this project only works on Linux x86\_64,
-macOS x86\_64 , and Windows x86\_64 currently. Buliding on other platforms will
+macOS x86\_64 , and Windows x86\_64 currently. Building on other platforms will
 need to arrange to build Wasmtime and use `CGO_*` env vars to compile correctly.
 
 This project has been tested with Go 1.13 or later. It is not recommended to
