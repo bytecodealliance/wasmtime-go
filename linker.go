@@ -113,16 +113,18 @@ func (l *Linker) DefineWasi(instance *WasiInstance) error {
 // Returns an error if the instance's imports couldn't be satisfied, had the
 // wrong types, or if a trap happened executing the start function.
 func (l *Linker) Instantiate(module *Module) (*Instance, error) {
-	var trap *C.wasm_trap_t
 	var ret *C.wasm_instance_t
-	err := C.wasmtime_linker_instantiate(l.ptr(), module.ptr(), &ret, &trap)
+	var err *C.wasmtime_error_t
+	trap := enterWasm(l.Store.freelist, func(trap **C.wasm_trap_t) {
+		err = C.wasmtime_linker_instantiate(l.ptr(), module.ptr(), &ret, trap)
+	})
 	runtime.KeepAlive(l)
 	runtime.KeepAlive(module)
+	if trap != nil {
+		return nil, trap
+	}
 	if err != nil {
 		return nil, mkError(err)
-	}
-	if trap != nil {
-		return nil, mkTrap(trap)
 	}
 	return mkInstance(ret, l.Store.freelist, nil), nil
 }

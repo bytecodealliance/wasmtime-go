@@ -1,15 +1,13 @@
 #include "_cgo_export.h"
 #include "shims.h"
 
-__thread size_t caller_id;
-
 static wasm_trap_t* trampoline(
    const wasmtime_caller_t *caller,
    void *env,
    const wasm_val_vec_t *args,
    wasm_val_vec_t *results
 ) {
-    return goTrampolineNew(caller_id, (wasmtime_caller_t*) caller, (size_t) env, (wasm_val_vec_t*) args, results);
+    return goTrampolineNew((wasmtime_caller_t*) caller, (size_t) env, (wasm_val_vec_t*) args, results);
 }
 
 static wasm_trap_t* wrap_trampoline(
@@ -18,7 +16,7 @@ static wasm_trap_t* wrap_trampoline(
    const wasm_val_vec_t *args,
    wasm_val_vec_t *results
 ) {
-    return goTrampolineWrap(caller_id, (wasmtime_caller_t*) caller, (size_t) env, (wasm_val_vec_t*) args, results);
+    return goTrampolineWrap((wasmtime_caller_t*) caller, (size_t) env, (wasm_val_vec_t*) args, results);
 }
 
 wasm_func_t *c_func_new_with_env(wasm_store_t *store, wasm_functype_t *ty, size_t env, int wrap) {
@@ -31,13 +29,9 @@ wasmtime_error_t *go_wasmtime_func_call(
     wasm_func_t *func,
     const wasm_val_vec_t *args,
     wasm_val_vec_t *results,
-    wasm_trap_t **trap,
-    size_t go_id
+    wasm_trap_t **trap
 ) {
-  size_t prev_caller_id = caller_id;
-  caller_id = go_id;
   wasmtime_error_t *ret = wasmtime_func_call(func, args, results, trap);
-  caller_id = prev_caller_id;
   return ret;
 }
 
