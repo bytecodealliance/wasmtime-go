@@ -31,12 +31,20 @@ type Caller struct {
 // objects. Otherwise that'll create a cycle between the Rust and Go heaps
 // which can't be garbage collected.
 type newMapEntry struct {
-	callback func(*Caller, []Val) ([]Val, *Trap)
-	results  []*ValType
+	callback  func(*Caller, []Val) ([]Val, *Trap)
+	results   []*ValType
+	caller_id C.size_t
 }
 
 type wrapMapEntry struct {
-	callback reflect.Value
+	callback  reflect.Value
+	caller_id C.size_t
+}
+
+type callerState struct {
+	freelist  *freeList
+	lastPanic interface{}
+	cnt       uint
 }
 
 var gLock sync.Mutex
@@ -44,8 +52,7 @@ var gNewMap = make(map[int]newMapEntry)
 var gNewMapSlab slab
 var gWrapMap = make(map[int]wrapMapEntry)
 var gWrapMapSlab slab
-var gCallerPanics = make(map[C.size_t]interface{})
-var gCallerFreeLists = make(map[C.size_t]*freeList)
+var gCallerState = make(map[C.size_t]*callerState)
 
 // NewFunc creates a new `Func` with the given `ty` which, when called, will call `f`
 //
@@ -71,8 +78,9 @@ func NewFunc(
 	gLock.Lock()
 	idx := gNewMapSlab.allocate()
 	gNewMap[idx] = newMapEntry{
-		callback: f,
-		results:  ty.Results(),
+		callback:  f,
+		results:   ty.Results(),
+		caller_id: C.size_t(uintptr(unsafe.Pointer(store.freelist))),
 	}
 	gLock.Unlock()
 
@@ -90,7 +98,6 @@ func NewFunc(
 
 //export goTrampolineNew
 func goTrampolineNew(
-	caller_id C.size_t,
 	callerPtr *C.wasmtime_caller_t,
 	env C.size_t,
 	argsPtr *C.wasm_val_vec_t,
@@ -99,7 +106,8 @@ func goTrampolineNew(
 	idx := int(env)
 	gLock.Lock()
 	entry := gNewMap[idx]
-	freelist := gCallerFreeLists[caller_id]
+	caller_id := entry.caller_id
+	freelist := gCallerState[caller_id].freelist
 	gLock.Unlock()
 
 	caller := &Caller{ptr: callerPtr, freelist: freelist}
@@ -133,7 +141,7 @@ func goTrampolineNew(
 	}()
 	if trap == nil && lastPanic != nil {
 		gLock.Lock()
-		gCallerPanics[caller_id] = lastPanic
+		gCallerState[caller_id].lastPanic = lastPanic
 		gLock.Unlock()
 		return nil
 	}
@@ -228,7 +236,8 @@ func WrapFunc(
 	gLock.Lock()
 	idx := gWrapMapSlab.allocate()
 	gWrapMap[idx] = wrapMapEntry{
-		callback: val,
+		callback:  val,
+		caller_id: C.size_t(uintptr(unsafe.Pointer(store.freelist))),
 	}
 	gLock.Unlock()
 
@@ -269,7 +278,6 @@ func typeToValType(ty reflect.Type) *ValType {
 
 //export goTrampolineWrap
 func goTrampolineWrap(
-	caller_id C.size_t,
 	callerPtr *C.wasmtime_caller_t,
 	env C.size_t,
 	argsPtr *C.wasm_val_vec_t,
@@ -280,7 +288,8 @@ func goTrampolineWrap(
 	idx := int(env)
 	gLock.Lock()
 	entry := gWrapMap[idx]
-	freelist := gCallerFreeLists[caller_id]
+	caller_id := entry.caller_id
+	freelist := gCallerState[caller_id].freelist
 	gLock.Unlock()
 
 	// Wrap our `Caller` argument in case it's needed
@@ -312,7 +321,7 @@ func goTrampolineWrap(
 	}()
 	if lastPanic != nil {
 		gLock.Lock()
-		gCallerPanics[caller_id] = lastPanic
+		gCallerState[caller_id].lastPanic = lastPanic
 		gLock.Unlock()
 		return nil
 	}
@@ -486,54 +495,26 @@ func (f *Func) Call(args ...interface{}) (interface{}, error) {
 
 	resultsVec := C.wasm_val_vec_t{}
 	C.wasm_val_vec_new_uninitialized(&resultsVec, C.size_t(f.ResultArity()))
-	var trap *C.wasm_trap_t
 
-	// Use our `freelist` as an anchor to get an identifier which our C
-	// shim shoves into thread-local storage and then pops out on the
-	// other side when a host function is called.
-	gLock.Lock()
-	caller_id := C.size_t(uintptr(unsafe.Pointer(f.freelist)))
-	gCallerFreeLists[caller_id] = f.freelist
-	gLock.Unlock()
-
-	err := C.go_wasmtime_func_call(
-		f.ptr(),
-		&paramsVec,
-		&resultsVec,
-		&trap,
-		caller_id,
-	)
+	var err *C.wasmtime_error_t
+	trap := enterWasm(f.freelist, func(trap **C.wasm_trap_t) {
+		err = C.go_wasmtime_func_call(
+			f.ptr(),
+			&paramsVec,
+			&resultsVec,
+			trap,
+		)
+	})
 	runtime.KeepAlive(f)
 	runtime.KeepAlive(args)
 	C.wasm_val_vec_delete(&paramsVec)
 
-	// Clear our thread's caller id from the global maps now that the call
-	// is finished.
-	gLock.Lock()
-	lastPanic := gCallerPanics[caller_id]
-	delete(gCallerPanics, caller_id)
-	delete(gCallerFreeLists, caller_id)
-	gLock.Unlock()
+	if trap != nil {
+		return nil, trap
+	}
 
 	if err != nil {
 		return nil, mkError(err)
-	}
-
-	// Take ownership of the return trapped pointer
-	var wrappedTrap *Trap
-	if trap != nil {
-		wrappedTrap = mkTrap(trap)
-	}
-
-	// Check to see if we called a Go host function which panicked.
-	if lastPanic != nil {
-		panic(lastPanic)
-	}
-
-	// Return the trap if one happened, but note that this comes after the
-	// panic check since that takes priority.
-	if trap != nil {
-		return nil, wrappedTrap
 	}
 
 	if resultsVec.size == 0 {
@@ -581,4 +562,59 @@ func (c *Caller) GetExport(name string) *Extern {
 	}
 
 	return mkExtern(ptr, c.freelist, nil)
+}
+
+// Shim function that's expected to wrap any invocations of WebAssembly from Go
+// itself.
+func enterWasm(freelist *freeList, wasm func(**C.wasm_trap_t)) *Trap {
+	// First thing we need to do is update `gCallerState` with the actual
+	// pointer to `freelist` since when calling wasm we may call a Go
+	// function which needs the freelist.
+	//
+	// Note that if there's already an entry in the map we just increase
+	// the reference count.
+	gLock.Lock()
+	caller_id := C.size_t(uintptr(unsafe.Pointer(freelist)))
+	if _, ok := gCallerState[caller_id]; !ok {
+		gCallerState[caller_id] = &callerState{freelist: freelist}
+	}
+	gCallerState[caller_id].cnt++
+	gLock.Unlock()
+
+	// After `gCallerState` is configured we can actually enter the wasm
+	// code. We handle traps/panics here so we pass in the trap pointer.
+	//
+	// Note that it's assumed that this never panics.
+	var trap *C.wasm_trap_t
+	wasm(&trap)
+
+	// After wasm has finished we need to remove `freelist` from the global
+	// `gCallerState` map to ensure it can eventually get GC'd. Here we
+	// also propagate any Go-originating panics if they're found.
+	gLock.Lock()
+	state := gCallerState[caller_id]
+	lastPanic := state.lastPanic
+	state.lastPanic = nil
+	state.cnt--
+	if state.cnt == 0 {
+		delete(gCallerState, caller_id)
+	}
+	gLock.Unlock()
+
+	// Take ownership of the return trapped pointer to ensure we don't leak
+	// it, even if Go panicked.
+	var wrappedTrap *Trap
+	if trap != nil {
+		wrappedTrap = mkTrap(trap)
+	}
+
+	// Check to see if we called a Go host function which panicked, in
+	// which case we propagate that here.
+	if lastPanic != nil {
+		panic(lastPanic)
+	}
+
+	// And otherwise if Go didn't panic we return whether the function
+	// trapped or not.
+	return wrappedTrap
 }

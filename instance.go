@@ -33,23 +33,25 @@ func NewInstance(store *Store, module *Module, imports []*Extern) (*Instance, er
 		ptr := C.wasm_extern_copy(imp.ptr())
 		*(**C.wasm_extern_t)(unsafe.Pointer(uintptr(base) + unsafe.Sizeof(ptr)*uintptr(i))) = ptr
 	}
-	var trap *C.wasm_trap_t
 	var ptr *C.wasm_instance_t
-	err := C.wasmtime_instance_new(
-		store.ptr(),
-		module.ptr(),
-		&importsRaw,
-		&ptr,
-		&trap,
-	)
+	var err *C.wasmtime_error_t
+	trap := enterWasm(store.freelist, func(trap **C.wasm_trap_t) {
+		err = C.wasmtime_instance_new(
+			store.ptr(),
+			module.ptr(),
+			&importsRaw,
+			&ptr,
+			trap,
+		)
+	})
 	runtime.KeepAlive(store)
 	runtime.KeepAlive(module)
 	C.wasm_extern_vec_delete(&importsRaw)
+	if trap != nil {
+		return nil, trap
+	}
 	if err != nil {
 		return nil, mkError(err)
-	}
-	if trap != nil {
-		return nil, mkTrap(trap)
 	}
 	return mkInstance(ptr, store.freelist, nil), nil
 }

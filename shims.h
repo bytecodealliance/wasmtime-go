@@ -25,8 +25,7 @@ wasmtime_error_t *go_wasmtime_func_call(
     wasm_func_t *func,
     const wasm_val_vec_t *args,
     wasm_val_vec_t *results,
-    wasm_trap_t **trap,
-    size_t go_id
+    wasm_trap_t **trap
 );
 void go_init_i32(wasm_val_t *val, int32_t i);
 void go_init_i64(wasm_val_t *val, int64_t i);

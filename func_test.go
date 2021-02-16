@@ -491,3 +491,34 @@ func TestFuncWrapAliasRet(t *testing.T) {
 		panic(fmt.Sprintf("wrong result, expected %q, got %q", i32_1, result))
 	}
 }
+
+func TestCallFuncFromCaller(t *testing.T) {
+	wasm, err := Wat2Wasm(`
+	(module
+		(import "" "f2" (func $f2))
+		(func (export "f1")
+			(call $f2)
+			(call $f2))
+		(func (export "f3")
+			(nop)))
+	`)
+	check(err)
+
+	store := NewStore(NewEngine())
+
+	f := NewFunc(store, NewFuncType(nil, nil), func(c *Caller, args []Val) ([]Val, *Trap) {
+		fn := c.GetExport("f3").Func()
+		_, err := fn.Call()
+		check(err)
+		return nil, nil
+	})
+
+	module, err := NewModule(store.Engine, wasm)
+	check(err)
+
+	instance, err := NewInstance(store, module, []*Extern{f.AsExtern()})
+	check(err)
+
+	_, err = instance.GetExport("f1").Func().Call()
+	check(err)
+}
