@@ -54,9 +54,9 @@ go_library(
     cgo = True,
     clinkopts = select({
         "@io_bazel_rules_go//go/platform:windows": [
-            "-luserenv -lole32 -lntdll -lws2_32 -lkernel32",
+            "-lwasmtime -luserenv -lole32 -lntdll -lws2_32 -lkernel32 -lbcrypt",
         ],
-        "//conditions:default": ["-lm -ldl"],
+        "//conditions:default": ["-lwasmtime -lm -ldl"],
     }),
     copts = [
         "-Ibuild/include",
