@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 cc_library(
     name = "wasmtime",
     srcs = select({
-        "@io_bazel_rules_go//go/platform:darwin": ["build/macos-x86_64/libwasmtime.a"],
+        "@io_bazel_rules_go//go/platform:darwin_amd64": ["build/macos-x86_64/libwasmtime.a"],
         "@io_bazel_rules_go//go/platform:linux_amd64": ["build/linux-x86_64/libwasmtime.a"],
         "@io_bazel_rules_go//go/platform:windows_amd64": ["build/windows-x86_64/libwasmtime.a"],
     }),
