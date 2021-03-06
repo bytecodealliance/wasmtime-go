@@ -36,15 +36,15 @@ jobs:
       env:
         GODEBUG: cgocheck=2
         GOGC: 1
-    # - name: Test bazel build on *nix
-    #   shell: bash
-    #   run: |
-    #     export GOOS=$(go env GOHOSTOS)
-    #     go get github.com/bazelbuild/bazelisk
-    #     export PATH=$PATH:$(go env GOPATH)/bin
-    #     bazelisk build :go_default_library
-    #     bazelisk test :go_default_test
-    #   if: matrix.os != 'windows-latest'
+    - name: Test bazel build on *nix
+      shell: bash
+      run: |
+        export GOOS=$(go env GOHOSTOS)
+        go get github.com/bazelbuild/bazelisk
+        export PATH=$PATH:$(go env GOPATH)/bin
+        bazelisk build :go_default_library
+        bazelisk test :go_default_test
+      if: matrix.os != 'windows-latest'
     # - name: Ready msys2
     #   uses: msys2/setup-msys2@v2
     #   with:
@@ -53,13 +53,13 @@ jobs:
     #     install: git mingw-w64-x86_64-toolchain
     #     path-type: inherit
     #   if: matrix.os == 'windows-latest'
-    # - name: Test bazel build on Windows
-    #   shell: msys2 {0}
-    #   run: |
-    #     go get github.com/bazelbuild/bazelisk
-    #     bazelisk build --compiler=mingw-gcc :go_default_library
-    #     bazelisk test --compiler=mingw-gcc :go_default_test
-    #   if: matrix.os == 'windows-latest'
+    - name: Test bazel build on Windows
+      shell: msys2 {0}
+      run: |
+        go get github.com/bazelbuild/bazelisk
+        bazelisk build --compiler=mingw-gcc :go_default_library
+        bazelisk test --compiler=mingw-gcc :go_default_test
+      if: matrix.os == 'windows-latest'
 
   coverage:
     runs-on: ubuntu-latest
