@@ -15,7 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        go: ['1.14.15', '1.15.10', '1.16'.2]
+        go: ['1.14.15', '1.15.10', '1.16.2']
     steps:
     - uses: actions/checkout@v2
 
@@ -31,6 +31,8 @@ jobs:
         go-version: ${{ matrix.go }}
     - run: go vet
     - run: go test
+    - run: go test
+      working-directory: examples
     - run: go test -tags debug
     - run: go test -tags debug
       env:
