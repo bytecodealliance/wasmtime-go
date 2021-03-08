@@ -143,3 +143,53 @@ func ExampleLinker() {
 	fmt.Print(result.(int32))
 	// Output: 7
 }
+
+func TestLinkerModule(t *testing.T) {
+	store := NewStore(NewEngine())
+	wasm, err := Wat2Wasm(`(module
+	  (func (export "f"))
+	)`)
+	assertNoError(err)
+	module, err := NewModule(store.Engine, wasm)
+	assertNoError(err)
+
+	linker := NewLinker(store)
+	err = linker.DefineModule("foo", module)
+	assertNoError(err)
+
+	wasm, err = Wat2Wasm(`(module
+	  (import "foo" "f" (func))
+	)`)
+	assertNoError(err)
+	module, err = NewModule(store.Engine, wasm)
+	assertNoError(err)
+
+	_, err = linker.Instantiate(module)
+	assertNoError(err)
+}
+
+func TestLinkerGetDefault(t *testing.T) {
+	store := NewStore(NewEngine())
+	linker := NewLinker(store)
+	f, err := linker.GetDefault("foo")
+	assertNoError(err)
+	f.Call()
+}
+
+func TestLinkerGetOneByName(t *testing.T) {
+	store := NewStore(NewEngine())
+	linker := NewLinker(store)
+	f, err := linker.GetOneByName("foo", "bar")
+	if f != nil {
+		panic("expected nil")
+	}
+	if err == nil {
+		panic("expected an error")
+	}
+
+	err = linker.DefineFunc("foo", "baz", func() {})
+	assertNoError(err)
+	f, err = linker.GetOneByName("foo", "baz")
+	assertNoError(err)
+	f.Func().Call()
+}
