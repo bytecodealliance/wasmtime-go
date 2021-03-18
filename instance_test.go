@@ -115,3 +115,43 @@ func TestInstanceBad(t *testing.T) {
 		panic("expected an error")
 	}
 }
+
+func TestInstanceGetFunc(t *testing.T) {
+	wasm, err := Wat2Wasm(`
+          (module
+            (func (export "f") (nop))
+            (global (export "g") i32 (i32.const 0))
+          )
+	`)
+	if err != nil {
+		panic(err)
+	}
+	store := NewStore(NewEngine())
+	module, err := NewModule(store.Engine, wasm)
+	if err != nil {
+		panic(err)
+	}
+	instance, err := NewInstance(store, module, []*Extern{})
+	if err != nil {
+		panic(err)
+	}
+
+	f := instance.GetFunc("f")
+	if f == nil {
+		panic("expected a function")
+	}
+	_, err = f.Call()
+	if err != nil {
+		panic(err)
+	}
+
+	f = instance.GetFunc("g")
+	if f != nil {
+		panic("expected an error")
+	}
+
+	f = instance.GetFunc("f2")
+	if f != nil {
+		panic("expected an error")
+	}
+}
