@@ -287,31 +287,39 @@ func newObjToDrop() (*ObjToDrop, *GcHit) {
 }
 
 func TestGlobalFinalizer(t *testing.T) {
-	store := refTypesStore()
-	global, err := NewGlobal(
-		store,
-		NewGlobalType(NewValType(KindExternref), true),
-		ValExternref(nil),
-	)
-	if err != nil {
-		panic(err)
-	}
-	obj, gc := newObjToDrop()
-	global.Set(ValExternref(obj))
-	runtime.GC()
-	if gc.hit {
-		panic("gc too early")
-	}
-	global.Set(ValExternref(nil))
-	// try real hard to get the Go GC to run the destructor
-	for i := 0; i < 10; i++ {
+	gc := func() *GcHit {
+		store := refTypesStore()
+		global, err := NewGlobal(
+			store,
+			NewGlobalType(NewValType(KindExternref), true),
+			ValExternref(nil),
+		)
+		if err != nil {
+			panic(err)
+		}
+		obj, gc := newObjToDrop()
+		global.Set(ValExternref(obj))
 		runtime.GC()
-	}
-	// There's some oddness on Windows right now where I guess the GC above
-	// doesn't work? Unsure why, but should be safe to skip there if it's
-	// working everywhere else.
-	if !gc.hit && runtime.GOOS != "windows" {
-		panic("dtor not run")
+		if gc.hit {
+			panic("gc too early")
+		}
+		global.Set(ValExternref(nil))
+		return gc
+	}()
+
+	// Try real hard to get the Go GC to run the destructor. This is
+	// somewhat nondeterministic depending on the platform, so this just
+	// hits `runtime.GC()` a lot and hopes that eventually it actually
+	// cleans up the `obj` from above. If this loop runs too many times,
+	// though, we assume it'll never work and we fail the test.
+	for i := 0; ; i++ {
+		runtime.GC()
+		if gc.hit {
+			break
+		}
+		if i >= 10000 {
+			panic("dtor not run")
+		}
 	}
 }
 
