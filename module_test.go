@@ -14,17 +14,17 @@ func TestModule(t *testing.T) {
 }
 
 func TestModuleValidate(t *testing.T) {
-	if ModuleValidate(NewStore(NewEngine()), []byte{}) == nil {
+	if ModuleValidate(NewEngine(), []byte{}) == nil {
 		panic("expected an error")
 	}
-	if ModuleValidate(NewStore(NewEngine()), []byte{1}) == nil {
+	if ModuleValidate(NewEngine(), []byte{1}) == nil {
 		panic("expected an error")
 	}
 	wasm, err := Wat2Wasm(`(module)`)
 	if err != nil {
 		panic(err)
 	}
-	if ModuleValidate(NewStore(NewEngine()), wasm) != nil {
+	if ModuleValidate(NewEngine(), wasm) != nil {
 		panic("expected valid module")
 	}
 }
@@ -45,7 +45,7 @@ func TestModuleImports(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	imports := module.Imports()
+	imports := module.Type().Imports()
 	if len(imports) != 4 {
 		panic("wrong number of imports")
 	}
@@ -121,7 +121,7 @@ func TestModuleExports(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	exports := module.Exports()
+	exports := module.Type().Exports()
 	if len(exports) != 4 {
 		panic("wrong number of exports")
 	}

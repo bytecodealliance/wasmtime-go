@@ -22,7 +22,7 @@ func TestFuncCall(t *testing.T) {
 		return []Val{}, nil
 	}
 	f := NewFunc(store, NewFuncType([]*ValType{}, []*ValType{}), cb)
-	results, trap := f.Call()
+	results, trap := f.Call(store)
 	if trap != nil {
 		panic(trap)
 	}
@@ -37,10 +37,10 @@ func TestFuncCall(t *testing.T) {
 func TestFuncTrap(t *testing.T) {
 	store := NewStore(NewEngine())
 	cb := func(caller *Caller, args []Val) ([]Val, *Trap) {
-		return nil, NewTrap(store, "x")
+		return nil, NewTrap("x")
 	}
 	f := NewFunc(store, NewFuncType([]*ValType{}, []*ValType{}), cb)
-	results, err := f.Call()
+	results, err := f.Call(store)
 	if err == nil {
 		panic("bad trap")
 	}
@@ -64,7 +64,7 @@ func TestFuncPanic(t *testing.T) {
 	var err error
 	func() {
 		defer func() { caught = recover() }()
-		results, err = f.Call()
+		results, err = f.Call(store)
 	}()
 	if caught == nil {
 		panic("panic didn't work")
@@ -99,7 +99,7 @@ func TestFuncArgs(t *testing.T) {
 	f32 := NewValType(KindF32)
 	f64 := NewValType(KindF64)
 	f := NewFunc(store, NewFuncType([]*ValType{i32, i64}, []*ValType{f32, f64}), cb)
-	results, trap := f.Call(int32(1), int64(2))
+	results, trap := f.Call(store, int32(1), int64(2))
 	if trap != nil {
 		panic(trap)
 	}
@@ -125,7 +125,7 @@ func TestFuncOneRet(t *testing.T) {
 	}
 	i32 := NewValType(KindI32)
 	f := NewFunc(store, NewFuncType([]*ValType{}, []*ValType{i32}), cb)
-	results, trap := f.Call()
+	results, trap := f.Call(store)
 	if trap != nil {
 		panic(trap)
 	}
@@ -146,7 +146,7 @@ func TestFuncWrongRet(t *testing.T) {
 	var caught interface{}
 	func() {
 		defer func() { caught = recover() }()
-		f.Call()
+		f.Call(store)
 	}()
 	if caught == nil {
 		panic("expected a panic")
@@ -167,7 +167,7 @@ func TestFuncWrongRet2(t *testing.T) {
 	var caught interface{}
 	func() {
 		defer func() { caught = recover() }()
-		f.Call()
+		f.Call(store)
 	}()
 	if caught == nil {
 		panic("expected a panic")
@@ -183,7 +183,7 @@ func TestFuncWrapSimple(t *testing.T) {
 	f := WrapFunc(store, func() {
 		called = true
 	})
-	result, trap := f.Call()
+	result, trap := f.Call(store)
 	if trap != nil {
 		panic(trap)
 	}
@@ -202,7 +202,7 @@ func TestFuncWrapSimple1Arg(t *testing.T) {
 			panic("wrong argument")
 		}
 	})
-	result, trap := f.Call(3)
+	result, trap := f.Call(store, 3)
 	if trap != nil {
 		panic(trap)
 	}
@@ -227,7 +227,7 @@ func TestFuncWrapSimpleManyArg(t *testing.T) {
 			panic("wrong argument")
 		}
 	})
-	result, trap := f.Call(3, 4, float32(5.0), float64(6.0))
+	result, trap := f.Call(store, 3, 4, float32(5.0), float64(6.0))
 	if trap != nil {
 		panic(trap)
 	}
@@ -239,7 +239,7 @@ func TestFuncWrapSimpleManyArg(t *testing.T) {
 func TestFuncWrapCallerArg(t *testing.T) {
 	store := NewStore(NewEngine())
 	f := WrapFunc(store, func(c *Caller) {})
-	result, trap := f.Call()
+	result, trap := f.Call(store)
 	if trap != nil {
 		panic(trap)
 	}
@@ -253,7 +253,7 @@ func TestFuncWrapRet1(t *testing.T) {
 	f := WrapFunc(store, func(c *Caller) int32 {
 		return 1
 	})
-	result, trap := f.Call()
+	result, trap := f.Call(store)
 	if trap != nil {
 		panic(trap)
 	}
@@ -267,7 +267,7 @@ func TestFuncWrapRet2(t *testing.T) {
 	f := WrapFunc(store, func(c *Caller) (int64, float64) {
 		return 5, 6
 	})
-	result, trap := f.Call()
+	result, trap := f.Call(store)
 	if trap != nil {
 		panic(trap)
 	}
@@ -288,7 +288,7 @@ func TestFuncWrapRetError(t *testing.T) {
 	f := WrapFunc(store, func(c *Caller) *Trap {
 		return nil
 	})
-	result, trap := f.Call()
+	result, trap := f.Call(store)
 	if trap != nil {
 		panic(trap)
 	}
@@ -300,9 +300,9 @@ func TestFuncWrapRetError(t *testing.T) {
 func TestFuncWrapRetErrorTrap(t *testing.T) {
 	store := NewStore(NewEngine())
 	f := WrapFunc(store, func(c *Caller) *Trap {
-		return NewTrap(store, "x")
+		return NewTrap("x")
 	})
-	_, err := f.Call()
+	_, err := f.Call(store)
 	if err == nil {
 		panic("expected trap")
 	}
@@ -317,7 +317,7 @@ func TestFuncWrapMultiRetWithTrap(t *testing.T) {
 	f := WrapFunc(store, func(c *Caller) (int32, float32, *Trap) {
 		return 1, 2, nil
 	})
-	_, err := f.Call()
+	_, err := f.Call(store)
 	if err != nil {
 		panic(err)
 	}
@@ -331,7 +331,7 @@ func TestFuncWrapPanic(t *testing.T) {
 	var err error
 	func() {
 		defer func() { caught = recover() }()
-		results, err = f.Call()
+		results, err = f.Call(store)
 	}()
 	if caught == nil {
 		panic("panic didn't work")
@@ -350,98 +350,98 @@ func TestFuncWrapPanic(t *testing.T) {
 func TestWrongArgsPanic(t *testing.T) {
 	store := NewStore(NewEngine())
 	i32 := WrapFunc(store, func(a int32) {})
-	i32.Call(1)
-	i32.Call(int32(1))
-	i32.Call(ValI32(1))
-	_, err := i32.Call()
+	i32.Call(store, 1)
+	i32.Call(store, int32(1))
+	i32.Call(store, ValI32(1))
+	_, err := i32.Call(store)
 	if err == nil {
 		panic("expected error")
 	}
-	_, err = i32.Call(1, 2)
+	_, err = i32.Call(store, 1, 2)
 	if err == nil {
 		panic("expected error")
 	}
-	_, err = i32.Call(int64(1))
+	_, err = i32.Call(store, int64(1))
 	if err == nil {
 		panic("expected error")
 	}
-	_, err = i32.Call(float32(1))
+	_, err = i32.Call(store, float32(1))
 	if err == nil {
 		panic("expected error")
 	}
-	_, err = i32.Call(float64(1))
+	_, err = i32.Call(store, float64(1))
 	if err == nil {
 		panic("expected error")
 	}
-	_, err = i32.Call(float32(1))
+	_, err = i32.Call(store, float32(1))
 	if err == nil {
 		panic("expected error")
 	}
-	_, err = i32.Call(float64(1))
+	_, err = i32.Call(store, float64(1))
 	if err == nil {
 		panic("expected error")
 	}
-	_, err = i32.Call(ValI64(1))
+	_, err = i32.Call(store, ValI64(1))
 	if err == nil {
 		panic("expected error")
 	}
-	_, err = i32.Call(ValF32(1))
+	_, err = i32.Call(store, ValF32(1))
 	if err == nil {
 		panic("expected error")
 	}
-	_, err = i32.Call(ValF64(1))
+	_, err = i32.Call(store, ValF64(1))
 	if err == nil {
 		panic("expected error")
 	}
 
 	i64 := WrapFunc(store, func(a int64) {})
-	i64.Call(1)
-	i64.Call(int64(1))
-	i64.Call(ValI64(1))
-	_, err = i64.Call(int32(1))
+	i64.Call(store, 1)
+	i64.Call(store, int64(1))
+	i64.Call(store, ValI64(1))
+	_, err = i64.Call(store, int32(1))
 	if err == nil {
 		panic("expected error")
 	}
-	_, err = i64.Call(float32(1))
+	_, err = i64.Call(store, float32(1))
 	if err == nil {
 		panic("expected error")
 	}
-	_, err = i64.Call(float64(1))
+	_, err = i64.Call(store, float64(1))
 	if err == nil {
 		panic("expected error")
 	}
-	_, err = i64.Call(float32(1))
+	_, err = i64.Call(store, float32(1))
 	if err == nil {
 		panic("expected error")
 	}
-	_, err = i64.Call(float64(1))
+	_, err = i64.Call(store, float64(1))
 	if err == nil {
 		panic("expected error")
 	}
-	_, err = i64.Call(ValI32(1))
+	_, err = i64.Call(store, ValI32(1))
 	if err == nil {
 		panic("expected error")
 	}
-	_, err = i64.Call(ValF32(1))
+	_, err = i64.Call(store, ValF32(1))
 	if err == nil {
 		panic("expected error")
 	}
-	_, err = i64.Call(ValF64(1))
+	_, err = i64.Call(store, ValF64(1))
 	if err == nil {
 		panic("expected error")
 	}
 
 	f32 := WrapFunc(store, func(a float32) {})
-	f32.Call(float32(1))
-	_, err = f32.Call(1)
+	f32.Call(store, float32(1))
+	_, err = f32.Call(store, 1)
 	if err == nil {
 		panic("expected error")
 	}
-	_, err = f32.Call(f32)
+	_, err = f32.Call(store, f32)
 	if err == nil {
 		panic("expected error")
 	}
-	if f32.ParamArity() != 1 {
+	if len(f32.Type(store).Params()) != 1 {
 		panic("wrong param arity")
 	}
 }
@@ -482,7 +482,7 @@ func TestFuncWrapAliasRet(t *testing.T) {
 	f := WrapFunc(store, func(which i32alias) i32alias {
 		return which
 	})
-	result, trap := f.Call(i32_1)
+	result, trap := f.Call(store, i32_1)
 	if trap != nil {
 		panic(trap)
 	}
@@ -508,7 +508,7 @@ func TestCallFuncFromCaller(t *testing.T) {
 
 	f := NewFunc(store, NewFuncType(nil, nil), func(c *Caller, args []Val) ([]Val, *Trap) {
 		fn := c.GetExport("f3").Func()
-		_, err := fn.Call()
+		_, err := fn.Call(store)
 		check(err)
 		return nil, nil
 	})
@@ -516,9 +516,9 @@ func TestCallFuncFromCaller(t *testing.T) {
 	module, err := NewModule(store.Engine, wasm)
 	check(err)
 
-	instance, err := NewInstance(store, module, []*Extern{f.AsExtern()})
+	instance, err := NewInstance(store, module, []AsExtern{f})
 	check(err)
 
-	_, err = instance.GetExport("f1").Func().Call()
+	_, err = instance.GetExport(store, "f1").Func().Call(store)
 	check(err)
 }

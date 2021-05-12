@@ -3,7 +3,7 @@ package wasmtime
 import "testing"
 
 func TestTrap(t *testing.T) {
-	trap := NewTrap(NewStore(NewEngine()), "message")
+	trap := NewTrap("message")
 	if trap.Message() != "message" {
 		panic("wrong message")
 	}
@@ -21,7 +21,7 @@ func TestTrapFrames(t *testing.T) {
 	module, err := NewModule(store.Engine, wasm)
 	assertNoError(err)
 
-	i, err := NewInstance(store, module, []*Extern{})
+	i, err := NewInstance(store, module, []AsExtern{})
 	if i != nil {
 		panic("expected failure")
 	}
@@ -73,7 +73,7 @@ func TestTrapModuleName(t *testing.T) {
 	module, err := NewModule(store.Engine, wasm)
 	assertNoError(err)
 
-	i, err := NewInstance(store, module, []*Extern{})
+	i, err := NewInstance(store, module, []AsExtern{})
 	if i != nil {
 		panic("expected failure")
 	}
