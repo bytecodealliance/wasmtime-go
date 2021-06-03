@@ -5,7 +5,6 @@ import urllib.request
 import zipfile
 import tarfile
 import io
-import sys
 import os
 import shutil
 import glob
@@ -52,3 +51,9 @@ for dylib in glob.glob("build/**/*.dylib"):
     os.remove(dylib)
 for dylib in glob.glob("build/**/*.so"):
     os.remove(dylib)
+
+for subdir, dirs, files in os.walk("build"):
+    dir_name = os.path.basename(os.path.normpath(subdir))
+    file_path = os.path.join(subdir, "empty.go")
+    with open(file_path, "w") as empty_file:
+        empty_file.write("package %s\n" % dir_name.replace("-", "_"))
