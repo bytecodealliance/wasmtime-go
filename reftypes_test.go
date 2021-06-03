@@ -22,7 +22,7 @@ func refTypesInstance(wat string) (*Instance, *Store) {
 	if err != nil {
 		panic(err)
 	}
-	instance, err := NewInstance(store, module, []*Extern{})
+	instance, err := NewInstance(store, module, []AsExtern{})
 	if err != nil {
 		panic(err)
 	}
@@ -30,7 +30,7 @@ func refTypesInstance(wat string) (*Instance, *Store) {
 }
 
 func TestRefTypesSmoke(t *testing.T) {
-	instance, _ := refTypesInstance(`
+	instance, store := refTypesInstance(`
 (module
   (func (export "f") (param externref) (result externref)
     local.get 0
@@ -41,8 +41,8 @@ func TestRefTypesSmoke(t *testing.T) {
 )
 `)
 
-	null_externref := instance.GetExport("null_externref").Func()
-	result, err := null_externref.Call()
+	null_externref := instance.GetExport(store, "null_externref").Func()
+	result, err := null_externref.Call(store)
 	if err != nil {
 		panic(err)
 	}
@@ -50,8 +50,8 @@ func TestRefTypesSmoke(t *testing.T) {
 		panic("expected nil result")
 	}
 
-	f := instance.GetExport("f").Func()
-	result, err = f.Call(true)
+	f := instance.GetExport(store, "f").Func()
+	result, err = f.Call(store, true)
 	if err != nil {
 		panic(err)
 	}
@@ -59,7 +59,7 @@ func TestRefTypesSmoke(t *testing.T) {
 		panic("expected `true`")
 	}
 
-	result, err = f.Call("x")
+	result, err = f.Call(store, "x")
 	if err != nil {
 		panic(err)
 	}
@@ -67,7 +67,7 @@ func TestRefTypesSmoke(t *testing.T) {
 		panic("expected `x`")
 	}
 
-	result, err = f.Call(ValExternref("x"))
+	result, err = f.Call(store, ValExternref("x"))
 	if err != nil {
 		panic(err)
 	}
@@ -95,7 +95,7 @@ func TestRefTypesTable(t *testing.T) {
 	}
 
 	for i := 0; i < 10; i++ {
-		val, err := table.Get(uint32(i))
+		val, err := table.Get(store, uint32(i))
 		if err != nil {
 			panic(err)
 		}
@@ -104,12 +104,12 @@ func TestRefTypesTable(t *testing.T) {
 		}
 	}
 
-	_, err = table.Grow(2, ValExternref("grown"))
+	_, err = table.Grow(store, 2, ValExternref("grown"))
 	if err != nil {
 		panic(err)
 	}
 	for i := 0; i < 10; i++ {
-		val, err := table.Get(uint32(i))
+		val, err := table.Get(store, uint32(i))
 		if err != nil {
 			panic(err)
 		}
@@ -118,7 +118,7 @@ func TestRefTypesTable(t *testing.T) {
 		}
 	}
 	for i := 10; i < 12; i++ {
-		val, err := table.Get(uint32(i))
+		val, err := table.Get(store, uint32(i))
 		if err != nil {
 			panic(err)
 		}
@@ -127,13 +127,13 @@ func TestRefTypesTable(t *testing.T) {
 		}
 	}
 
-	err = table.Set(7, ValExternref("lucky"))
+	err = table.Set(store, 7, ValExternref("lucky"))
 	if err != nil {
 		panic(err)
 	}
 
 	for i := 0; i < 7; i++ {
-		val, err := table.Get(uint32(i))
+		val, err := table.Get(store, uint32(i))
 		if err != nil {
 			panic(err)
 		}
@@ -141,7 +141,7 @@ func TestRefTypesTable(t *testing.T) {
 			panic("bad init")
 		}
 	}
-	val, err := table.Get(7)
+	val, err := table.Get(store, 7)
 	if err != nil {
 		panic(err)
 	}
@@ -149,7 +149,7 @@ func TestRefTypesTable(t *testing.T) {
 		panic("bad init")
 	}
 	for i := 8; i < 10; i++ {
-		val, err := table.Get(uint32(i))
+		val, err := table.Get(store, uint32(i))
 		if err != nil {
 			panic(err)
 		}
@@ -158,7 +158,7 @@ func TestRefTypesTable(t *testing.T) {
 		}
 	}
 	for i := 10; i < 12; i++ {
-		val, err := table.Get(uint32(i))
+		val, err := table.Get(store, uint32(i))
 		if err != nil {
 			panic(err)
 		}
@@ -179,15 +179,15 @@ func TestRefTypesGlobal(t *testing.T) {
 		panic(err)
 	}
 
-	val := global.Get()
+	val := global.Get(store)
 	if val.Get().(string) != "hello" {
 		panic("bad init")
 	}
-	err = global.Set(ValExternref("goodbye"))
+	err = global.Set(store, ValExternref("goodbye"))
 	if err != nil {
 		panic(err)
 	}
-	if global.Get().Get().(string) != "goodbye" {
+	if global.Get(store).Get().(string) != "goodbye" {
 		panic("bad init")
 	}
 }
@@ -197,16 +197,16 @@ func TestRefTypesWrap(t *testing.T) {
 	f := WrapFunc(store, func() error {
 		return nil
 	})
-	if len(f.Type().Params()) != 0 {
+	if len(f.Type(store).Params()) != 0 {
 		panic("wrong params")
 	}
-	if len(f.Type().Results()) != 1 {
+	if len(f.Type(store).Results()) != 1 {
 		panic("wrong results")
 	}
-	if f.Type().Results()[0].Kind() != KindExternref {
+	if f.Type(store).Results()[0].Kind() != KindExternref {
 		panic("wrong result")
 	}
-	ret, err := f.Call()
+	ret, err := f.Call(store)
 	if err != nil {
 		panic(err)
 	}
@@ -217,7 +217,7 @@ func TestRefTypesWrap(t *testing.T) {
 	f = WrapFunc(store, func() error {
 		return errors.New("message")
 	})
-	ret, err = f.Call()
+	ret, err = f.Call(store)
 	if err != nil {
 		panic(err)
 	}
@@ -234,32 +234,32 @@ func TestRefTypesWrap(t *testing.T) {
 		}
 		return g, f
 	})
-	if len(f.Type().Params()) != 4 {
+	if len(f.Type(store).Params()) != 4 {
 		panic("wrong params")
 	}
-	if f.Type().Params()[0].Kind() != KindExternref {
+	if f.Type(store).Params()[0].Kind() != KindExternref {
 		panic("wrong param")
 	}
-	if f.Type().Params()[1].Kind() != KindExternref {
+	if f.Type(store).Params()[1].Kind() != KindExternref {
 		panic("wrong param")
 	}
-	if f.Type().Params()[2].Kind() != KindFuncref {
+	if f.Type(store).Params()[2].Kind() != KindFuncref {
 		panic("wrong param")
 	}
-	if f.Type().Params()[3].Kind() != KindExternref {
+	if f.Type(store).Params()[3].Kind() != KindExternref {
 		panic("wrong param")
 	}
-	if len(f.Type().Results()) != 2 {
+	if len(f.Type(store).Results()) != 2 {
 		panic("wrong results")
 	}
-	if f.Type().Results()[0].Kind() != KindExternref {
+	if f.Type(store).Results()[0].Kind() != KindExternref {
 		panic("wrong result")
 	}
-	if f.Type().Results()[1].Kind() != KindFuncref {
+	if f.Type(store).Results()[1].Kind() != KindFuncref {
 		panic("wrong result")
 	}
 
-	ret, err = f.Call("message", store, f, errors.New("x"))
+	ret, err = f.Call(store, "message", store, f, errors.New("x"))
 	if err != nil {
 		panic(err)
 	}
@@ -298,12 +298,12 @@ func TestGlobalFinalizer(t *testing.T) {
 			panic(err)
 		}
 		obj, gc := newObjToDrop()
-		global.Set(ValExternref(obj))
+		global.Set(store, ValExternref(obj))
 		runtime.GC()
 		if gc.hit {
 			panic("gc too early")
 		}
-		global.Set(ValExternref(nil))
+		global.Set(store, ValExternref(nil))
 		return gc
 	}()
 
@@ -327,18 +327,21 @@ func TestFuncFinalizer(t *testing.T) {
 	instance, store := refTypesInstance(`
 	      (module (func (export "f") (param externref)))
 	`)
-	f := instance.GetExport("f").Func()
+	f := instance.GetExport(store, "f").Func()
 	obj, gc := newObjToDrop()
-	_, err := f.Call(obj)
+	_, err := f.Call(store, obj)
 	if err != nil {
 		panic(err)
 	}
 	store.GC()
-	// try real hard to get the Go GC to run the destructor
-	for i := 0; i < 10; i++ {
+	// like above, try real hard to get the Go GC to run the destructor
+	for i := 0; ; i++ {
 		runtime.GC()
-	}
-	if !gc.hit {
-		panic("dtor not run")
+		if gc.hit {
+			break
+		}
+		if i >= 10000 {
+			panic("dtor not run")
+		}
 	}
 }

@@ -19,11 +19,11 @@ func TestInstance(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	instance, err := NewInstance(store, module, []*Extern{})
+	instance, err := NewInstance(store, module, []AsExtern{})
 	if err != nil {
 		panic(err)
 	}
-	exports := instance.Exports()
+	exports := instance.Exports(store)
 	if len(exports) != 4 {
 		panic("wrong number of exports")
 	}
@@ -63,28 +63,28 @@ func TestInstance(t *testing.T) {
 	table := exports[2].Table()
 	m := exports[3].Memory()
 
-	if len(f.Type().Params()) != 0 {
+	if len(f.Type(store).Params()) != 0 {
 		panic("bad params on type")
 	}
-	if len(exports[0].Type().FuncType().Params()) != 0 {
+	if len(exports[0].Type(store).FuncType().Params()) != 0 {
 		panic("bad params on type")
 	}
-	if g.Type().Content().Kind() != KindI32 {
+	if g.Type(store).Content().Kind() != KindI32 {
 		panic("bad global type")
 	}
-	if exports[1].Type().GlobalType().Content().Kind() != KindI32 {
+	if exports[1].Type(store).GlobalType().Content().Kind() != KindI32 {
 		panic("bad global type")
 	}
-	if table.Type().Element().Kind() != KindFuncref {
+	if table.Type(store).Element().Kind() != KindFuncref {
 		panic("bad table type")
 	}
-	if exports[2].Type().TableType().Element().Kind() != KindFuncref {
+	if exports[2].Type(store).TableType().Element().Kind() != KindFuncref {
 		panic("bad table type")
 	}
-	if m.Type().Limits().Min != 1 {
+	if m.Type(store).Limits().Min != 1 {
 		panic("bad memory type")
 	}
-	if exports[3].Type().MemoryType().Limits().Min != 1 {
+	if exports[3].Type(store).MemoryType().Limits().Min != 1 {
 		panic("bad memory type")
 	}
 }
@@ -97,7 +97,7 @@ func TestInstanceBad(t *testing.T) {
 	assertNoError(err)
 
 	// wrong number of imports
-	instance, err := NewInstance(store, module, []*Extern{})
+	instance, err := NewInstance(store, module, []AsExtern{})
 	if instance != nil {
 		panic("expected nil instance")
 	}
@@ -107,7 +107,7 @@ func TestInstanceBad(t *testing.T) {
 
 	// wrong types of imports
 	f := WrapFunc(store, func(a int32) {})
-	instance, err = NewInstance(store, module, []*Extern{f.AsExtern()})
+	instance, err = NewInstance(store, module, []AsExtern{f})
 	if instance != nil {
 		panic("expected nil instance")
 	}
@@ -131,26 +131,26 @@ func TestInstanceGetFunc(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	instance, err := NewInstance(store, module, []*Extern{})
+	instance, err := NewInstance(store, module, []AsExtern{})
 	if err != nil {
 		panic(err)
 	}
 
-	f := instance.GetFunc("f")
+	f := instance.GetFunc(store, "f")
 	if f == nil {
 		panic("expected a function")
 	}
-	_, err = f.Call()
+	_, err = f.Call(store)
 	if err != nil {
 		panic(err)
 	}
 
-	f = instance.GetFunc("g")
+	f = instance.GetFunc(store, "g")
 	if f != nil {
 		panic("expected an error")
 	}
 
-	f = instance.GetFunc("f2")
+	f = instance.GetFunc(store, "f2")
 	if f != nil {
 		panic("expected an error")
 	}

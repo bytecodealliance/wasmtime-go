@@ -40,13 +40,13 @@ func Example() {
 
 	// Next up we instantiate a module which is where we link in all our
 	// imports. We've got one import so we pass that in here.
-	instance, err := NewInstance(store, module, []*Extern{item.AsExtern()})
+	instance, err := NewInstance(store, module, []AsExtern{item})
 	check(err)
 
 	// After we've instantiated we can lookup our `run` function and call
 	// it.
-	run := instance.GetExport("run").Func()
-	_, err = run.Call()
+	run := instance.GetExport(store, "run").Func()
+	_, err = run.Call(store)
 	check(err)
 
 	// Output: Hello from Go!
@@ -89,10 +89,10 @@ func Example_gcd() {
 	check(err)
 	module, err := NewModule(store.Engine, wasm)
 	check(err)
-	instance, err := NewInstance(store, module, []*Extern{})
+	instance, err := NewInstance(store, module, []AsExtern{})
 	check(err)
-	run := instance.GetExport("gcd").Func()
-	result, err := run.Call(6, 27)
+	run := instance.GetExport(store, "gcd").Func()
+	result, err := run.Call(store, 6, 27)
 	check(err)
 	fmt.Printf("gcd(6, 27) = %d\n", result.(int32))
 	// Output: gcd(6, 27) = 3
@@ -102,7 +102,7 @@ func Example_gcd() {
 func Example_memory() {
 	// Create our `Store` context and then compile a module and create an
 	// instance from the compiled module all in one go.
-	wasmtimeStore := NewStore(NewEngine())
+	store := NewStore(NewEngine())
 	wasm, err := Wat2Wasm(`
           (module
             (memory (export "memory") 2 3)
@@ -119,29 +119,29 @@ func Example_memory() {
           )
         `)
 	check(err)
-	module, err := NewModule(wasmtimeStore.Engine, wasm)
+	module, err := NewModule(store.Engine, wasm)
 	check(err)
-	instance, err := NewInstance(wasmtimeStore, module, []*Extern{})
+	instance, err := NewInstance(store, module, []AsExtern{})
 	check(err)
 
 	// Load up our exports from the instance
-	memory := instance.GetExport("memory").Memory()
-	size := instance.GetExport("size").Func()
-	load := instance.GetExport("load").Func()
-	store := instance.GetExport("store").Func()
+	memory := instance.GetExport(store, "memory").Memory()
+	sizeFn := instance.GetExport(store, "size").Func()
+	loadFn := instance.GetExport(store, "load").Func()
+	storeFn := instance.GetExport(store, "store").Func()
 
 	// some helper functions we'll use below
 	call32 := func(f *Func, args ...interface{}) int32 {
-		ret, err := f.Call(args...)
+		ret, err := f.Call(store, args...)
 		check(err)
 		return ret.(int32)
 	}
 	call := func(f *Func, args ...interface{}) {
-		_, err := f.Call(args...)
+		_, err := f.Call(store, args...)
 		check(err)
 	}
 	assertTraps := func(f *Func, args ...interface{}) {
-		_, err := f.Call(args...)
+		_, err := f.Call(store, args...)
 		_, ok := err.(*Trap)
 		if !ok {
 			panic("expected a trap")
@@ -149,44 +149,47 @@ func Example_memory() {
 	}
 
 	// Check the initial memory sizes/contents
-	assert(memory.Size() == 2)
-	assert(memory.DataSize() == 0x20000)
-	buf := memory.UnsafeData()
+	assert(memory.Size(store) == 2)
+	assert(memory.DataSize(store) == 0x20000)
+	buf := memory.UnsafeData(store)
 
 	assert(buf[0] == 0)
 	assert(buf[0x1000] == 1)
 	assert(buf[0x1003] == 4)
 
-	assert(call32(size) == 2)
-	assert(call32(load, 0) == 0)
-	assert(call32(load, 0x1000) == 1)
-	assert(call32(load, 0x1003) == 4)
-	assert(call32(load, 0x1ffff) == 0)
-	assertTraps(load, 0x20000)
+	assert(call32(sizeFn) == 2)
+	assert(call32(loadFn, 0) == 0)
+	assert(call32(loadFn, 0x1000) == 1)
+	assert(call32(loadFn, 0x1003) == 4)
+	assert(call32(loadFn, 0x1ffff) == 0)
+	assertTraps(loadFn, 0x20000)
 
 	// We can mutate memory as well
 	buf[0x1003] = 5
-	call(store, 0x1002, 6)
-	assertTraps(store, 0x20000, 0)
+	call(storeFn, 0x1002, 6)
+	assertTraps(storeFn, 0x20000, 0)
 
 	assert(buf[0x1002] == 6)
 	assert(buf[0x1003] == 5)
-	assert(call32(load, 0x1002) == 6)
-	assert(call32(load, 0x1003) == 5)
+	assert(call32(loadFn, 0x1002) == 6)
+	assert(call32(loadFn, 0x1003) == 5)
 
 	// And like wasm instructions, we can grow memory
-	assert(memory.Grow(1))
-	assert(memory.Size() == 3)
-	assert(memory.DataSize() == 0x30000)
+	_, err = memory.Grow(store, 1)
+	assert(err == nil)
+	assert(memory.Size(store) == 3)
+	assert(memory.DataSize(store) == 0x30000)
 
-	assert(call32(load, 0x20000) == 0)
-	call(store, 0x20000, 0)
-	assertTraps(load, 0x30000)
-	assertTraps(store, 0x30000, 0)
+	assert(call32(loadFn, 0x20000) == 0)
+	call(storeFn, 0x20000, 0)
+	assertTraps(loadFn, 0x30000)
+	assertTraps(storeFn, 0x30000, 0)
 
 	// Memory can fail to grow
-	assert(!memory.Grow(1))
-	assert(memory.Grow(0))
+	_, err = memory.Grow(store, 1)
+	assert(err != nil)
+	_, err = memory.Grow(store, 0)
+	assert(err == nil)
 
 	// Ensure that `memory` lives long enough to cover all our usages of
 	// using its internal buffer we read from `UnsafeData()`
@@ -195,10 +198,13 @@ func Example_memory() {
 	// Finally we can also create standalone memories to get imported by
 	// wasm modules too.
 	memorytype := NewMemoryType(Limits{Min: 5, Max: 5})
-	memory2 := NewMemory(wasmtimeStore, memorytype)
-	assert(memory2.Size() == 5)
-	assert(!memory2.Grow(1))
-	assert(memory2.Grow(0))
+	memory2, err := NewMemory(store, memorytype)
+	assert(err == nil)
+	assert(memory2.Size(store) == 5)
+	_, err = memory2.Grow(store, 1)
+	assert(err != nil)
+	_, err = memory2.Grow(store, 0)
+	assert(err == nil)
 
 	// Output:
 }
@@ -245,12 +251,12 @@ func Example_multi() {
 		return b + 1, a + 1
 	})
 
-	instance, err := NewInstance(store, module, []*Extern{callback.AsExtern()})
+	instance, err := NewInstance(store, module, []AsExtern{callback})
 	check(err)
 
-	g := instance.GetExport("g").Func()
+	g := instance.GetExport(store, "g").Func()
 
-	results, err := g.Call(1, 3)
+	results, err := g.Call(store, 1, 3)
 	check(err)
 	arr := results.([]Val)
 	a := arr[0].I64()
@@ -260,8 +266,8 @@ func Example_multi() {
 	assert(a == 4)
 	assert(b == 2)
 
-	roundTripMany := instance.GetExport("round_trip_many").Func()
-	results, err = roundTripMany.Call(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+	roundTripMany := instance.GetExport(store, "round_trip_many").Func()
+	results, err = roundTripMany.Call(store, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
 	check(err)
 	arr = results.([]Val)
 
@@ -314,33 +320,30 @@ func Example_wasi() {
 	stdoutPath := filepath.Join(dir, "stdout")
 
 	engine := NewEngine()
-	store := NewStore(engine)
-
-	linker := NewLinker(store)
-
-	// Configure WASI imports to write stdout into a file.
-	wasiConfig := NewWasiConfig()
-	wasiConfig.SetStdoutFile(stdoutPath)
-
-	// Set the version to the same as in the WAT.
-	wasi, err := NewWasiInstance(store, wasiConfig, "wasi_snapshot_preview1")
-	check(err)
-
-	// Link WASI
-	err = linker.DefineWasi(wasi)
-	check(err)
 
 	// Create our module
 	wasm, err := Wat2Wasm(TextWat)
 	check(err)
-	module, err := NewModule(store.Engine, wasm)
+	module, err := NewModule(engine, wasm)
 	check(err)
-	instance, err := linker.Instantiate(module)
+
+	// Create a linker with WASI functions defined within it
+	linker := NewLinker(engine)
+	err = linker.DefineWasi()
+	check(err)
+
+	// Configure WASI imports to write stdout into a file, and then create
+	// a `Store` using this wasi configuration.
+	wasiConfig := NewWasiConfig()
+	wasiConfig.SetStdoutFile(stdoutPath)
+	store := NewStore(engine)
+	store.SetWasi(wasiConfig)
+	instance, err := linker.Instantiate(store, module)
 	check(err)
 
 	// Run the function
-	nom := instance.GetExport("_start").Func()
-	_, err = nom.Call()
+	nom := instance.GetExport(store, "_start").Func()
+	_, err = nom.Call(store)
 	check(err)
 
 	// Print WASM stdout

@@ -59,11 +59,11 @@ func TestInstanceType(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	instance, err := NewInstance(store, module, []*Extern{})
+	instance, err := NewInstance(store, module, []AsExtern{})
 	if err != nil {
 		panic(err)
 	}
-	ty := instance.Type()
+	ty := instance.Type(store)
 	exports := ty.Exports()
 	if len(exports) != 3 {
 		panic("wrong number of exports")
@@ -88,7 +88,7 @@ func TestImportModule(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	_, err = NewInstance(store, module, []*Extern{module2.AsExtern()})
+	_, err = NewInstance(store, module, []AsExtern{module2})
 	if err != nil {
 		panic(err)
 	}
@@ -112,11 +112,11 @@ func TestImportInstance(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	instance, err := NewInstance(store, module2, []*Extern{})
+	instance, err := NewInstance(store, module2, []AsExtern{})
 	if err != nil {
 		panic(err)
 	}
-	_, err = NewInstance(store, module, []*Extern{instance.AsExtern()})
+	_, err = NewInstance(store, module, []AsExtern{instance})
 	if err != nil {
 		panic(err)
 	}
@@ -132,11 +132,11 @@ func TestExportModule(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	instance, err := NewInstance(store, module, []*Extern{})
+	instance, err := NewInstance(store, module, []AsExtern{})
 	if err != nil {
 		panic(err)
 	}
-	if instance.GetExport("").Module() == nil {
+	if instance.GetExport(store, "").Module() == nil {
 		panic("expected a module")
 	}
 }
@@ -151,11 +151,11 @@ func TestExportInstance(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	instance, err := NewInstance(store, module, []*Extern{})
+	instance, err := NewInstance(store, module, []AsExtern{})
 	if err != nil {
 		panic(err)
 	}
-	if instance.GetExport("").Instance() == nil {
+	if instance.GetExport(store, "").Instance() == nil {
 		panic("expected a module")
 	}
 }

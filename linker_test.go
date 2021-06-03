@@ -22,30 +22,31 @@ func TestLinker(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	linker := NewLinker(store)
+	linker := NewLinker(store.Engine)
 	assertNoError(linker.Define("", "f", WrapFunc(store, func() {})))
 	g, err := NewGlobal(store, NewGlobalType(NewValType(KindI32), false), ValI32(0))
 	assertNoError(err)
 	assertNoError(linker.Define("", "g", g))
-	m := NewMemory(store, NewMemoryType(Limits{Min: 1, Max: 0xffffffff}))
+	m, err := NewMemory(store, NewMemoryType(Limits{Min: 1, Max: 0xffffffff}))
+	assertNoError(err)
 	assertNoError(linker.Define("", "m", m))
-	assertNoError(linker.Define("other", "m", m.AsExtern()))
+	assertNoError(linker.Define("other", "m", m))
 
 	tableWasm, err := Wat2Wasm(`(module (table (export "") 1 funcref))`)
 	assertNoError(err)
 	tableModule, err := NewModule(store.Engine, tableWasm)
 	assertNoError(err)
-	instance, err := NewInstance(store, tableModule, []*Extern{})
+	instance, err := NewInstance(store, tableModule, []AsExtern{})
 	assertNoError(err)
-	table := instance.Exports()[0].Table()
+	table := instance.Exports(store)[0].Table()
 	assertNoError(linker.Define("", "t", table))
 
-	_, err = linker.Instantiate(module)
+	_, err = linker.Instantiate(store, module)
 	assertNoError(err)
 
-	assertNoError(linker.DefineFunc("", "", func() {}))
-	assertNoError(linker.DefineInstance("x", instance))
-	err = linker.DefineInstance("x", instance)
+	assertNoError(linker.DefineFunc(store, "", "", func() {}))
+	assertNoError(linker.DefineInstance(store, "x", instance))
+	err = linker.DefineInstance(store, "x", instance)
 	if err == nil {
 		panic("expected an error")
 	}
@@ -59,7 +60,7 @@ func assertNoError(err error) {
 
 func TestLinkerShadowing(t *testing.T) {
 	store := NewStore(NewEngine())
-	linker := NewLinker(store)
+	linker := NewLinker(store.Engine)
 	assertNoError(linker.Define("", "f", WrapFunc(store, func() {})))
 	err := linker.Define("", "f", WrapFunc(store, func() {}))
 	if err == nil {
@@ -81,8 +82,8 @@ func TestLinkerTrap(t *testing.T) {
 	module, err := NewModule(store.Engine, wasm)
 	assertNoError(err)
 
-	linker := NewLinker(store)
-	i, err := linker.Instantiate(module)
+	linker := NewLinker(store.Engine)
+	i, err := linker.Instantiate(store, module)
 	if i != nil {
 		panic("expected failure")
 	}
@@ -123,22 +124,22 @@ func ExampleLinker() {
 	module2, err := NewModule(store.Engine, wasm2)
 	check(err)
 
-	linker := NewLinker(store)
+	linker := NewLinker(store.Engine)
 
 	// The second module is instantiated first since it has no imports, and
 	// then we insert the instance back into the linker under the name
 	// the first module expects.
-	instance2, err := linker.Instantiate(module2)
+	instance2, err := linker.Instantiate(store, module2)
 	check(err)
-	err = linker.DefineInstance("wasm2", instance2)
+	err = linker.DefineInstance(store, "wasm2", instance2)
 	check(err)
 
 	// And now we can instantiate our first module, executing the result
 	// afterwards
-	instance1, err := linker.Instantiate(module1)
+	instance1, err := linker.Instantiate(store, module1)
 	check(err)
-	doubleAndAdd := instance1.GetExport("double_and_add").Func()
-	result, err := doubleAndAdd.Call(2, 3)
+	doubleAndAdd := instance1.GetExport(store, "double_and_add").Func()
+	result, err := doubleAndAdd.Call(store, 2, 3)
 	check(err)
 	fmt.Print(result.(int32))
 	// Output: 7
@@ -153,8 +154,8 @@ func TestLinkerModule(t *testing.T) {
 	module, err := NewModule(store.Engine, wasm)
 	assertNoError(err)
 
-	linker := NewLinker(store)
-	err = linker.DefineModule("foo", module)
+	linker := NewLinker(store.Engine)
+	err = linker.DefineModule(store, "foo", module)
 	assertNoError(err)
 
 	wasm, err = Wat2Wasm(`(module
@@ -164,32 +165,28 @@ func TestLinkerModule(t *testing.T) {
 	module, err = NewModule(store.Engine, wasm)
 	assertNoError(err)
 
-	_, err = linker.Instantiate(module)
+	_, err = linker.Instantiate(store, module)
 	assertNoError(err)
 }
 
 func TestLinkerGetDefault(t *testing.T) {
 	store := NewStore(NewEngine())
-	linker := NewLinker(store)
-	f, err := linker.GetDefault("foo")
+	linker := NewLinker(store.Engine)
+	f, err := linker.GetDefault(store, "foo")
 	assertNoError(err)
-	f.Call()
+	f.Call(store)
 }
 
 func TestLinkerGetOneByName(t *testing.T) {
 	store := NewStore(NewEngine())
-	linker := NewLinker(store)
-	f, err := linker.GetOneByName("foo", "bar")
+	linker := NewLinker(store.Engine)
+	f := linker.Get(store, "foo", "bar")
 	if f != nil {
 		panic("expected nil")
 	}
-	if err == nil {
-		panic("expected an error")
-	}
 
-	err = linker.DefineFunc("foo", "baz", func() {})
+	err := linker.DefineFunc(store, "foo", "baz", func() {})
 	assertNoError(err)
-	f, err = linker.GetOneByName("foo", "baz")
-	assertNoError(err)
-	f.Func().Call()
+	f = linker.Get(store, "foo", "baz")
+	f.Func().Call(store)
 }

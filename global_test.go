@@ -8,11 +8,11 @@ func TestGlobal(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	if g.Get().I32() != 100 {
+	if g.Get(store).I32() != 100 {
 		panic("wrong value in global")
 	}
-	g.Set(ValI32(200))
-	if g.Get().I32() != 200 {
+	g.Set(store, ValI32(200))
+	if g.Get(store).I32() != 200 {
 		panic("wrong value in global")
 	}
 
@@ -20,7 +20,7 @@ func TestGlobal(t *testing.T) {
 	if err == nil {
 		panic("should fail to create global")
 	}
-	err = g.Set(ValI64(200))
+	err = g.Set(store, ValI64(200))
 	if err == nil {
 		panic("should fail to set global")
 	}

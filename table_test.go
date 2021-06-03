@@ -9,38 +9,35 @@ func TestTable(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	if table.Size() != 1 {
+	if table.Size(store) != 1 {
 		panic("wrong size")
 	}
 
-	f, err := table.Get(0)
+	f, err := table.Get(store, 0)
 	if err != nil {
 		panic(err)
 	}
 	if f.Funcref() != nil {
 		panic("expected nil")
 	}
-	f, err = table.Get(1)
+	f, err = table.Get(store, 1)
 	if err == nil {
 		panic("expected error")
-	}
-	if f.Funcref() != nil {
-		panic("expected nil")
 	}
 
-	err = table.Set(0, ValFuncref(nil))
+	err = table.Set(store, 0, ValFuncref(nil))
 	if err != nil {
 		panic(err)
 	}
-	err = table.Set(1, ValFuncref(nil))
+	err = table.Set(store, 1, ValFuncref(nil))
 	if err == nil {
 		panic("expected error")
 	}
-	err = table.Set(0, ValFuncref(WrapFunc(store, func() {})))
+	err = table.Set(store, 0, ValFuncref(WrapFunc(store, func() {})))
 	if err != nil {
 		panic(nil)
 	}
-	f, err = table.Get(0)
+	f, err = table.Get(store, 0)
 	if err != nil {
 		panic(err)
 	}
@@ -48,7 +45,7 @@ func TestTable(t *testing.T) {
 		panic("expected not nil")
 	}
 
-	prevSize, err := table.Grow(1, ValFuncref(nil))
+	prevSize, err := table.Grow(store, 1, ValFuncref(nil))
 	if err != nil {
 		panic(err)
 	}
@@ -56,7 +53,7 @@ func TestTable(t *testing.T) {
 		print(prevSize)
 		panic("bad prev")
 	}
-	f, err = table.Get(1)
+	f, err = table.Get(store, 1)
 	if err != nil {
 		panic(err)
 	}
@@ -65,20 +62,20 @@ func TestTable(t *testing.T) {
 	}
 
 	called := false
-	_, err = table.Grow(1, ValFuncref(WrapFunc(store, func() {
+	_, err = table.Grow(store, 1, ValFuncref(WrapFunc(store, func() {
 		called = true
 	})))
 	if err != nil {
 		panic(err)
 	}
-	f, err = table.Get(2)
+	f, err = table.Get(store, 2)
 	if err != nil {
 		panic(err)
 	}
 	if called {
 		panic("called already?")
 	}
-	_, err = f.Funcref().Call()
+	_, err = f.Funcref().Call(store)
 	if err != nil {
 		panic(err)
 	}
