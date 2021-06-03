@@ -97,13 +97,13 @@ func main() {
 
     // Next up we instantiate a module which is where we link in all our
     // imports. We've got one import so we pass that in here.
-    instance, err := wasmtime.NewInstance(store,module, []*wasmtime.Extern{item.AsExtern()})
+    instance, err := wasmtime.NewInstance(store, module, []wasmtime.AsExtern{item})
     check(err)
 
     // After we've instantiated we can lookup our `run` function and call
     // it.
-    run := instance.GetExport("run").Func()
-    _, err = run.Call()
+    run := instance.GetExport(store, "run").Func()
+    _, err = run.Call(store)
     check(err)
 }
 
