@@ -7,6 +7,11 @@ on:
   schedule:
     - cron: '0 0 * * *' # run at 00:00 UTC
 
+# Cancel any in-flight jobs for the same PR/branch so there's only one active
+# at a time
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
