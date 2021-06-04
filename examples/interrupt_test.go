@@ -41,7 +41,7 @@ func ExampleInterrupt() {
 
 	// Spin up a goroutine to send us an interrupt in a second
 	go func() {
-		time.Sleep(1)
+		time.Sleep(time.Second)
 		fmt.Println("Interrupting!")
 		interrupt_handle.Interrupt()
 	}()
