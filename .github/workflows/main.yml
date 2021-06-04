@@ -65,6 +65,10 @@ jobs:
         bazelisk build --subcommands=pretty_print --verbose_failures --compiler=mingw-gcc :go_default_library
         bazelisk test --subcommands=pretty_print --verbose_failures --compiler=mingw-gcc :go_default_test
       if: matrix.os == 'windows-latest'
+    - name: Test vendoring on *nix
+      shell: bash
+      run: ./ci/test-vendoring.sh
+      if: matrix.os != 'windows-latest'
 
   coverage:
     runs-on: ubuntu-latest
