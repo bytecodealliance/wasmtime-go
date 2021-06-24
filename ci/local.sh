@@ -20,7 +20,7 @@ if [ ! -d "$build" ]; then
   build="$wasmtime/target/debug"
 fi
 # Use absolute path for symbolic links
-build=$(readlink -f "$build")
+build=$(cd "$build" && pwd)
 
 if [ ! -f "$build/libwasmtime.a" ]; then
   echo 'Missing libwasmtime.a. Did you `cargo build -p wasmtime-c-api`?'
