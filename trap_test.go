@@ -59,7 +59,11 @@ wasm backtrace:
     2:   0x1c - <unknown>!<wasm function 0>
 `
 	if trap.Error() != expected {
-		t.Fatalf("expected\n%s\ngot\n%s", trap.Error(), expected)
+		t.Fatalf("expected\n%s\ngot\n%s", expected, trap.Error())
+	}
+	expCode := UnreachableCodeReached
+	if code := trap.Code(); code != nil && *code != expCode {
+		t.Fatalf("expected %v got %v", expCode, code)
 	}
 }
 
