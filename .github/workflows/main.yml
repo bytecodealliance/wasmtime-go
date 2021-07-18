@@ -36,6 +36,8 @@ jobs:
         go-version: ${{ matrix.go }}
     - run: go vet
     - run: go test
+    - run: go test
+      working-directory: examples
     - run: go test -tags debug
     - run: go test -tags debug
       env:
