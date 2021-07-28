@@ -190,3 +190,57 @@ func TestLinkerGetOneByName(t *testing.T) {
 	f = linker.Get(store, "foo", "baz")
 	f.Func().Call(store)
 }
+
+func TestLinkerFuncs(t *testing.T) {
+	engine := NewEngine()
+	linker := NewLinker(engine)
+	var called int
+	err := linker.FuncWrap("foo", "bar", func() {
+		called += 1
+	})
+	check(err)
+
+	wasm, err := Wat2Wasm(`
+	    (module
+		(import "foo" "bar" (func))
+		(start 0)
+	    )
+	`)
+	check(err)
+
+	module, err := NewModule(engine, wasm)
+	check(err)
+
+	_, err = linker.Instantiate(NewStore(engine), module)
+	check(err)
+	if called != 1 {
+		panic("expected a call")
+	}
+
+	_, err = linker.Instantiate(NewStore(engine), module)
+	check(err)
+	if called != 2 {
+		panic("expected a call")
+	}
+
+	cb := func(caller *Caller, args []Val) ([]Val, *Trap) {
+		called += 2
+		return []Val{}, nil
+	}
+	ty := NewFuncType([]*ValType{}, []*ValType{})
+	linker.AllowShadowing(true)
+	err = linker.FuncNew("foo", "bar", ty, cb)
+	check(err)
+
+	_, err = linker.Instantiate(NewStore(engine), module)
+	check(err)
+	if called != 4 {
+		panic("expected a call")
+	}
+
+	_, err = linker.Instantiate(NewStore(engine), module)
+	check(err)
+	if called != 6 {
+		panic("expected a call")
+	}
+}

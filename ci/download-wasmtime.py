@@ -13,6 +13,7 @@ urls = [
     ['wasmtime-dev-x86_64-mingw-c-api.zip', 'windows-x86_64'],
     ['wasmtime-dev-x86_64-linux-c-api.tar.xz', 'linux-x86_64'],
     ['wasmtime-dev-x86_64-macos-c-api.tar.xz', 'macos-x86_64'],
+    ['wasmtime-dev-aarch64-linux-c-api.tar.xz', 'linux-aarch64'],
 ]
 
 try:
