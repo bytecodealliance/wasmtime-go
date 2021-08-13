@@ -3,8 +3,9 @@ package wasmtime
 import "testing"
 
 func TestMemoryType(t *testing.T) {
-	ty := NewMemoryType(Limits{Min: 0, Max: 100})
-	ty.Limits()
+	ty := NewMemoryType(0, true, 100)
+	ty.Minimum()
+	ty.Maximum()
 
 	ty2 := ty.AsExternType().MemoryType()
 	if ty2 == nil {
@@ -18,5 +19,16 @@ func TestMemoryType(t *testing.T) {
 	}
 	if ty.AsExternType().TableType() != nil {
 		panic("working cast")
+	}
+}
+
+func TestMemoryType64(t *testing.T) {
+	ty := NewMemoryType64(0x100000000, true, 0x100000001)
+	if ty.Minimum() != 0x100000000 {
+		panic("bad limits")
+	}
+	present, max := ty.Maximum()
+	if !present || max != 0x100000001 {
+		panic("bad limits")
 	}
 }

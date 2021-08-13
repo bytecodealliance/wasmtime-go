@@ -81,10 +81,10 @@ func TestInstance(t *testing.T) {
 	if exports[2].Type(store).TableType().Element().Kind() != KindFuncref {
 		panic("bad table type")
 	}
-	if m.Type(store).Limits().Min != 1 {
+	if m.Type(store).Minimum() != 1 {
 		panic("bad memory type")
 	}
-	if exports[3].Type(store).MemoryType().Limits().Min != 1 {
+	if exports[3].Type(store).MemoryType().Minimum() != 1 {
 		panic("bad memory type")
 	}
 }

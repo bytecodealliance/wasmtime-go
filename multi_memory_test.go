@@ -32,13 +32,21 @@ func TestMultiMemoryExported(t *testing.T) {
 	if exports[0].Type().MemoryType() == nil {
 		panic("wrong export type")
 	}
-	if (exports[0].Type().MemoryType().Limits() != Limits{Min: 2, Max: 3}) {
+	if exports[0].Type().MemoryType().Minimum() != 2 {
+		panic("wrong memory limits")
+	}
+	present, max := exports[0].Type().MemoryType().Maximum()
+	if !present || max != 3 {
 		panic("wrong memory limits")
 	}
 	if exports[1].Type().MemoryType() == nil {
 		panic("wrong export type")
 	}
-	if (exports[1].Type().MemoryType().Limits() != Limits{Min: 2, Max: 4}) {
+	if exports[1].Type().MemoryType().Minimum() != 2 {
+		panic("wrong memory limits")
+	}
+	present, max = exports[1].Type().MemoryType().Maximum()
+	if !present || max != 4 {
 		panic("wrong memory limits")
 	}
 
@@ -63,11 +71,11 @@ func TestMultiMemoryImported(t *testing.T) {
 	}
 	store := multiMemoryStore()
 
-	mem0, err := NewMemory(store, NewMemoryType(Limits{Min: 1, Max: 3}))
+	mem0, err := NewMemory(store, NewMemoryType(1, true, 3))
 	if err != nil {
 		panic(err)
 	}
-	mem1, err := NewMemory(store, NewMemoryType(Limits{Min: 2, Max: 4}))
+	mem1, err := NewMemory(store, NewMemoryType(2, true, 4))
 	if err != nil {
 		panic(err)
 	}
