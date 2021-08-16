@@ -3,25 +3,27 @@ package wasmtime
 import "testing"
 
 func TestTableType(t *testing.T) {
-	ty := NewTableType(NewValType(KindI32), Limits{})
+	ty := NewTableType(NewValType(KindI32), 0, false, 0)
 	if ty.Element().Kind() != KindI32 {
 		panic("invalid kind")
 	}
-	if ty.Limits().Min != 0 {
+	if ty.Minimum() != 0 {
 		panic("invalid min")
 	}
-	if ty.Limits().Max != 0 {
+	present, _ := ty.Maximum()
+	if present {
 		panic("invalid max")
 	}
 
-	ty = NewTableType(NewValType(KindF64), Limits{Min: 1, Max: 129})
+	ty = NewTableType(NewValType(KindF64), 1, true, 129)
 	if ty.Element().Kind() != KindF64 {
 		panic("invalid kind")
 	}
-	if ty.Limits().Min != 1 {
+	if ty.Minimum() != 1 {
 		panic("invalid min")
 	}
-	if ty.Limits().Max != 129 {
+	present, max := ty.Maximum()
+	if !present || max != 129 {
 		panic("invalid max")
 	}
 

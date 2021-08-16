@@ -87,7 +87,7 @@ func TestRefTypesTable(t *testing.T) {
 	store := refTypesStore()
 	table, err := NewTable(
 		store,
-		NewTableType(NewValType(KindExternref), Limits{Min: 10, Max: LimitsMaxNone}),
+		NewTableType(NewValType(KindExternref), 10, false, 0),
 		ValExternref("init"),
 	)
 	if err != nil {

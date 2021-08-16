@@ -27,7 +27,7 @@ func TestLinker(t *testing.T) {
 	g, err := NewGlobal(store, NewGlobalType(NewValType(KindI32), false), ValI32(0))
 	assertNoError(err)
 	assertNoError(linker.Define("", "g", g))
-	m, err := NewMemory(store, NewMemoryType(Limits{Min: 1, Max: 0xffffffff}))
+	m, err := NewMemory(store, NewMemoryType(1, true, 300))
 	assertNoError(err)
 	assertNoError(linker.Define("", "m", m))
 	assertNoError(linker.Define("other", "m", m))

@@ -100,7 +100,7 @@ func TestModuleImports(t *testing.T) {
 	if imports[3].Type().MemoryType() == nil {
 		panic("wrong import type")
 	}
-	if imports[3].Type().MemoryType().Limits().Min != 1 {
+	if imports[3].Type().MemoryType().Minimum() != 1 {
 		panic("wrong import type")
 	}
 }
@@ -164,7 +164,7 @@ func TestModuleExports(t *testing.T) {
 	if exports[3].Type().MemoryType() == nil {
 		panic("wrong export type")
 	}
-	if exports[3].Type().MemoryType().Limits().Min != 1 {
+	if exports[3].Type().MemoryType().Minimum() != 1 {
 		panic("wrong export type")
 	}
 }

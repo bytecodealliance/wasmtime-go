@@ -4,7 +4,7 @@ import "testing"
 
 func TestTable(t *testing.T) {
 	store := NewStore(NewEngine())
-	ty := NewTableType(NewValType(KindFuncref), Limits{Min: 1, Max: 3})
+	ty := NewTableType(NewValType(KindFuncref), 1, true, 3)
 	table, err := NewTable(store, ty, ValFuncref(nil))
 	if err != nil {
 		panic(err)

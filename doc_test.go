@@ -197,7 +197,7 @@ func Example_memory() {
 
 	// Finally we can also create standalone memories to get imported by
 	// wasm modules too.
-	memorytype := NewMemoryType(Limits{Min: 5, Max: 5})
+	memorytype := NewMemoryType(5, true, 5)
 	memory2, err := NewMemory(store, memorytype)
 	assert(err == nil)
 	assert(memory2.Size(store) == 5)
