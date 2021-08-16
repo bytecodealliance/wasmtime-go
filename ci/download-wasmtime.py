@@ -48,6 +48,8 @@ for i, arr in enumerate(urls):
 
 for dylib in glob.glob("build/**/*.dll"):
     os.remove(dylib)
+for dylib in glob.glob("build/**/*.dll.a"):
+    os.remove(dylib)
 for dylib in glob.glob("build/**/*.dylib"):
     os.remove(dylib)
 for dylib in glob.glob("build/**/*.so"):
