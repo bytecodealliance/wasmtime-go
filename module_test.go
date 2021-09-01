@@ -1,6 +1,10 @@
 package wasmtime
 
-import "testing"
+import (
+	"io/ioutil"
+	"os"
+	"testing"
+)
 
 func TestModule(t *testing.T) {
 	_, err := NewModule(NewEngine(), []byte{})
@@ -192,6 +196,21 @@ func TestModuleSerialize(t *testing.T) {
 	}
 
 	_, err = NewModuleDeserialize(engine, bytes)
+	if err != nil {
+		panic(err)
+	}
+
+	tmpfile, err := ioutil.TempFile("", "example")
+	if err != nil {
+		panic(err)
+	}
+	defer os.Remove(tmpfile.Name())
+
+	if _, err := tmpfile.Write(bytes); err != nil {
+		panic(err)
+	}
+	tmpfile.Close()
+	_, err = NewModuleDeserializeFile(engine, tmpfile.Name())
 	if err != nil {
 		panic(err)
 	}
