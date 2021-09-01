@@ -209,6 +209,7 @@ func TestModuleSerialize(t *testing.T) {
 	if _, err := tmpfile.Write(bytes); err != nil {
 		panic(err)
 	}
+	tmpfile.Close()
 	_, err = NewModuleDeserializeFile(engine, tmpfile.Name())
 	if err != nil {
 		panic(err)
