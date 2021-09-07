@@ -25,13 +25,13 @@ jobs:
     - uses: actions/checkout@v2
 
     # first download wasmtime's last static library build using python
-    - uses: actions/setup-python@v1
+    - uses: actions/setup-python@v2
       with:
         python-version: 3.8
     - run: python ci/download-wasmtime.py
 
     # then run our go tests ...
-    - uses: actions/setup-go@v1
+    - uses: actions/setup-go@v2
       with:
         go-version: ${{ matrix.go }}
     - run: go vet
@@ -74,11 +74,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: actions/setup-python@v1
+    - uses: actions/setup-python@v2
       with:
         python-version: 3.8
     - run: python ci/download-wasmtime.py
-    - uses: actions/setup-go@v1
+    - uses: actions/setup-go@v2
       with:
         go-version: '1.14'
     - run: go test -coverprofile cover.out ./...
@@ -92,7 +92,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: actions/setup-go@v1
+    - uses: actions/setup-go@v2
       with:
         go-version: '1.14'
     # https://stackoverflow.com/questions/42510140/check-format-for-continous-integration
