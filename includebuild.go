@@ -13,6 +13,7 @@ import (
 	_ "github.com/bytecodealliance/wasmtime-go/build/include"
 	_ "github.com/bytecodealliance/wasmtime-go/build/include/wasmtime"
 	_ "github.com/bytecodealliance/wasmtime-go/build/linux-x86_64"
+	_ "github.com/bytecodealliance/wasmtime-go/build/macos-aarch64"
 	_ "github.com/bytecodealliance/wasmtime-go/build/macos-x86_64"
 	_ "github.com/bytecodealliance/wasmtime-go/build/windows-x86_64"
 )
