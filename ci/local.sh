@@ -8,7 +8,7 @@ fi
 
 # Clean and re-create "build" directory hierarchy
 rm -rf build
-for d in "include" "include/wasmtime" "linux-x86_64" "macos-x86_64" "windows-x86_64" "macos-aarch64"; do
+for d in "include" "include/wasmtime" "linux-x86_64" "macos-x86_64" "windows-x86_64" "linux-aarch64" "macos-aarch64"; do
   path="build/$d"
   mkdir -p "$path"
   name=$(basename $d)
@@ -26,7 +26,7 @@ if [ ! -f "$build/libwasmtime.a" ]; then
   echo 'Missing libwasmtime.a. Did you `cargo build -p wasmtime-c-api`?'
 fi
 
-for d in "linux-x86_64" "macos-x86_64" "macos-aarch64"; do
+for d in "linux-x86_64" "macos-x86_64" "linux-aarch64" "macos-aarch64"; do
   ln -s "$build/libwasmtime.a" "build/$d/libwasmtime.a"
 done
 
