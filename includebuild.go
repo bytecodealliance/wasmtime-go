@@ -11,6 +11,7 @@ import (
 	// Import these build directories in order to have them
 	// included in vendored dependencies.
 	// Cf. https://github.com/golang/go/issues/26366
+
 	_ "github.com/bytecodealliance/wasmtime-go/build/include"
 	_ "github.com/bytecodealliance/wasmtime-go/build/include/wasmtime"
 	_ "github.com/bytecodealliance/wasmtime-go/build/linux-aarch64"
