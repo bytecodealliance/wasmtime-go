@@ -52,7 +52,7 @@ func TestTrapFrames(t *testing.T) {
 		panic("bad function index")
 	}
 
-	expected := `wasm trap: unreachable
+	expected := `wasm trap: wasm ` + "`unreachable`" + ` instruction executed
 wasm backtrace:
     0:   0x26 - <unknown>!bar
     1:   0x21 - <unknown>!foo
