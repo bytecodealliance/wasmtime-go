@@ -17,11 +17,13 @@ urls = [
 ]
 
 try:
-    shutil.rmtree('build')
+    # keep directory structure, only iremove files
+    for subdir, dirs, files in os.walk("build"):
+        dir_name = os.path.basename(os.path.normpath(subdir))
+        for file in files:
+            os.unlink(os.path.join(subdir, file))
 except FileNotFoundError:
-    pass
-
-os.makedirs('build')
+    os.makedirs('build')
 
 for i, arr in enumerate(urls):
     filename, dirname = arr
@@ -41,9 +43,9 @@ for i, arr in enumerate(urls):
 
     src = filename.replace('.zip', '').replace('.tar.xz', '')
     if i == 0:
-        os.rename(src + '/include', 'build/include')
+        shutil.copytree(src + '/include', 'build/include', dirs_exist_ok=True)
 
-    os.rename(src + '/lib', 'build/' + dirname)
+    shutil.copytree(src + '/lib', 'build/' + dirname, dirs_exist_ok=True)
     shutil.rmtree(src)
 
 for dylib in glob.glob("build/**/*.dll"):
