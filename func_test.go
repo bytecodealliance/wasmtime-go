@@ -522,3 +522,52 @@ func TestCallFuncFromCaller(t *testing.T) {
 	_, err = instance.GetExport(store, "f1").Func().Call(store)
 	check(err)
 }
+
+func TestPanicTraps(t *testing.T) {
+	wasm, err := Wat2Wasm(`
+	(module
+		(import "" "" (func $i (param i32)))
+		(func (export "h")
+		    i32.const 0
+		    call $i
+		    i32.const 1
+		    call $i)
+	)`)
+	check(err)
+
+	store := NewStore(NewEngine())
+
+	correctPanic := false
+
+	f := WrapFunc(store, func(arg int32) {
+		if arg == 0 {
+			correctPanic = true
+			panic("got the right argument")
+		} else {
+			correctPanic = false
+			panic("expected zero")
+		}
+	})
+
+	module, err := NewModule(store.Engine, wasm)
+	check(err)
+
+	instance, err := NewInstance(store, module, []AsExtern{f})
+	check(err)
+
+	f = instance.GetExport(store, "h").Func()
+	var lastPanic interface{}
+	func() {
+		defer func() { lastPanic = recover() }()
+		f.Call(store)
+		panic("should have panicked")
+	}()
+
+	if lastPanic == nil {
+		panic("expected a panic")
+	}
+	if !correctPanic {
+		panic("wasm was resumed after initial panic")
+	}
+
+}
