@@ -138,7 +138,7 @@ func ExampleLinker() {
 	// afterwards
 	instance1, err := linker.Instantiate(store, module1)
 	check(err)
-	doubleAndAdd := instance1.GetExport(store, "double_and_add").Func()
+	doubleAndAdd := instance1.GetFunc(store, "double_and_add")
 	result, err := doubleAndAdd.Call(store, 2, 3)
 	check(err)
 	fmt.Print(result.(int32))
