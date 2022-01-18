@@ -102,7 +102,10 @@ func main() {
 
     // After we've instantiated we can lookup our `run` function and call
     // it.
-    run := instance.GetExport(store, "run").Func()
+    run := instance.GetFunc(store, "run")
+    if run == nil {
+        panic("not a function")
+    }
     _, err = run.Call(store)
     check(err)
 }

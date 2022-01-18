@@ -519,7 +519,7 @@ func TestCallFuncFromCaller(t *testing.T) {
 	instance, err := NewInstance(store, module, []AsExtern{f})
 	check(err)
 
-	_, err = instance.GetExport(store, "f1").Func().Call(store)
+	_, err = instance.GetFunc(store, "f1").Call(store)
 	check(err)
 }
 
@@ -555,7 +555,7 @@ func TestPanicTraps(t *testing.T) {
 	instance, err := NewInstance(store, module, []AsExtern{f})
 	check(err)
 
-	f = instance.GetExport(store, "h").Func()
+	f = instance.GetFunc(store, "h")
 	var lastPanic interface{}
 	func() {
 		defer func() { lastPanic = recover() }()

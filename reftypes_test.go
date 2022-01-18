@@ -41,7 +41,7 @@ func TestRefTypesSmoke(t *testing.T) {
 )
 `)
 
-	null_externref := instance.GetExport(store, "null_externref").Func()
+	null_externref := instance.GetFunc(store, "null_externref")
 	result, err := null_externref.Call(store)
 	if err != nil {
 		panic(err)
@@ -50,7 +50,7 @@ func TestRefTypesSmoke(t *testing.T) {
 		panic("expected nil result")
 	}
 
-	f := instance.GetExport(store, "f").Func()
+	f := instance.GetFunc(store, "f")
 	result, err = f.Call(store, true)
 	if err != nil {
 		panic(err)
@@ -327,7 +327,7 @@ func TestFuncFinalizer(t *testing.T) {
 	instance, store := refTypesInstance(`
 	      (module (func (export "f") (param externref)))
 	`)
-	f := instance.GetExport(store, "f").Func()
+	f := instance.GetFunc(store, "f")
 	obj, gc := newObjToDrop()
 	_, err := f.Call(store, obj)
 	if err != nil {

@@ -45,7 +45,7 @@ func Example() {
 
 	// After we've instantiated we can lookup our `run` function and call
 	// it.
-	run := instance.GetExport(store, "run").Func()
+	run := instance.GetFunc(store, "run")
 	_, err = run.Call(store)
 	check(err)
 
@@ -91,7 +91,7 @@ func Example_gcd() {
 	check(err)
 	instance, err := NewInstance(store, module, []AsExtern{})
 	check(err)
-	run := instance.GetExport(store, "gcd").Func()
+	run := instance.GetFunc(store, "gcd")
 	result, err := run.Call(store, 6, 27)
 	check(err)
 	fmt.Printf("gcd(6, 27) = %d\n", result.(int32))
@@ -126,9 +126,9 @@ func Example_memory() {
 
 	// Load up our exports from the instance
 	memory := instance.GetExport(store, "memory").Memory()
-	sizeFn := instance.GetExport(store, "size").Func()
-	loadFn := instance.GetExport(store, "load").Func()
-	storeFn := instance.GetExport(store, "store").Func()
+	sizeFn := instance.GetFunc(store, "size")
+	loadFn := instance.GetFunc(store, "load")
+	storeFn := instance.GetFunc(store, "store")
 
 	// some helper functions we'll use below
 	call32 := func(f *Func, args ...interface{}) int32 {
@@ -254,7 +254,7 @@ func Example_multi() {
 	instance, err := NewInstance(store, module, []AsExtern{callback})
 	check(err)
 
-	g := instance.GetExport(store, "g").Func()
+	g := instance.GetFunc(store, "g")
 
 	results, err := g.Call(store, 1, 3)
 	check(err)
@@ -266,7 +266,7 @@ func Example_multi() {
 	assert(a == 4)
 	assert(b == 2)
 
-	roundTripMany := instance.GetExport(store, "round_trip_many").Func()
+	roundTripMany := instance.GetFunc(store, "round_trip_many")
 	results, err = roundTripMany.Call(store, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
 	check(err)
 	arr = results.([]Val)
@@ -342,7 +342,7 @@ func Example_wasi() {
 	check(err)
 
 	// Run the function
-	nom := instance.GetExport(store, "_start").Func()
+	nom := instance.GetFunc(store, "_start")
 	_, err = nom.Call(store)
 	check(err)
 
