@@ -71,9 +71,58 @@ func TestFuelConsumed(t *testing.T) {
 
 	fuel, enable := store.FuelConsumed()
 	if enable != false {
-		panic("expected no error")
+		t.Fatal("expected not enable")
 	}
 	if fuel != 0 {
 		t.Fatalf("fuel is %d, not zero", fuel)
+	}
+}
+
+func TestAddFuel(t *testing.T) {
+	config := NewConfig()
+	config.SetConsumeFuel(true)
+	engine := NewEngineWithConfig(config)
+	store := NewStore(engine)
+
+	fuel, enable := store.FuelConsumed()
+	if enable != true {
+		t.Fatal("expected enabled")
+	}
+	if fuel != 0 {
+		t.Fatalf("fuel is %d, not zero", fuel)
+	}
+
+	const add_fuel = 3
+	if err := store.AddFuel(add_fuel); err != nil {
+		t.Fatal("expected no error")
+	}
+}
+
+func TestConsumeFuel(t *testing.T) {
+	config := NewConfig()
+	config.SetConsumeFuel(true)
+	engine := NewEngineWithConfig(config)
+	store := NewStore(engine)
+
+	fuel, enable := store.FuelConsumed()
+	if enable != true {
+		t.Fatal("expected enabled")
+	}
+	if fuel != 0 {
+		t.Fatalf("fuel is %d, not zero", fuel)
+	}
+
+	const add_fuel = 3
+	if err := store.AddFuel(add_fuel); err != nil {
+		t.Fatal("expected no error")
+	}
+
+	consume_fuel := uint64(1)
+	remaining, err := store.ConsumeFuel(consume_fuel)
+	if err != nil {
+		t.Fatal("expected no error")
+	}
+	if remaining != (add_fuel - consume_fuel) {
+		t.Fatalf("expected %d, but %d", add_fuel-consume_fuel, remaining)
 	}
 }

@@ -283,7 +283,8 @@ func (store *Store) AddFuel(fuel uint64) error {
 	return nil
 }
 
-func (store *Store) ConsumeFuel(fuel, remaining uint64) (uint64, error) {
+func (store *Store) ConsumeFuel(fuel uint64) (uint64, error) {
+	var remaining uint64
 	c_remaining := C.uint64_t(remaining)
 	err := C.wasmtime_context_consume_fuel(store.Context(), C.uint64_t(fuel), &c_remaining)
 	runtime.KeepAlive(store)
