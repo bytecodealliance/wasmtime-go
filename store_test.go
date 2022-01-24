@@ -69,7 +69,10 @@ func TestFuelConsumed(t *testing.T) {
 	engine := NewEngine()
 	store := NewStore(engine)
 
-	fuel := store.FuelConsumed()
+	fuel, enable := store.FuelConsumed()
+	if enable != false {
+		panic("expected no error")
+	}
 	if fuel != 0 {
 		t.Fatalf("fuel is %d, not zero", fuel)
 	}

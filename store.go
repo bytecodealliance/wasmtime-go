@@ -265,12 +265,31 @@ func goFinalizeFuncWrap(env unsafe.Pointer) {
 	gEngineFuncWrapSlab.deallocate(idx)
 }
 
-func (store *Store) FuelConsumed() (uint64, error) {
+func (store *Store) FuelConsumed() (uint64, bool) {
 	fuel := C.uint64_t(0)
-	err := C.wasmtime_context_fuel_consumed(store.Context(), &fuel)
+	enable := C.wasmtime_context_fuel_consumed(store.Context(), &fuel)
+	runtime.KeepAlive(store)
+
+	return uint64(fuel), bool(enable)
+}
+
+func (store *Store) AddFuel(fuel uint64) error {
+	err := C.wasmtime_context_add_fuel(store.Context(), C.uint64_t(fuel))
+	runtime.KeepAlive(store)
+	if err != nil {
+		return mkError(err)
+	}
+
+	return nil
+}
+
+func (store *Store) ConsumeFuel(fuel, remaining uint64) (uint64, error) {
+	c_remaining := C.uint64_t(remaining)
+	err := C.wasmtime_context_consume_fuel(store.Context(), C.uint64_t(fuel), &c_remaining)
 	runtime.KeepAlive(store)
 	if err != nil {
 		return 0, mkError(err)
 	}
-	return uint64(fuel), nil
+
+	return uint64(c_remaining), nil
 }
