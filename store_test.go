@@ -64,3 +64,13 @@ func TestInterruptWasm(t *testing.T) {
 		panic("expected a trap")
 	}
 }
+
+func TestFuelConsumed(t *testing.T) {
+	engine := NewEngine()
+	store := NewStore(engine)
+
+	fuel := store.FuelConsumed()
+	if fuel != 0 {
+		t.Fatalf("fuel is %d, not zero", fuel)
+	}
+}

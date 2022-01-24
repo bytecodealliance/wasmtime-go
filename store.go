@@ -264,3 +264,13 @@ func goFinalizeFuncWrap(env unsafe.Pointer) {
 	delete(gEngineFuncWrap, idx)
 	gEngineFuncWrapSlab.deallocate(idx)
 }
+
+func (store *Store) FuelConsumed() (uint64, error) {
+	fuel := C.uint64_t(0)
+	err := C.wasmtime_context_fuel_consumed(store.Context(), &fuel)
+	runtime.KeepAlive(store)
+	if err != nil {
+		return 0, mkError(err)
+	}
+	return uint64(fuel), nil
+}

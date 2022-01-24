@@ -10,6 +10,7 @@ func TestConfig(t *testing.T) {
 	NewConfig().SetWasmBulkMemory(true)
 	NewConfig().SetWasmMultiValue(true)
 	NewConfig().SetWasmMultiMemory(true)
+	NewConfig().SetConsumFuel(true)
 	err := NewConfig().SetStrategy(StrategyAuto)
 	if err != nil {
 		panic(err)
