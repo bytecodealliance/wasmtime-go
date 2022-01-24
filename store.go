@@ -191,7 +191,7 @@ func insertFuncNew(data *storeData, ty *FuncType, callback func(*Caller, []Val) 
 		defer gEngineFuncLock.Unlock()
 		idx = gEngineFuncNewSlab.allocate()
 		gEngineFuncNew[idx] = &entry
-		idx = (idx << 1) | 0
+		idx = (idx << 1)
 	} else {
 		idx = len(data.funcNew)
 		data.funcNew = append(data.funcNew, entry)
@@ -218,7 +218,7 @@ func insertFuncWrap(data *storeData, callback reflect.Value) int {
 		defer gEngineFuncLock.Unlock()
 		idx = gEngineFuncWrapSlab.allocate()
 		gEngineFuncWrap[idx] = &entry
-		idx = (idx << 1) | 0
+		idx = (idx << 1)
 	} else {
 		idx = len(data.funcWrap)
 		data.funcWrap = append(data.funcWrap, entry)
