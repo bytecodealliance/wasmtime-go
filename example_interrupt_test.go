@@ -16,13 +16,10 @@ func Example_interrupt() {
 	// Enable interruptable code via `Config` and then create an interrupt
 	// handle which we'll use later to interrupt running code.
 	config := wasmtime.NewConfig()
-	config.SetInterruptable(true)
+	config.SetEpochInterruption(true)
 	engine := wasmtime.NewEngineWithConfig(config)
 	store := wasmtime.NewStore(engine)
-	interruptHandle, err := store.InterruptHandle()
-	if err != nil {
-		panic(err)
-	}
+	store.SetEpochDeadline(1)
 
 	// Compile and instantiate a small example with an infinite loop.
 	wasm, err := wasmtime.Wat2Wasm(`
@@ -52,7 +49,7 @@ func Example_interrupt() {
 	go func() {
 		time.Sleep(1 * time.Second)
 		fmt.Println("Interrupting!")
-		interruptHandle.Interrupt()
+		engine.IncrementEpoch()
 	}()
 
 	fmt.Println("Entering infinite loop ...")
@@ -63,8 +60,8 @@ func Example_interrupt() {
 	}
 
 	fmt.Println("trap received...")
-	if !strings.Contains(trap.Message(), "wasm trap: interrupt") {
-		panic("Unexpected trap")
+	if !strings.Contains(trap.Message(), "epoch deadline reached") {
+		panic("Unexpected trap: " + trap.Message())
 	}
 
 	// Output:

@@ -179,10 +179,11 @@ func (cfg *Config) CacheConfigLoad(path string) error {
 	return nil
 }
 
-// SetInterruptable configures whether generated wasm code can be interrupted via interrupt
-// handles.
-func (cfg *Config) SetInterruptable(interruptable bool) {
-	C.wasmtime_config_interruptable_set(cfg.ptr(), C.bool(interruptable))
+// SetEpochInterruption enables epoch-based instrumentation of generated code to
+// interrupt WebAssembly execution when the current engine epoch exceeds a
+// defined threshold.
+func (cfg *Config) SetEpochInterruption(enable bool) {
+	C.wasmtime_config_epoch_interruption_set(cfg.ptr(), C.bool(enable))
 	runtime.KeepAlive(cfg)
 }
 
