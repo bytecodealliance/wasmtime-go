@@ -7,34 +7,11 @@ func TestStore(t *testing.T) {
 	NewStore(engine)
 }
 
-func TestInterruptHandle(t *testing.T) {
-	store := NewStore(NewEngine())
-	handle, err := store.InterruptHandle()
-	if handle != nil {
-		panic("expected nil handle")
-	}
-	if err == nil {
-		panic("expected an error")
-	}
-
-	config := NewConfig()
-	config.SetInterruptable(true)
-	store = NewStore(NewEngineWithConfig(config))
-	handle, err = store.InterruptHandle()
-	if err != nil {
-		panic(err)
-	}
-	handle.Interrupt()
-}
-
 func TestInterruptWasm(t *testing.T) {
 	config := NewConfig()
-	config.SetInterruptable(true)
+	config.SetEpochInterruption(true)
 	store := NewStore(NewEngineWithConfig(config))
-	handle, err := store.InterruptHandle()
-	if err != nil {
-		panic(err)
-	}
+	store.SetEpochDeadline(1)
 	wasm, err := Wat2Wasm(`
 	  (import "" "" (func))
 	  (func
@@ -49,8 +26,9 @@ func TestInterruptWasm(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
+	engine := store.Engine
 	f := WrapFunc(store, func() {
-		handle.Interrupt()
+		engine.IncrementEpoch()
 	})
 	instance, err := NewInstance(store, module, []AsExtern{f})
 	if instance != nil {
