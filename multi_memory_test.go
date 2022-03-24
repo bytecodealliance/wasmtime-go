@@ -24,8 +24,7 @@ func TestMultiMemoryExported(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	ty := module.Type()
-	exports := ty.Exports()
+	exports := module.Exports()
 	if len(exports) != 2 {
 		panic("wrong number of exports")
 	}

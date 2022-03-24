@@ -49,7 +49,7 @@ func TestModuleImports(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	imports := module.Type().Imports()
+	imports := module.Imports()
 	if len(imports) != 4 {
 		panic("wrong number of imports")
 	}
@@ -125,7 +125,7 @@ func TestModuleExports(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	exports := module.Type().Exports()
+	exports := module.Exports()
 	if len(exports) != 4 {
 		panic("wrong number of exports")
 	}
