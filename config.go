@@ -92,12 +92,6 @@ func (cfg *Config) SetWasmMultiValue(enabled bool) {
 	runtime.KeepAlive(cfg)
 }
 
-// SetWasmModuleLinking configures whether the wasm module linking proposal is enabled
-func (cfg *Config) SetWasmModuleLinking(enabled bool) {
-	C.wasmtime_config_wasm_module_linking_set(cfg.ptr(), C.bool(enabled))
-	runtime.KeepAlive(cfg)
-}
-
 // SetWasmMultiMemory configures whether the wasm multi memory proposal is enabled
 func (cfg *Config) SetWasmMultiMemory(enabled bool) {
 	C.wasmtime_config_wasm_multi_memory_set(cfg.ptr(), C.bool(enabled))
