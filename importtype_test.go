@@ -1,29 +1,21 @@
 package wasmtime
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 func TestImportType(t *testing.T) {
 	fty := NewFuncType([]*ValType{}, []*ValType{})
 	ty := NewImportType("a", "b", fty)
-	if ty.Module() != "a" {
-		panic("invalid module")
-	}
-	if *ty.Name() != "b" {
-		panic("invalid name")
-	}
-	if ty.Type().FuncType() == nil {
-		panic("invalid ty")
-	}
+	assert.Equal(t, "a", ty.Module())
+	assert.Equal(t, "b", *ty.Name())
+	assert.NotNil(t, ty.Type().FuncType())
 
 	gty := NewGlobalType(NewValType(KindI32), true)
 	ty = NewImportType("", "", gty.AsExternType())
-	if ty.Module() != "" {
-		panic("invalid module")
-	}
-	if *ty.Name() != "" {
-		panic("invalid name")
-	}
-	if ty.Type().GlobalType() == nil {
-		panic("invalid ty")
-	}
+	assert.Empty(t, ty.Module())
+	assert.Empty(t, *ty.Name())
+	assert.NotNil(t, ty.Type().GlobalType())
 }

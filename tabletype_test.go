@@ -1,43 +1,30 @@
 package wasmtime
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 func TestTableType(t *testing.T) {
 	ty := NewTableType(NewValType(KindI32), 0, false, 0)
-	if ty.Element().Kind() != KindI32 {
-		panic("invalid kind")
-	}
-	if ty.Minimum() != 0 {
-		panic("invalid min")
-	}
+	assert.Equal(t, KindI32, ty.Element().Kind())
+	assert.Equal(t, uint32(0), ty.Minimum())
+
 	present, _ := ty.Maximum()
-	if present {
-		panic("invalid max")
-	}
+	assert.False(t, present)
 
 	ty = NewTableType(NewValType(KindF64), 1, true, 129)
-	if ty.Element().Kind() != KindF64 {
-		panic("invalid kind")
-	}
-	if ty.Minimum() != 1 {
-		panic("invalid min")
-	}
+	assert.Equal(t, KindF64, ty.Element().Kind())
+	assert.Equal(t, uint32(1), ty.Minimum())
+
 	present, max := ty.Maximum()
-	if !present || max != 129 {
-		panic("invalid max")
-	}
+	assert.True(t, present)
+	assert.Equal(t, uint32(129), max)
 
 	ty2 := ty.AsExternType().TableType()
-	if ty2 == nil {
-		panic("unexpected cast")
-	}
-	if ty.AsExternType().FuncType() != nil {
-		panic("working cast")
-	}
-	if ty.AsExternType().GlobalType() != nil {
-		panic("working cast")
-	}
-	if ty.AsExternType().MemoryType() != nil {
-		panic("working cast")
-	}
+	assert.NotNil(t, ty2)
+	assert.Nil(t, ty.AsExternType().FuncType())
+	assert.Nil(t, ty.AsExternType().GlobalType())
+	assert.Nil(t, ty.AsExternType().MemoryType())
 }

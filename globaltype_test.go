@@ -1,34 +1,25 @@
 package wasmtime
 
-import "testing"
-import "runtime"
+import (
+	"runtime"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 func TestGlobalType(t *testing.T) {
 	ty := NewGlobalType(NewValType(KindI32), true)
-	if ty.Content().Kind() != KindI32 {
-		panic("invalid kind")
-	}
-	if !ty.Mutable() {
-		panic("invalid mutable")
-	}
+	assert.Equal(t, KindI32, ty.Content().Kind())
+	assert.True(t, ty.Mutable())
+
 	content := ty.Content()
 	runtime.GC()
-	if content.Kind() != KindI32 {
-		panic("invalid kind")
-	}
+	assert.Equal(t, KindI32, content.Kind())
 
 	ty = NewGlobalType(NewValType(KindI32), true)
 	ty2 := ty.AsExternType().GlobalType()
-	if ty2 == nil {
-		panic("unexpected cast")
-	}
-	if ty.AsExternType().FuncType() != nil {
-		panic("working cast")
-	}
-	if ty.AsExternType().MemoryType() != nil {
-		panic("working cast")
-	}
-	if ty.AsExternType().TableType() != nil {
-		panic("working cast")
-	}
+	assert.NotNil(t, ty2)
+	assert.Nil(t, ty.AsExternType().FuncType())
+	assert.Nil(t, ty.AsExternType().MemoryType())
+	assert.Nil(t, ty.AsExternType().TableType())
 }

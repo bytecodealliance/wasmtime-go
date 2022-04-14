@@ -1,12 +1,14 @@
 package wasmtime
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 func TestTrap(t *testing.T) {
 	trap := NewTrap("message")
-	if trap.Message() != "message" {
-		panic("wrong message")
-	}
+	assert.Equal(t, trap.Message(), "message", "wrong message")
 }
 
 func TestTrapFrames(t *testing.T) {
@@ -17,40 +19,24 @@ func TestTrapFrames(t *testing.T) {
 	  (func $bar unreachable)
 	  (start 0)
 	`)
-	assertNoError(err)
+	assert.NoError(t, err)
 	module, err := NewModule(store.Engine, wasm)
-	assertNoError(err)
+	assert.NoError(t, err)
 
-	i, err := NewInstance(store, module, []AsExtern{})
-	if i != nil {
-		panic("expected failure")
-	}
-	if err == nil {
-		panic("expected failure")
-	}
+	inst, err := NewInstance(store, module, []AsExtern{})
+	assert.Nil(t, inst, "expected failure")
+	assert.Error(t, err)
+
 	trap := err.(*Trap)
 	frames := trap.Frames()
-	if len(frames) != 3 {
-		panic("expected 3 frames")
-	}
-	if *frames[0].FuncName() != "bar" {
-		panic("bad function name")
-	}
-	if *frames[1].FuncName() != "foo" {
-		panic("bad function name")
-	}
-	if frames[2].FuncName() != nil {
-		panic("bad function name")
-	}
-	if frames[0].FuncIndex() != 2 {
-		panic("bad function index")
-	}
-	if frames[1].FuncIndex() != 1 {
-		panic("bad function index")
-	}
-	if frames[2].FuncIndex() != 0 {
-		panic("bad function index")
-	}
+	assert.Len(t, frames, 3, "expected 3 frames")
+
+	assert.Equal(t, "bar", *frames[0].FuncName(), "bad function name")
+	assert.Equal(t, "foo", *frames[1].FuncName(), "bad function name")
+	assert.Equal(t, nil, frames[2].FuncName(), "bad function name")
+	assert.Equal(t, 2, frames[0].FuncIndex(), "bad function index")
+	assert.Equal(t, 1, frames[1].FuncIndex(), "bad function index")
+	assert.Equal(t, 0, frames[2].FuncIndex(), "bad function index")
 
 	expected := `wasm trap: wasm ` + "`unreachable`" + ` instruction executed
 wasm backtrace:
@@ -58,13 +44,11 @@ wasm backtrace:
     1:   0x21 - <unknown>!foo
     2:   0x1c - <unknown>!<wasm function 0>
 `
-	if trap.Error() != expected {
-		t.Fatalf("expected\n%s\ngot\n%s", expected, trap.Error())
-	}
-	expCode := UnreachableCodeReached
-	if code := trap.Code(); code != nil && *code != expCode {
-		t.Fatalf("expected %v got %v", expCode, code)
-	}
+
+	assert.Equal(t, expected, trap.Error())
+	code := trap.Code()
+	assert.NotNil(t, code)
+	assert.Equal(t, *code, UnreachableCodeReached)
 }
 
 func TestTrapModuleName(t *testing.T) {
@@ -73,23 +57,16 @@ func TestTrapModuleName(t *testing.T) {
 	  (func unreachable)
 	  (start 0)
 	)`)
-	assertNoError(err)
+	assert.NoError(t, err)
 	module, err := NewModule(store.Engine, wasm)
-	assertNoError(err)
+	assert.NoError(t, err)
 
-	i, err := NewInstance(store, module, []AsExtern{})
-	if i != nil {
-		panic("expected failure")
-	}
-	if err == nil {
-		panic("expected failure")
-	}
+	inst, err := NewInstance(store, module, []AsExtern{})
+	assert.Nil(t, inst, "expected failure")
+	assert.Error(t, err)
+
 	trap := err.(*Trap)
 	frames := trap.Frames()
-	if len(frames) != 1 {
-		panic("expected 3 frames")
-	}
-	if *frames[0].ModuleName() != "f" {
-		panic("bad module name")
-	}
+	assert.Len(t, frames, 1, "expected 1 frame")
+	assert.Equal(t, "f", *frames[0].FuncName(), "bad function name")
 }

@@ -1,6 +1,10 @@
 package wasmtime
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 func TestInstance(t *testing.T) {
 	wasm, err := Wat2Wasm(`
@@ -11,109 +15,58 @@ func TestInstance(t *testing.T) {
             (memory (export "m") 1)
           )
         `)
-	if err != nil {
-		panic(err)
-	}
+	assert.NoError(t, err)
 	store := NewStore(NewEngine())
 	module, err := NewModule(store.Engine, wasm)
-	if err != nil {
-		panic(err)
-	}
+	assert.NoError(t, err)
 	instance, err := NewInstance(store, module, []AsExtern{})
-	if err != nil {
-		panic(err)
-	}
+	assert.NoError(t, err)
 	exports := instance.Exports(store)
-	if len(exports) != 4 {
-		panic("wrong number of exports")
-	}
-	if exports[0].Func() == nil {
-		panic("not a func")
-	}
-	if exports[0].Global() != nil {
-		panic("should be a func")
-	}
-	if exports[0].Memory() != nil {
-		panic("should be a func")
-	}
-	if exports[0].Table() != nil {
-		panic("should be a func")
-	}
-	if exports[1].Func() != nil {
-		panic("should be a global")
-	}
-	if exports[1].Global() == nil {
-		panic("should be a global")
-	}
-	if exports[1].Memory() != nil {
-		panic("should be a func")
-	}
-	if exports[1].Table() != nil {
-		panic("should be a func")
-	}
-	if exports[2].Table() == nil {
-		panic("should be a table")
-	}
-	if exports[3].Memory() == nil {
-		panic("should be a memory")
-	}
+	assert.Len(t, exports, 4)
+	assert.NotNil(t, exports[0].Func())
+	assert.Nil(t, exports[0].Global())
+	assert.Nil(t, exports[0].Memory())
+	assert.Nil(t, exports[0].Table())
+
+	assert.Nil(t, exports[1].Func())
+	assert.NotNil(t, exports[1].Global())
+	assert.Nil(t, exports[1].Memory())
+	assert.Nil(t, exports[1].Table())
+
+	assert.NotNil(t, exports[2].Table())
+	assert.NotNil(t, exports[3].Memory())
 
 	f := exports[0].Func()
 	g := exports[1].Global()
 	table := exports[2].Table()
 	m := exports[3].Memory()
-
-	if len(f.Type(store).Params()) != 0 {
-		panic("bad params on type")
-	}
-	if len(exports[0].Type(store).FuncType().Params()) != 0 {
-		panic("bad params on type")
-	}
-	if g.Type(store).Content().Kind() != KindI32 {
-		panic("bad global type")
-	}
-	if exports[1].Type(store).GlobalType().Content().Kind() != KindI32 {
-		panic("bad global type")
-	}
-	if table.Type(store).Element().Kind() != KindFuncref {
-		panic("bad table type")
-	}
-	if exports[2].Type(store).TableType().Element().Kind() != KindFuncref {
-		panic("bad table type")
-	}
-	if m.Type(store).Minimum() != 1 {
-		panic("bad memory type")
-	}
-	if exports[3].Type(store).MemoryType().Minimum() != 1 {
-		panic("bad memory type")
-	}
+	assert.Len(t, f.Type(store).Params(), 0)
+	assert.Len(t, exports[0].Type(store).FuncType().Params(), 0)
+	assert.Equal(t, KindI32, g.Type(store).Content().Kind())
+	assert.Equal(t, KindI32, exports[1].Type(store).GlobalType().Content().Kind())
+	assert.Equal(t, KindFuncref, table.Type(store).Element().Kind())
+	assert.Equal(t, KindFuncref, exports[2].Type(store).TableType().Element().Kind())
+	assert.Equal(t, uint64(1), m.Type(store).Minimum())
+	assert.Equal(t, uint64(1), exports[3].Type(store).MemoryType().Minimum())
 }
 
 func TestInstanceBad(t *testing.T) {
 	store := NewStore(NewEngine())
 	wasm, err := Wat2Wasm(`(module (import "" "" (func)))`)
-	assertNoError(err)
+	assert.NoError(t, err)
 	module, err := NewModule(NewEngine(), wasm)
-	assertNoError(err)
+	assert.NoError(t, err)
 
 	// wrong number of imports
 	instance, err := NewInstance(store, module, []AsExtern{})
-	if instance != nil {
-		panic("expected nil instance")
-	}
-	if err == nil {
-		panic("expected an error")
-	}
+	assert.Nil(t, instance)
+	assert.Error(t, err)
 
 	// wrong types of imports
 	f := WrapFunc(store, func(a int32) {})
 	instance, err = NewInstance(store, module, []AsExtern{f})
-	if instance != nil {
-		panic("expected nil instance")
-	}
-	if err == nil {
-		panic("expected an error")
-	}
+	assert.Nil(t, instance)
+	assert.Error(t, err)
 }
 
 func TestInstanceGetFunc(t *testing.T) {
@@ -123,35 +76,24 @@ func TestInstanceGetFunc(t *testing.T) {
             (global (export "g") i32 (i32.const 0))
           )
 	`)
-	if err != nil {
-		panic(err)
-	}
+	assert.NoError(t, err)
+
 	store := NewStore(NewEngine())
 	module, err := NewModule(store.Engine, wasm)
-	if err != nil {
-		panic(err)
-	}
+	assert.NoError(t, err)
+
 	instance, err := NewInstance(store, module, []AsExtern{})
-	if err != nil {
-		panic(err)
-	}
+	assert.NoError(t, err)
 
 	f := instance.GetFunc(store, "f")
-	if f == nil {
-		panic("expected a function")
-	}
+	assert.NotNil(t, f, "expected a function")
+
 	_, err = f.Call(store)
-	if err != nil {
-		panic(err)
-	}
+	assert.NoError(t, err)
 
 	f = instance.GetFunc(store, "g")
-	if f != nil {
-		panic("expected an error")
-	}
+	assert.Nil(t, f, "expected an error")
 
 	f = instance.GetFunc(store, "f2")
-	if f != nil {
-		panic("expected an error")
-	}
+	assert.Nil(t, f, "expected an error")
 }

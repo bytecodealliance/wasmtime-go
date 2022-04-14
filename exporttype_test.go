@@ -1,13 +1,13 @@
 package wasmtime
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 func TestExportType(t *testing.T) {
 	et := NewExportType("x", NewMemoryType(0, false, 0))
-	if et.Name() != "x" {
-		panic("bad name")
-	}
-	if et.Type().MemoryType() == nil {
-		panic("bad type")
-	}
+	assert.Equal(t, et.Name(), "x", "bad name")
+	assert.NotNil(t, et.Type().MemoryType(), "bad type")
 }

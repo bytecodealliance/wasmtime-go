@@ -2,21 +2,15 @@ package wasmtime
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSlab(t *testing.T) {
 	var slab slab
-	if slab.allocate() != 0 {
-		panic("bad alloc")
-	}
-	if slab.allocate() != 1 {
-		panic("bad alloc")
-	}
+	assert.Equal(t, 0, slab.allocate())
+	assert.Equal(t, 1, slab.allocate())
 	slab.deallocate(0)
-	if slab.allocate() != 0 {
-		panic("bad alloc")
-	}
-	if slab.allocate() != 2 {
-		panic("bad alloc")
-	}
+	assert.Equal(t, 0, slab.allocate())
+	assert.Equal(t, 2, slab.allocate())
 }

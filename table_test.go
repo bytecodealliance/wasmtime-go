@@ -1,85 +1,53 @@
 package wasmtime
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 func TestTable(t *testing.T) {
 	store := NewStore(NewEngine())
 	ty := NewTableType(NewValType(KindFuncref), 1, true, 3)
 	table, err := NewTable(store, ty, ValFuncref(nil))
-	if err != nil {
-		panic(err)
-	}
-	if table.Size(store) != 1 {
-		panic("wrong size")
-	}
+	assert.NoError(t, err)
+	assert.Equal(t, uint32(1), table.Size(store))
 
 	f, err := table.Get(store, 0)
-	if err != nil {
-		panic(err)
-	}
-	if f.Funcref() != nil {
-		panic("expected nil")
-	}
+	assert.NoError(t, err)
+	assert.Nil(t, f.Funcref())
+
 	f, err = table.Get(store, 1)
-	if err == nil {
-		panic("expected error")
-	}
+	assert.Error(t, err)
 
 	err = table.Set(store, 0, ValFuncref(nil))
-	if err != nil {
-		panic(err)
-	}
+	assert.NoError(t, err)
 	err = table.Set(store, 1, ValFuncref(nil))
-	if err == nil {
-		panic("expected error")
-	}
+	assert.Error(t, err)
 	err = table.Set(store, 0, ValFuncref(WrapFunc(store, func() {})))
-	if err != nil {
-		panic(nil)
-	}
+	assert.NoError(t, err)
 	f, err = table.Get(store, 0)
-	if err != nil {
-		panic(err)
-	}
-	if f.Funcref() == nil {
-		panic("expected not nil")
-	}
+	assert.NoError(t, err)
+	assert.NotNil(t, f.Funcref())
 
 	prevSize, err := table.Grow(store, 1, ValFuncref(nil))
-	if err != nil {
-		panic(err)
-	}
-	if prevSize != 1 {
-		print(prevSize)
-		panic("bad prev")
-	}
+	assert.NoError(t, err)
+	assert.Equal(t, uint32(1), prevSize)
+
 	f, err = table.Get(store, 1)
-	if err != nil {
-		panic(err)
-	}
-	if f.Funcref() != nil {
-		panic("expected nil")
-	}
+	assert.NoError(t, err)
+	assert.Nil(t, f.Funcref())
 
 	called := false
 	_, err = table.Grow(store, 1, ValFuncref(WrapFunc(store, func() {
 		called = true
 	})))
-	if err != nil {
-		panic(err)
-	}
+	assert.NoError(t, err)
 	f, err = table.Get(store, 2)
-	if err != nil {
-		panic(err)
-	}
-	if called {
-		panic("called already?")
-	}
+	assert.NoError(t, err)
+	assert.False(t, called)
+
 	_, err = f.Funcref().Call(store)
-	if err != nil {
-		panic(err)
-	}
-	if !called {
-		panic("should have called")
-	}
+	assert.NoError(t, err)
+	assert.True(t, called)
 }
