@@ -3,13 +3,13 @@ package wasmtime
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestWat2Wasm(t *testing.T) {
 	wasm, err := Wat2Wasm("(module)")
-	assert.NoError(t, err)
-	assert.Len(t, wasm, 8, "wrong wasm")
+	require.NoError(t, err)
+	require.Len(t, wasm, 8, "wrong wasm")
 	_, err = Wat2Wasm("___")
-	assert.Error(t, err, "expected an error")
+	require.Error(t, err, "expected an error")
 }

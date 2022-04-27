@@ -5,7 +5,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func refTypesStore() *Store {
@@ -17,11 +17,11 @@ func refTypesStore() *Store {
 func refTypesInstance(t *testing.T, wat string) (*Instance, *Store) {
 	store := refTypesStore()
 	wasm, err := Wat2Wasm(wat)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	module, err := NewModule(store.Engine, wasm)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	instance, err := NewInstance(store, module, []AsExtern{})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	return instance, store
 }
 
@@ -39,28 +39,28 @@ func TestRefTypesSmoke(t *testing.T) {
 
 	null_externref := instance.GetFunc(store, "null_externref")
 	result, err := null_externref.Call(store)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	if result != nil {
 		panic("expected nil result")
 	}
 
 	f := instance.GetFunc(store, "f")
 	result, err = f.Call(store, true)
-	assert.NoError(t, err)
-	assert.True(t, result.(bool))
+	require.NoError(t, err)
+	require.True(t, result.(bool))
 
 	result, err = f.Call(store, "x")
-	assert.NoError(t, err)
-	assert.Equal(t, "x", result.(string))
+	require.NoError(t, err)
+	require.Equal(t, "x", result.(string))
 
 	result, err = f.Call(store, ValExternref("x"))
-	assert.NoError(t, err)
-	assert.Equal(t, "x", result.(string))
+	require.NoError(t, err)
+	require.Equal(t, "x", result.(string))
 }
 
 func TestRefTypesVal(t *testing.T) {
 	val := ValExternref("x")
-	assert.Equal(t, "x", val.Get().(string))
+	require.Equal(t, "x", val.Get().(string))
 }
 
 func TestRefTypesTable(t *testing.T) {
@@ -70,48 +70,48 @@ func TestRefTypesTable(t *testing.T) {
 		NewTableType(NewValType(KindExternref), 10, false, 0),
 		ValExternref("init"),
 	)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	for i := 0; i < 10; i++ {
 		val, err := table.Get(store, uint32(i))
-		assert.NoError(t, err)
-		assert.Equal(t, "init", val.Get().(string))
+		require.NoError(t, err)
+		require.Equal(t, "init", val.Get().(string))
 	}
 
 	_, err = table.Grow(store, 2, ValExternref("grown"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	for i := 0; i < 10; i++ {
 		val, err := table.Get(store, uint32(i))
-		assert.NoError(t, err)
-		assert.Equal(t, "init", val.Get().(string))
+		require.NoError(t, err)
+		require.Equal(t, "init", val.Get().(string))
 	}
 	for i := 10; i < 12; i++ {
 		val, err := table.Get(store, uint32(i))
-		assert.NoError(t, err)
-		assert.Equal(t, "grown", val.Get().(string))
+		require.NoError(t, err)
+		require.Equal(t, "grown", val.Get().(string))
 	}
 
 	err = table.Set(store, 7, ValExternref("lucky"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	for i := 0; i < 7; i++ {
 		val, err := table.Get(store, uint32(i))
-		assert.NoError(t, err)
-		assert.Equal(t, "init", val.Get().(string))
+		require.NoError(t, err)
+		require.Equal(t, "init", val.Get().(string))
 	}
 	val, err := table.Get(store, 7)
-	assert.NoError(t, err)
-	assert.Equal(t, "lucky", val.Get().(string))
+	require.NoError(t, err)
+	require.Equal(t, "lucky", val.Get().(string))
 
 	for i := 8; i < 10; i++ {
 		val, err := table.Get(store, uint32(i))
-		assert.NoError(t, err)
-		assert.Equal(t, "init", val.Get().(string))
+		require.NoError(t, err)
+		require.Equal(t, "init", val.Get().(string))
 	}
 	for i := 10; i < 12; i++ {
 		val, err := table.Get(store, uint32(i))
-		assert.NoError(t, err)
-		assert.Equal(t, "grown", val.Get().(string))
+		require.NoError(t, err)
+		require.Equal(t, "grown", val.Get().(string))
 	}
 }
 
@@ -122,13 +122,13 @@ func TestRefTypesGlobal(t *testing.T) {
 		NewGlobalType(NewValType(KindExternref), true),
 		ValExternref("hello"),
 	)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	val := global.Get(store)
-	assert.Equal(t, "hello", val.Get().(string))
+	require.Equal(t, "hello", val.Get().(string))
 	err = global.Set(store, ValExternref("goodbye"))
-	assert.NoError(t, err)
-	assert.Equal(t, "goodbye", global.Get(store).Get().(string))
+	require.NoError(t, err)
+	require.Equal(t, "goodbye", global.Get(store).Get().(string))
 }
 
 func TestRefTypesWrap(t *testing.T) {
@@ -136,42 +136,42 @@ func TestRefTypesWrap(t *testing.T) {
 	f := WrapFunc(store, func() error {
 		return nil
 	})
-	assert.Len(t, f.Type(store).Params(), 0)
-	assert.Len(t, f.Type(store).Results(), 1)
-	assert.Equal(t, KindExternref, f.Type(store).Results()[0].Kind())
+	require.Len(t, f.Type(store).Params(), 0)
+	require.Len(t, f.Type(store).Results(), 1)
+	require.Equal(t, KindExternref, f.Type(store).Results()[0].Kind())
 
 	ret, err := f.Call(store)
-	assert.NoError(t, err)
-	assert.Nil(t, ret)
+	require.NoError(t, err)
+	require.Nil(t, ret)
 
 	expectedErr := errors.New("message")
 	f = WrapFunc(store, func() error {
 		return expectedErr
 	})
 	ret, err = f.Call(store)
-	assert.NoError(t, err)
-	assert.ErrorIs(t, ret.(error), expectedErr)
+	require.NoError(t, err)
+	require.ErrorIs(t, ret.(error), expectedErr)
 
 	f = WrapFunc(store, func(a interface{}, b *Store, f *Func, g error) (error, *Func) {
-		assert.Equal(t, "message", a.(string))
-		assert.Equal(t, "x", g.Error())
+		require.Equal(t, "message", a.(string))
+		require.Equal(t, "x", g.Error())
 
 		return g, f
 	})
-	assert.Len(t, f.Type(store).Params(), 4)
-	assert.Equal(t, KindExternref, f.Type(store).Params()[0].Kind())
-	assert.Equal(t, KindExternref, f.Type(store).Params()[1].Kind())
-	assert.Equal(t, KindFuncref, f.Type(store).Params()[2].Kind())
-	assert.Equal(t, KindExternref, f.Type(store).Params()[3].Kind())
+	require.Len(t, f.Type(store).Params(), 4)
+	require.Equal(t, KindExternref, f.Type(store).Params()[0].Kind())
+	require.Equal(t, KindExternref, f.Type(store).Params()[1].Kind())
+	require.Equal(t, KindFuncref, f.Type(store).Params()[2].Kind())
+	require.Equal(t, KindExternref, f.Type(store).Params()[3].Kind())
 
-	assert.Len(t, f.Type(store).Results(), 2)
-	assert.Equal(t, KindExternref, f.Type(store).Results()[0].Kind())
-	assert.Equal(t, KindFuncref, f.Type(store).Results()[1].Kind())
+	require.Len(t, f.Type(store).Results(), 2)
+	require.Equal(t, KindExternref, f.Type(store).Results()[0].Kind())
+	require.Equal(t, KindFuncref, f.Type(store).Results()[1].Kind())
 
 	ret, err = f.Call(store, "message", store, f, errors.New("x"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	arr := ret.([]Val)
-	assert.Len(t, arr, 2)
+	require.Len(t, arr, 2)
 }
 
 type GcHit struct {
@@ -199,7 +199,7 @@ func TestGlobalFinalizer(t *testing.T) {
 			NewGlobalType(NewValType(KindExternref), true),
 			ValExternref(nil),
 		)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		obj, gc := newObjToDrop()
 		global.Set(store, ValExternref(obj))
 		runtime.GC()
@@ -220,7 +220,7 @@ func TestGlobalFinalizer(t *testing.T) {
 		if gc.hit {
 			break
 		}
-		assert.Less(t, i, 10000)
+		require.Less(t, i, 10000)
 	}
 }
 
@@ -231,7 +231,7 @@ func TestFuncFinalizer(t *testing.T) {
 	f := instance.GetFunc(store, "f")
 	obj, gc := newObjToDrop()
 	_, err := f.Call(store, obj)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	store.GC()
 	// like above, try real hard to get the Go GC to run the destructor
 	for i := 0; ; i++ {
@@ -239,6 +239,6 @@ func TestFuncFinalizer(t *testing.T) {
 		if gc.hit {
 			break
 		}
-		assert.Less(t, i, 10000)
+		require.Less(t, i, 10000)
 	}
 }

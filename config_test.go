@@ -3,7 +3,7 @@ package wasmtime
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestConfig(t *testing.T) {
@@ -23,7 +23,7 @@ func TestConfig(t *testing.T) {
 	NewConfig().SetCraneliftOptLevel(OptLevelSpeedAndSize)
 	NewConfig().SetProfiler(ProfilingStrategyNone)
 	err := NewConfig().CacheConfigLoadDefault()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = NewConfig().CacheConfigLoad("nonexistent.toml")
-	assert.NoError(t, err)
+	require.Error(t, err)
 }

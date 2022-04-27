@@ -4,22 +4,22 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGlobalType(t *testing.T) {
 	ty := NewGlobalType(NewValType(KindI32), true)
-	assert.Equal(t, KindI32, ty.Content().Kind())
-	assert.True(t, ty.Mutable())
+	require.Equal(t, KindI32, ty.Content().Kind())
+	require.True(t, ty.Mutable())
 
 	content := ty.Content()
 	runtime.GC()
-	assert.Equal(t, KindI32, content.Kind())
+	require.Equal(t, KindI32, content.Kind())
 
 	ty = NewGlobalType(NewValType(KindI32), true)
 	ty2 := ty.AsExternType().GlobalType()
-	assert.NotNil(t, ty2)
-	assert.Nil(t, ty.AsExternType().FuncType())
-	assert.Nil(t, ty.AsExternType().MemoryType())
-	assert.Nil(t, ty.AsExternType().TableType())
+	require.NotNil(t, ty2)
+	require.Nil(t, ty.AsExternType().FuncType())
+	require.Nil(t, ty.AsExternType().MemoryType())
+	require.Nil(t, ty.AsExternType().TableType())
 }

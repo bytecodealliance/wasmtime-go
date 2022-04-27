@@ -3,19 +3,19 @@ package wasmtime
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestImportType(t *testing.T) {
 	fty := NewFuncType([]*ValType{}, []*ValType{})
 	ty := NewImportType("a", "b", fty)
-	assert.Equal(t, "a", ty.Module())
-	assert.Equal(t, "b", *ty.Name())
-	assert.NotNil(t, ty.Type().FuncType())
+	require.Equal(t, "a", ty.Module())
+	require.Equal(t, "b", *ty.Name())
+	require.NotNil(t, ty.Type().FuncType())
 
 	gty := NewGlobalType(NewValType(KindI32), true)
 	ty = NewImportType("", "", gty.AsExternType())
-	assert.Empty(t, ty.Module())
-	assert.Empty(t, *ty.Name())
-	assert.NotNil(t, ty.Type().GlobalType())
+	require.Empty(t, ty.Module())
+	require.Empty(t, *ty.Name())
+	require.NotNil(t, ty.Type().GlobalType())
 }

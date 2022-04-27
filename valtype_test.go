@@ -3,7 +3,7 @@ package wasmtime
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestValType(t *testing.T) {
@@ -16,11 +16,11 @@ func TestValType(t *testing.T) {
 }
 
 func TestValTypeKind(t *testing.T) {
-	assert.Equal(t, KindI32, NewValType(KindI32).Kind(), "wrong kind")
-	assert.Equal(t, NewValType(KindF32).Kind(), KindF32, "wrong kind")
-	assert.Equal(t, NewValType(KindF64).Kind(), KindF64, "wrong kind")
-	assert.Equal(t, NewValType(KindExternref).Kind(), KindExternref, "wrong kind")
-	assert.Equal(t, NewValType(KindFuncref).Kind(), KindFuncref, "wrong kind")
-	assert.NotEqual(t, KindI32, KindI64, "unequal kinds equal")
-	assert.Equal(t, KindI32, KindI32, "equal kinds unequal")
+	require.Equal(t, KindI32, NewValType(KindI32).Kind(), "wrong kind")
+	require.Equal(t, NewValType(KindF32).Kind(), KindF32, "wrong kind")
+	require.Equal(t, NewValType(KindF64).Kind(), KindF64, "wrong kind")
+	require.Equal(t, NewValType(KindExternref).Kind(), KindExternref, "wrong kind")
+	require.Equal(t, NewValType(KindFuncref).Kind(), KindFuncref, "wrong kind")
+	require.NotEqual(t, KindI32, KindI64, "unequal kinds equal")
+	require.Equal(t, KindI32, KindI32, "equal kinds unequal")
 }

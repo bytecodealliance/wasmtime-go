@@ -3,7 +3,7 @@ package wasmtime
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestEngine(t *testing.T) {
@@ -15,15 +15,15 @@ func TestEngineInvalidatesConfig(t *testing.T) {
 	config := NewConfig()
 	{
 		engine := NewEngineWithConfig(config)
-		assert.NotNil(t, engine)
+		require.NotNil(t, engine)
 	}
 
 	{
 		defer func() {
 			r := recover()
-			assert.NotNil(t, r, "The code did not panic")
+			require.NotNil(t, r, "The code did not panic")
 		}()
 		engine := NewEngineWithConfig(config)
-		assert.Nil(t, engine)
+		require.Nil(t, engine)
 	}
 }

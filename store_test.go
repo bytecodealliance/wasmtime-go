@@ -3,7 +3,7 @@ package wasmtime
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestStore(t *testing.T) {
@@ -23,19 +23,19 @@ func TestInterruptWasm(t *testing.T) {
 	    (loop br 0))
 	  (start 1)
 	`)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	module, err := NewModule(store.Engine, wasm)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	engine := store.Engine
 	f := WrapFunc(store, func() {
 		engine.IncrementEpoch()
 	})
 	instance, err := NewInstance(store, module, []AsExtern{f})
-	assert.Nil(t, instance)
+	require.Nil(t, instance)
 
-	assert.Error(t, err)
+	require.Error(t, err)
 	trap := err.(*Trap)
-	assert.NotNil(t, trap)
+	require.NotNil(t, trap)
 }
 
 func TestFuelConsumed(t *testing.T) {
@@ -43,8 +43,8 @@ func TestFuelConsumed(t *testing.T) {
 	store := NewStore(engine)
 
 	fuel, enable := store.FuelConsumed()
-	assert.False(t, enable)
-	assert.Equal(t, fuel, uint64(0))
+	require.False(t, enable)
+	require.Equal(t, fuel, uint64(0))
 }
 
 func TestAddFuel(t *testing.T) {
@@ -54,12 +54,12 @@ func TestAddFuel(t *testing.T) {
 	store := NewStore(engine)
 
 	fuel, enable := store.FuelConsumed()
-	assert.True(t, enable)
-	assert.Equal(t, fuel, uint64(0))
+	require.True(t, enable)
+	require.Equal(t, fuel, uint64(0))
 
 	const add_fuel = 3
 	err := store.AddFuel(add_fuel)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestConsumeFuel(t *testing.T) {
@@ -69,15 +69,15 @@ func TestConsumeFuel(t *testing.T) {
 	store := NewStore(engine)
 
 	fuel, enable := store.FuelConsumed()
-	assert.True(t, enable)
-	assert.Equal(t, fuel, uint64(0))
+	require.True(t, enable)
+	require.Equal(t, fuel, uint64(0))
 
 	const add_fuel = 3
 	err := store.AddFuel(add_fuel)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	consume_fuel := uint64(1)
 	remaining, err := store.ConsumeFuel(consume_fuel)
-	assert.NoError(t, err)
-	assert.Equal(t, (add_fuel - consume_fuel), remaining)
+	require.NoError(t, err)
+	require.Equal(t, (add_fuel - consume_fuel), remaining)
 }

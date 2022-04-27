@@ -25,12 +25,12 @@ func Example() {
 	    (call $hello))
 	  )
       `)
-	checkErr(err)
+	exampleCheckErr(err)
 
 	// Once we have our binary `wasm` we can compile that into a `*Module`
 	// which represents compiled JIT code.
 	module, err := NewModule(store.Engine, wasm)
-	checkErr(err)
+	exampleCheckErr(err)
 
 	// Our `hello.wat` file imports one item, so we create that function
 	// here.
@@ -41,13 +41,13 @@ func Example() {
 	// Next up we instantiate a module which is where we link in all our
 	// imports. We've got one import so we pass that in here.
 	instance, err := NewInstance(store, module, []AsExtern{item})
-	checkErr(err)
+	exampleCheckErr(err)
 
 	// After we've instantiated we can lookup our `run` function and call
 	// it.
 	run := instance.GetFunc(store, "run")
 	_, err = run.Call(store)
-	checkErr(err)
+	exampleCheckErr(err)
 
 	// Output: Hello from Go!
 }
@@ -86,14 +86,14 @@ const GcdWat = `
 func Example_gcd() {
 	store := NewStore(NewEngine())
 	wasm, err := Wat2Wasm(GcdWat)
-	checkErr(err)
+	exampleCheckErr(err)
 	module, err := NewModule(store.Engine, wasm)
-	checkErr(err)
+	exampleCheckErr(err)
 	instance, err := NewInstance(store, module, []AsExtern{})
-	checkErr(err)
+	exampleCheckErr(err)
 	run := instance.GetFunc(store, "gcd")
 	result, err := run.Call(store, 6, 27)
-	checkErr(err)
+	exampleCheckErr(err)
 	fmt.Printf("gcd(6, 27) = %d\n", result.(int32))
 	// Output: gcd(6, 27) = 3
 }
@@ -118,11 +118,11 @@ func ExampleMemory() {
             (data (i32.const 0x1000) "\01\02\03\04")
           )
         `)
-	checkErr(err)
+	exampleCheckErr(err)
 	module, err := NewModule(store.Engine, wasm)
-	checkErr(err)
+	exampleCheckErr(err)
 	instance, err := NewInstance(store, module, []AsExtern{})
-	checkErr(err)
+	exampleCheckErr(err)
 
 	// Load up our exports from the instance
 	memory := instance.GetExport(store, "memory").Memory()
@@ -133,12 +133,12 @@ func ExampleMemory() {
 	// some helper functions we'll use below
 	call32 := func(f *Func, args ...interface{}) int32 {
 		ret, err := f.Call(store, args...)
-		checkErr(err)
+		exampleCheckErr(err)
 		return ret.(int32)
 	}
 	call := func(f *Func, args ...interface{}) {
 		_, err := f.Call(store, args...)
-		checkErr(err)
+		exampleCheckErr(err)
 	}
 	assertTraps := func(f *Func, args ...interface{}) {
 		_, err := f.Call(store, args...)
@@ -243,21 +243,21 @@ func Example_multi() {
 	      local.get 9)
 	  )
         `)
-	checkErr(err)
+	exampleCheckErr(err)
 	module, err := NewModule(store.Engine, wasm)
-	checkErr(err)
+	exampleCheckErr(err)
 
 	callback := WrapFunc(store, func(a int32, b int64) (int64, int32) {
 		return b + 1, a + 1
 	})
 
 	instance, err := NewInstance(store, module, []AsExtern{callback})
-	checkErr(err)
+	exampleCheckErr(err)
 
 	g := instance.GetFunc(store, "g")
 
 	results, err := g.Call(store, 1, 3)
-	checkErr(err)
+	exampleCheckErr(err)
 	arr := results.([]Val)
 	a := arr[0].I64()
 	b := arr[1].I32()
@@ -268,7 +268,7 @@ func Example_multi() {
 
 	roundTripMany := instance.GetFunc(store, "round_trip_many")
 	results, err = roundTripMany.Call(store, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
-	checkErr(err)
+	exampleCheckErr(err)
 	arr = results.([]Val)
 
 	for i := 0; i < len(arr); i++ {
@@ -313,9 +313,8 @@ const TextWat = `
 // An example of linking WASI to the runtime in order to interact with the system.
 // It uses the WAT code from https://github.com/bytecodealliance/wasmtime/blob/main/docs/WASI-tutorial.md#web-assembly-text-example
 func Example_wasi() {
-
 	dir, err := ioutil.TempDir("", "out")
-	checkErr(err)
+	exampleCheckErr(err)
 	defer os.RemoveAll(dir)
 	stdoutPath := filepath.Join(dir, "stdout")
 
@@ -323,14 +322,14 @@ func Example_wasi() {
 
 	// Create our module
 	wasm, err := Wat2Wasm(TextWat)
-	checkErr(err)
+	exampleCheckErr(err)
 	module, err := NewModule(engine, wasm)
-	checkErr(err)
+	exampleCheckErr(err)
 
 	// Create a linker with WASI functions defined within it
 	linker := NewLinker(engine)
 	err = linker.DefineWasi()
-	checkErr(err)
+	exampleCheckErr(err)
 
 	// Configure WASI imports to write stdout into a file, and then create
 	// a `Store` using this wasi configuration.
@@ -339,22 +338,22 @@ func Example_wasi() {
 	store := NewStore(engine)
 	store.SetWasi(wasiConfig)
 	instance, err := linker.Instantiate(store, module)
-	checkErr(err)
+	exampleCheckErr(err)
 
 	// Run the function
 	nom := instance.GetFunc(store, "_start")
 	_, err = nom.Call(store)
-	checkErr(err)
+	exampleCheckErr(err)
 
 	// Print WASM stdout
 	out, err := ioutil.ReadFile(stdoutPath)
-	checkErr(err)
+	exampleCheckErr(err)
 	fmt.Print(string(out))
 
 	// Output: hello world
 }
 
-func checkErr(e error) {
+func exampleCheckErr(e error) {
 	if e != nil {
 		panic(e)
 	}
