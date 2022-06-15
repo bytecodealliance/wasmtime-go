@@ -10,12 +10,13 @@ import shutil
 import glob
 
 
-version = '0.36.0'
+version = '0.37.0'
 urls = [
     ['wasmtime-v{}-x86_64-mingw-c-api.zip', 'windows-x86_64'],
     ['wasmtime-v{}-x86_64-linux-c-api.tar.xz', 'linux-x86_64'],
     ['wasmtime-v{}-x86_64-macos-c-api.tar.xz', 'macos-x86_64'],
     ['wasmtime-v{}-aarch64-linux-c-api.tar.xz', 'linux-aarch64'],
+    ['wasmtime-v{}-aarch64-macos-c-api.tar.xz', 'macos-aarch64'],
 ]
 
 try:
