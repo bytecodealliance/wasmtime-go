@@ -60,7 +60,7 @@ func Example_interrupt() {
 	}
 
 	fmt.Println("trap received...")
-	if !strings.Contains(trap.Message(), "epoch deadline reached") {
+	if !strings.Contains(trap.Message(), "wasm trap: interrupt") {
 		panic("Unexpected trap: " + trap.Message())
 	}
 

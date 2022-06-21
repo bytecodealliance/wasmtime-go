@@ -54,7 +54,6 @@ func Example_fuel() {
 		fuelBefore, _ := store.FuelConsumed()
 		output, err := fibonacci.Call(store, n)
 		if err != nil {
-			fmt.Println(err)
 			break
 		}
 		fuelAfter, _ := store.FuelConsumed()
@@ -79,5 +78,4 @@ func Example_fuel() {
 	// fib(11) = 89 [consumed 2866 fuel]
 	// fib(12) = 144 [consumed 4646 fuel]
 	// fib(13) = 233 [consumed 7526 fuel]
-	// all fuel consumed by WebAssembly
 }
