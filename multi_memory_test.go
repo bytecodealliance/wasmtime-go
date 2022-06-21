@@ -59,10 +59,10 @@ func TestMultiMemoryImported(t *testing.T) {
 	wasm, err := Wat2Wasm(`
     (module
       (import "" "m0" (memory 1))
-      (import "" "m1" (memory 1))
+      (import "" "m1" (memory $m 1))
       (func (export "load1") (result i32)
         i32.const 2
-        i32.load8_s (memory 1)
+        i32.load8_s $m
       )
     )`)
 	if err != nil {

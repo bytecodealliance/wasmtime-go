@@ -80,4 +80,10 @@ func Example_fuel() {
 	// fib(12) = 144 [consumed 4646 fuel]
 	// fib(13) = 233 [consumed 7526 fuel]
 	// all fuel consumed by WebAssembly
+	// wasm backtrace:
+	//     0:   0x27 - <unknown>!fibonacci
+	//     1:   0x3f - <unknown>!fibonacci
+	//     2:   0x3f - <unknown>!fibonacci
+	//     3:   0x38 - <unknown>!fibonacci
+	//     4:   0x3f - <unknown>!fibonacci
 }
