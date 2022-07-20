@@ -23,12 +23,12 @@ func Example_interrupt() {
 
 	// Compile and instantiate a small example with an infinite loop.
 	wasm, err := wasmtime.Wat2Wasm(`
-        (module
-          (func (export "run")
-            (loop
-              br 0)
-          )
-        )`)
+	(module
+	  (func (export "run")
+	    (loop
+	      br 0)
+	  )
+	)`)
 	if err != nil {
 		panic(err)
 	}
