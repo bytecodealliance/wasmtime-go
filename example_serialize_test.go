@@ -6,7 +6,9 @@ import (
 	"github.com/bytecodealliance/wasmtime-go"
 )
 
-func serialize() []byte {
+// Small example of how to serialize a compiled wasm module, and then
+// instantiate it from the compilation artifacts.
+func ExampleModule_serialize() {
 	// Configure the initial compilation environment.
 	fmt.Println("Initializing...")
 	engine := wasmtime.NewEngine()
@@ -26,23 +28,20 @@ func serialize() []byte {
 	if err != nil {
 		panic(err)
 	}
-	serialized, err := module.Serialize()
+	bytes, err := module.Serialize()
 	if err != nil {
 		panic(err)
 	}
 
 	fmt.Println("Serialized.")
-	return serialized
-}
 
-func deserialize(encoded []byte) {
 	// Configure the initial compilation environment.
 	fmt.Println("Initializing...")
 	store := wasmtime.NewStore(wasmtime.NewEngine())
 
 	// Deserialize the compiled module.
 	fmt.Println("Deserialize module...")
-	module, err := wasmtime.NewModuleDeserialize(store.Engine, encoded)
+	module, err = wasmtime.NewModuleDeserialize(store.Engine, bytes)
 	if err != nil {
 		panic(err)
 	}
@@ -79,13 +78,6 @@ func deserialize(encoded []byte) {
 	}
 
 	fmt.Println("Done.")
-}
-
-// Small example of how to serialize a compiled wasm module, and then
-// instantiate it from the compilation artifacts.
-func ExampleModule_serialize() {
-	bytes := serialize()
-	deserialize(bytes)
 	// Output:
 	// Initializing...
 	// Compiling module...
