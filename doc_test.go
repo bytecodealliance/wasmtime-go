@@ -6,7 +6,7 @@ import (
 
 // An example of instantiating a small wasm module which imports functionality
 // from the host, then calling into wasm which calls back into the host.
-func Example() {
+func Example_hello() {
 	// Almost all operations in wasmtime require a contextual `store`
 	// argument to share, so create that first
 	store := NewStore(NewEngine())
