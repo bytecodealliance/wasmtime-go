@@ -2,10 +2,6 @@ package wasmtime
 
 import (
 	"fmt"
-	"io/ioutil"
-	"os"
-	"path/filepath"
-	"runtime"
 )
 
 // An example of instantiating a small wasm module which imports functionality
@@ -98,6 +94,7 @@ func Example_gcd() {
 	// Output: gcd(6, 27) = 3
 }
 
+<<<<<<< HEAD
 // An example of working with the Memory type to read/write wasm memory.
 func ExampleMemory() {
 	// Create our `Store` context and then compile a module and create an
