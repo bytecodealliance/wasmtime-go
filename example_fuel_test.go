@@ -31,7 +31,8 @@ func ExampleConfig_fuel() {
 	    )
 	  )
 	  (export "fibonacci" (func $fibonacci))
-	)`)
+	)
+	`)
 	if err != nil {
 		panic(err)
 	}

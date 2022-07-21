@@ -17,7 +17,8 @@ func serialize() []byte {
 	(module
 	  (func $hello (import "" "hello"))
 	  (func (export "run") (call $hello))
-	)`)
+	)
+	`)
 	if err != nil {
 		panic(err)
 	}

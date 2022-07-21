@@ -19,7 +19,8 @@ func ExampleLinker() {
 	    local.get 1
 	    i32.add
 	  )
-	)`)
+	)
+	`)
 	if err != nil {
 		panic(err)
 	}
@@ -31,7 +32,8 @@ func ExampleLinker() {
 	    i32.const 2
 	    i32.mul
 	  )
-	)`)
+	)
+	`)
 	if err != nil {
 		panic(err)
 	}

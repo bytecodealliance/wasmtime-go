@@ -27,7 +27,8 @@ func ExampleConfig_interrupt() {
 	    (loop
 	      br 0)
 	  )
-	)`)
+	)
+	`)
 	if err != nil {
 		panic(err)
 	}
