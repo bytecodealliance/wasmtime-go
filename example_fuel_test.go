@@ -1,5 +1,3 @@
-// Example of limiting a WebAssembly function's runtime using "fuel consumption".
-
 package wasmtime_test
 
 import (
@@ -8,6 +6,7 @@ import (
 	"github.com/bytecodealliance/wasmtime-go"
 )
 
+// Example of limiting a WebAssembly function's runtime using "fuel consumption".
 func ExampleConfig_fuel() {
 	config := wasmtime.NewConfig()
 	config.SetConsumeFuel(true)

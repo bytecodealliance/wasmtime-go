@@ -1,6 +1,3 @@
-// Small example of how to serialize a compiled wasm module, and then
-// instantiate it from the compilation artifacts.
-
 package wasmtime_test
 
 import (
@@ -83,6 +80,8 @@ func deserialize(encoded []byte) {
 	fmt.Println("Done.")
 }
 
+// Small example of how to serialize a compiled wasm module, and then
+// instantiate it from the compilation artifacts.
 func ExampleModule_serialize() {
 	bytes := serialize()
 	deserialize(bytes)
