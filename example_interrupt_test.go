@@ -12,7 +12,7 @@ import (
 	"github.com/bytecodealliance/wasmtime-go"
 )
 
-func Example_interrupt() {
+func ExampleConfig_interrupt() {
 	// Enable interruptable code via `Config` and then create an interrupt
 	// handle which we'll use later to interrupt running code.
 	config := wasmtime.NewConfig()

@@ -83,7 +83,7 @@ func deserialize(encoded []byte) {
 	fmt.Println("Done.")
 }
 
-func Example_serialize() {
+func ExampleModule_serialize() {
 	bytes := serialize()
 	deserialize(bytes)
 

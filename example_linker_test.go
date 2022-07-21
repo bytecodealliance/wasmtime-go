@@ -6,7 +6,7 @@ import (
 	"github.com/bytecodealliance/wasmtime-go"
 )
 
-func Example_linker() {
+func ExampleLinker() {
 	store := wasmtime.NewStore(wasmtime.NewEngine())
 
 	// Compile two wasm modules where the first references the second

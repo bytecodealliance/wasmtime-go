@@ -8,7 +8,7 @@ import (
 	"github.com/bytecodealliance/wasmtime-go"
 )
 
-func Example_fuel() {
+func ExampleConfig_fuel() {
 	config := wasmtime.NewConfig()
 	config.SetConsumeFuel(true)
 	engine := wasmtime.NewEngineWithConfig(config)
