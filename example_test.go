@@ -601,3 +601,107 @@ func ExampleWasiConfig() {
 	fmt.Print(string(out))
 	// Output: hello world
 }
+
+// An example of instantiating a small wasm module which imports functionality
+// from the host, then calling into wasm which calls back into the host.
+func Example_hello() {
+	// Almost all operations in wasmtime require a contextual `store`
+	// argument to share, so create that first
+	store := wasmtime.NewStore(wasmtime.NewEngine())
+
+	// Compiling modules requires WebAssembly binary input, but the wasmtime
+	// package also supports converting the WebAssembly text format to the
+	// binary format.
+	wasm, err := wasmtime.Wat2Wasm(`
+	(module
+	  (import "" "hello" (func $hello))
+	  (func (export "run")
+	    (call $hello)
+	  )
+	)
+	`)
+	if err != nil {
+		panic(err)
+	}
+
+	// Once we have our binary `wasm` we can compile that into a `*Module`
+	// which represents compiled JIT code.
+	module, err := wasmtime.NewModule(store.Engine, wasm)
+	if err != nil {
+		panic(err)
+	}
+
+	// Our `hello.wat` file imports one item, so we create that function
+	// here.
+	item := wasmtime.WrapFunc(store, func() {
+		fmt.Println("Hello from Go!")
+	})
+
+	// Next up we instantiate a module which is where we link in all our
+	// imports. We've got one import so we pass that in here.
+	instance, err := wasmtime.NewInstance(store, module, []wasmtime.AsExtern{item})
+	if err != nil {
+		panic(err)
+	}
+
+	// After we've instantiated we can lookup our `run` function and call
+	// it.
+	run := instance.GetFunc(store, "run")
+	_, err = run.Call(store)
+	if err != nil {
+		panic(err)
+	}
+	// Output: Hello from Go!
+}
+
+// An example of a wasm module which calculates the GCD of two numbers
+func Example_gcd() {
+	store := wasmtime.NewStore(wasmtime.NewEngine())
+	wasm, err := wasmtime.Wat2Wasm(`
+	(module
+	  (func $gcd (param i32 i32) (result i32)
+	    (local i32)
+	    block  ;; label = @1
+	      block  ;; label = @2
+	        local.get 0
+	        br_if 0 (;@2;)
+	        local.get 1
+	        local.set 2
+	        br 1 (;@1;)
+	      end
+	      loop  ;; label = @2
+	        local.get 1
+	        local.get 0
+	        local.tee 2
+	        i32.rem_u
+	        local.set 0
+	        local.get 2
+	        local.set 1
+	        local.get 0
+	        br_if 0 (;@2;)
+	      end
+	    end
+	    local.get 2
+	  )
+	  (export "gcd" (func $gcd))
+	)
+	`)
+	if err != nil {
+		panic(err)
+	}
+	module, err := wasmtime.NewModule(store.Engine, wasm)
+	if err != nil {
+		panic(err)
+	}
+	instance, err := wasmtime.NewInstance(store, module, []wasmtime.AsExtern{})
+	if err != nil {
+		panic(err)
+	}
+	run := instance.GetFunc(store, "gcd")
+	result, err := run.Call(store, 6, 27)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("gcd(6, 27) = %d\n", result.(int32))
+	// Output: gcd(6, 27) = 3
+}
