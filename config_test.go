@@ -11,20 +11,14 @@ func TestConfig(t *testing.T) {
 	NewConfig().SetWasmMultiValue(true)
 	NewConfig().SetWasmMultiMemory(true)
 	NewConfig().SetConsumeFuel(true)
-	err := NewConfig().SetStrategy(StrategyAuto)
-	if err != nil {
-		panic(err)
-	}
-	err = NewConfig().SetStrategy(StrategyCranelift)
-	if err != nil {
-		panic(err)
-	}
+	NewConfig().SetStrategy(StrategyAuto)
+	NewConfig().SetStrategy(StrategyCranelift)
 	NewConfig().SetCraneliftDebugVerifier(true)
 	NewConfig().SetCraneliftOptLevel(OptLevelNone)
 	NewConfig().SetCraneliftOptLevel(OptLevelSpeed)
 	NewConfig().SetCraneliftOptLevel(OptLevelSpeedAndSize)
 	NewConfig().SetProfiler(ProfilingStrategyNone)
-	err = NewConfig().CacheConfigLoadDefault()
+	err := NewConfig().CacheConfigLoadDefault()
 	if err != nil {
 		panic(err)
 	}
