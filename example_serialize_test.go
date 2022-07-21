@@ -86,7 +86,6 @@ func deserialize(encoded []byte) {
 func ExampleModule_serialize() {
 	bytes := serialize()
 	deserialize(bytes)
-
 	// Output:
 	// Initializing...
 	// Compiling module...

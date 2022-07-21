@@ -63,7 +63,6 @@ func ExampleConfig_interrupt() {
 	if !strings.Contains(trap.Message(), "wasm trap: interrupt") {
 		panic("Unexpected trap: " + trap.Message())
 	}
-
 	// Output:
 	// Entering infinite loop ...
 	// Interrupting!
