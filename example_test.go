@@ -499,6 +499,83 @@ func ExampleModule_serialize() {
 	// > Hello World!
 }
 
+// Small example of how to use `externref`s.
+func ExampleVal_Externref() {
+	config := wasmtime.NewConfig()
+	config.SetWasmReferenceTypes(true)
+	store := wasmtime.NewStore(wasmtime.NewEngineWithConfig(config))
+	wasm, err := wasmtime.Wat2Wasm(`
+	(module
+	  (table $table (export "table") 10 externref)
+
+	  (global $global (export "global") (mut externref) (ref.null extern))
+
+	  (func (export "func") (param externref) (result externref)
+	    local.get 0
+	  )
+	)
+	`)
+	if err != nil {
+		log.Fatal(err)
+	}
+	module, err := wasmtime.NewModule(store.Engine, wasm)
+	if err != nil {
+		log.Fatal(err)
+	}
+	instance, err := wasmtime.NewInstance(store, module, []wasmtime.AsExtern{})
+	if err != nil {
+		log.Fatal(err)
+	}
+	// Create a new `externref` value.
+	value := wasmtime.ValExternref("Hello, World!")
+	// The `externref`'s wrapped data should be the string "Hello, World!".
+	externRef := value.Externref()
+	if externRef != "Hello, World!" {
+		log.Fatal("unexpected value")
+	}
+	// Lookup the `table` export.
+	table := instance.GetExport(store, "table").Table()
+	// Set `table[3]` to our `externref`.
+	err = table.Set(store, 3, value)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// `table[3]` should now be our `externref`.
+	tableValue, err := table.Get(store, 3)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if tableValue.Externref() != externRef {
+		log.Fatal("unexpected value in table")
+	}
+	// Lookup the `global` export.
+	global := instance.GetExport(store, "global").Global()
+	// Set the global to our `externref`.
+	err = global.Set(store, value)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// Get the global, and it should return our `externref` again.
+	globalValue := global.Get(store)
+	if globalValue.Externref() != externRef {
+		log.Fatal("unexpected value in global")
+	}
+	// Lookup the `func` export.
+	fn := instance.GetFunc(store, "func")
+	// And call it!
+	result, err := fn.Call(store, value)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// `func` returns the same reference we gave it, so `results` should be
+	// our `externref`.
+	if result != externRef {
+		log.Fatal("unexpected value from func")
+	}
+	// Output:
+	//
+}
+
 // An example of linking WASI to the runtime in order to interact with the system.
 // It uses the WAT code from https://github.com/bytecodealliance/wasmtime/blob/main/docs/WASI-tutorial.md#web-assembly-text-example
 func ExampleWasiConfig() {
