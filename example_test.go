@@ -436,11 +436,9 @@ func ExampleMemory() {
 // instantiate it from the compilation artifacts.
 func ExampleModule_serialize() {
 	// Configure the initial compilation environment.
-	fmt.Println("Initializing...")
 	engine := wasmtime.NewEngine()
 
 	// Compile the wasm module into an in-memory instance of a `Module`.
-	fmt.Println("Compiling module...")
 	wasm, err := wasmtime.Wat2Wasm(`
 	(module
 	  (func $hello (import "" "hello"))
@@ -459,14 +457,10 @@ func ExampleModule_serialize() {
 		log.Fatal(err)
 	}
 
-	fmt.Println("Serialized.")
-
 	// Configure the initial compilation environment.
-	fmt.Println("Initializing...")
 	store := wasmtime.NewStore(wasmtime.NewEngine())
 
 	// Deserialize the compiled module.
-	fmt.Println("Deserialize module...")
 	module, err = wasmtime.NewModuleDeserialize(store.Engine, bytes)
 	if err != nil {
 		log.Fatal(err)
@@ -474,7 +468,6 @@ func ExampleModule_serialize() {
 
 	// Here we handle the imports of the module, which in this case is our
 	// `helloFunc` callback.
-	fmt.Println("Creating callback...")
 	helloFunc := wasmtime.WrapFunc(store, func() {
 		fmt.Println("Calling back...")
 		fmt.Println("> Hello World!")
@@ -483,14 +476,12 @@ func ExampleModule_serialize() {
 	// Once we've got that all set up we can then move to the instantiation
 	// phase, pairing together a compiled module as well as a set of imports.
 	// Note that this is where the wasm `start` function, if any, would run.
-	fmt.Println("Instantiating module...")
 	instance, err := wasmtime.NewInstance(store, module, []wasmtime.AsExtern{helloFunc})
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Next we poke around a bit to extract the `run` function from the module.
-	fmt.Println("Extracting export...")
 	run := instance.GetFunc(store, "run")
 	if run == nil {
 		log.Fatal("Failed to find function export `run`")
@@ -502,21 +493,10 @@ func ExampleModule_serialize() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	fmt.Println("Done.")
 	// Output:
-	// Initializing...
-	// Compiling module...
-	// Serialized.
-	// Initializing...
-	// Deserialize module...
-	// Creating callback...
-	// Instantiating module...
-	// Extracting export...
 	// Calling export...
 	// Calling back...
 	// > Hello World!
-	// Done.
 }
 
 // An example of linking WASI to the runtime in order to interact with the system.
