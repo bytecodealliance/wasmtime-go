@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -21,7 +22,7 @@ func ExampleConfig_fuel() {
 	store := wasmtime.NewStore(engine)
 	err := store.AddFuel(10000)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	// Compile and instantiate a small example with an infinite loop.
@@ -41,21 +42,21 @@ func ExampleConfig_fuel() {
 	)
 	`)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	module, err := wasmtime.NewModule(store.Engine, wasm)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	instance, err := wasmtime.NewInstance(store, module, []wasmtime.AsExtern{})
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	// Invoke `fibonacci` export with higher and higher numbers until we exhaust our fuel.
 	fibonacci := instance.GetFunc(store, "fibonacci")
 	if fibonacci == nil {
-		panic("Failed to find function export `fibonacci`")
+		log.Fatal("Failed to find function export `fibonacci`")
 	}
 	for n := 0; ; n++ {
 		fuelBefore, _ := store.FuelConsumed()
@@ -67,7 +68,7 @@ func ExampleConfig_fuel() {
 		fmt.Printf("fib(%d) = %d [consumed %d fuel]\n", n, output, fuelAfter-fuelBefore)
 		err = store.AddFuel(fuelAfter - fuelBefore)
 		if err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
 	}
 	// Output:
@@ -108,19 +109,19 @@ func ExampleConfig_interrupt() {
 	)
 	`)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	module, err := wasmtime.NewModule(store.Engine, wasm)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	instance, err := wasmtime.NewInstance(store, module, []wasmtime.AsExtern{})
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	run := instance.GetFunc(store, "run")
 	if run == nil {
-		panic("Failed to find function export `run`")
+		log.Fatal("Failed to find function export `run`")
 	}
 
 	// Spin up a goroutine to send us an interrupt in a second
@@ -134,12 +135,12 @@ func ExampleConfig_interrupt() {
 	_, err = run.Call(store)
 	var trap *wasmtime.Trap
 	if !errors.As(err, &trap) {
-		panic("Unexpected error")
+		log.Fatal("Unexpected error")
 	}
 
 	fmt.Println("trap received...")
 	if !strings.Contains(trap.Message(), "wasm trap: interrupt") {
-		panic("Unexpected trap: " + trap.Message())
+		log.Fatalf("Unexpected trap: %s", trap.Message())
 	}
 	// Output:
 	// Entering infinite loop ...
@@ -183,11 +184,11 @@ func ExampleConfig_multi() {
 	)
 	`)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	module, err := wasmtime.NewModule(store.Engine, wasm)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	callback := wasmtime.WrapFunc(store, func(a int32, b int64) (int64, int32) {
@@ -196,14 +197,14 @@ func ExampleConfig_multi() {
 
 	instance, err := wasmtime.NewInstance(store, module, []wasmtime.AsExtern{callback})
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	g := instance.GetFunc(store, "g")
 
 	results, err := g.Call(store, 1, 3)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	arr := results.([]wasmtime.Val)
 	a := arr[0].I64()
@@ -211,23 +212,23 @@ func ExampleConfig_multi() {
 	fmt.Printf("> %d %d\n", a, b)
 
 	if a != 4 {
-		panic("unexpected value for a")
+		log.Fatal("unexpected value for a")
 	}
 	if b != 2 {
-		panic("unexpected value for b")
+		log.Fatal("unexpected value for b")
 	}
 
 	roundTripMany := instance.GetFunc(store, "round_trip_many")
 	results, err = roundTripMany.Call(store, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	arr = results.([]wasmtime.Val)
 
 	for i := 0; i < len(arr); i++ {
 		fmt.Printf(" %d", arr[i].Get())
 		if arr[i].I64() != int64(i) {
-			panic("unexpected value for arr[i]")
+			log.Fatal("unexpected value for arr[i]")
 		}
 	}
 	// Output: > 4 2
@@ -250,7 +251,7 @@ func ExampleLinker() {
 	)
 	`)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	wasm2, err := wasmtime.Wat2Wasm(`
@@ -263,17 +264,17 @@ func ExampleLinker() {
 	)
 	`)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	// Next compile both modules
 	module1, err := wasmtime.NewModule(store.Engine, wasm1)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	module2, err := wasmtime.NewModule(store.Engine, wasm2)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	linker := wasmtime.NewLinker(store.Engine)
@@ -283,23 +284,23 @@ func ExampleLinker() {
 	// the first module expects.
 	instance2, err := linker.Instantiate(store, module2)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	err = linker.DefineInstance(store, "wasm2", instance2)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	// And now we can instantiate our first module, executing the result
 	// afterwards
 	instance1, err := linker.Instantiate(store, module1)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	doubleAndAdd := instance1.GetFunc(store, "double_and_add")
 	result, err := doubleAndAdd.Call(store, 2, 3)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	fmt.Print(result.(int32))
 	// Output: 7
@@ -326,15 +327,15 @@ func ExampleMemory() {
 	)
 	`)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	module, err := wasmtime.NewModule(store.Engine, wasm)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	instance, err := wasmtime.NewInstance(store, module, []wasmtime.AsExtern{})
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	// Load up our exports from the instance
@@ -347,26 +348,26 @@ func ExampleMemory() {
 	call32 := func(f *wasmtime.Func, args ...interface{}) int32 {
 		ret, err := f.Call(store, args...)
 		if err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
 		return ret.(int32)
 	}
 	call := func(f *wasmtime.Func, args ...interface{}) {
 		_, err := f.Call(store, args...)
 		if err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
 	}
 	assertTraps := func(f *wasmtime.Func, args ...interface{}) {
 		_, err := f.Call(store, args...)
 		_, ok := err.(*wasmtime.Trap)
 		if !ok {
-			panic("expected a trap")
+			log.Fatal("expected a trap")
 		}
 	}
 	assert := func(b bool) {
 		if !b {
-			panic("assertion failed")
+			log.Fatal("assertion failed")
 		}
 	}
 
@@ -447,15 +448,15 @@ func ExampleModule_serialize() {
 	)
 	`)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	module, err := wasmtime.NewModule(engine, wasm)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	bytes, err := module.Serialize()
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	fmt.Println("Serialized.")
@@ -468,7 +469,7 @@ func ExampleModule_serialize() {
 	fmt.Println("Deserialize module...")
 	module, err = wasmtime.NewModuleDeserialize(store.Engine, bytes)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	// Here we handle the imports of the module, which in this case is our
@@ -485,21 +486,21 @@ func ExampleModule_serialize() {
 	fmt.Println("Instantiating module...")
 	instance, err := wasmtime.NewInstance(store, module, []wasmtime.AsExtern{helloFunc})
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	// Next we poke around a bit to extract the `run` function from the module.
 	fmt.Println("Extracting export...")
 	run := instance.GetFunc(store, "run")
 	if run == nil {
-		panic("Failed to find function export `run`")
+		log.Fatal("Failed to find function export `run`")
 	}
 
 	// And last but not least we can call it!
 	fmt.Println("Calling export...")
 	_, err = run.Call(store)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	fmt.Println("Done.")
@@ -523,7 +524,7 @@ func ExampleModule_serialize() {
 func ExampleWasiConfig() {
 	dir, err := ioutil.TempDir("", "out")
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	defer os.RemoveAll(dir)
 	stdoutPath := filepath.Join(dir, "stdout")
@@ -561,18 +562,18 @@ func ExampleWasiConfig() {
 	)
 	`)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	module, err := wasmtime.NewModule(engine, wasm)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	// Create a linker with WASI functions defined within it
 	linker := wasmtime.NewLinker(engine)
 	err = linker.DefineWasi()
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	// Configure WASI imports to write stdout into a file, and then create
@@ -583,20 +584,20 @@ func ExampleWasiConfig() {
 	store.SetWasi(wasiConfig)
 	instance, err := linker.Instantiate(store, module)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	// Run the function
 	nom := instance.GetFunc(store, "_start")
 	_, err = nom.Call(store)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	// Print WASM stdout
 	out, err := ioutil.ReadFile(stdoutPath)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	fmt.Print(string(out))
 	// Output: hello world
@@ -621,14 +622,14 @@ func Example_hello() {
 	)
 	`)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	// Once we have our binary `wasm` we can compile that into a `*Module`
 	// which represents compiled JIT code.
 	module, err := wasmtime.NewModule(store.Engine, wasm)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	// Our `hello.wat` file imports one item, so we create that function
@@ -641,7 +642,7 @@ func Example_hello() {
 	// imports. We've got one import so we pass that in here.
 	instance, err := wasmtime.NewInstance(store, module, []wasmtime.AsExtern{item})
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	// After we've instantiated we can lookup our `run` function and call
@@ -649,7 +650,7 @@ func Example_hello() {
 	run := instance.GetFunc(store, "run")
 	_, err = run.Call(store)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	// Output: Hello from Go!
 }
@@ -687,20 +688,20 @@ func Example_gcd() {
 	)
 	`)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	module, err := wasmtime.NewModule(store.Engine, wasm)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	instance, err := wasmtime.NewInstance(store, module, []wasmtime.AsExtern{})
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	run := instance.GetFunc(store, "gcd")
 	result, err := run.Call(store, 6, 27)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	fmt.Printf("gcd(6, 27) = %d\n", result.(int32))
 	// Output: gcd(6, 27) = 3
