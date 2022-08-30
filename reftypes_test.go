@@ -4,6 +4,8 @@ import (
 	"errors"
 	"runtime"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func refTypesStore() *Store {
@@ -12,25 +14,19 @@ func refTypesStore() *Store {
 	return NewStore(NewEngineWithConfig(config))
 }
 
-func refTypesInstance(wat string) (*Instance, *Store) {
+func refTypesInstance(t *testing.T, wat string) (*Instance, *Store) {
 	store := refTypesStore()
 	wasm, err := Wat2Wasm(wat)
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 	module, err := NewModule(store.Engine, wasm)
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 	instance, err := NewInstance(store, module, []AsExtern{})
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 	return instance, store
 }
 
 func TestRefTypesSmoke(t *testing.T) {
-	instance, store := refTypesInstance(`
+	instance, store := refTypesInstance(t, `
 (module
   (func (export "f") (param externref) (result externref)
     local.get 0
@@ -43,44 +39,28 @@ func TestRefTypesSmoke(t *testing.T) {
 
 	null_externref := instance.GetFunc(store, "null_externref")
 	result, err := null_externref.Call(store)
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 	if result != nil {
 		panic("expected nil result")
 	}
 
 	f := instance.GetFunc(store, "f")
 	result, err = f.Call(store, true)
-	if err != nil {
-		panic(err)
-	}
-	if result.(bool) != true {
-		panic("expected `true`")
-	}
+	require.NoError(t, err)
+	require.True(t, result.(bool))
 
 	result, err = f.Call(store, "x")
-	if err != nil {
-		panic(err)
-	}
-	if result.(string) != "x" {
-		panic("expected `x`")
-	}
+	require.NoError(t, err)
+	require.Equal(t, "x", result.(string))
 
 	result, err = f.Call(store, ValExternref("x"))
-	if err != nil {
-		panic(err)
-	}
-	if result.(string) != "x" {
-		panic("expected `x`")
-	}
+	require.NoError(t, err)
+	require.Equal(t, "x", result.(string))
 }
 
 func TestRefTypesVal(t *testing.T) {
 	val := ValExternref("x")
-	if val.Get().(string) != "x" {
-		panic("bad return of `Get`")
-	}
+	require.Equal(t, "x", val.Get().(string))
 }
 
 func TestRefTypesTable(t *testing.T) {
@@ -90,81 +70,48 @@ func TestRefTypesTable(t *testing.T) {
 		NewTableType(NewValType(KindExternref), 10, false, 0),
 		ValExternref("init"),
 	)
-	if err != nil {
-		panic("err")
-	}
+	require.NoError(t, err)
 
 	for i := 0; i < 10; i++ {
 		val, err := table.Get(store, uint32(i))
-		if err != nil {
-			panic(err)
-		}
-		if val.Get().(string) != "init" {
-			panic("bad init")
-		}
+		require.NoError(t, err)
+		require.Equal(t, "init", val.Get().(string))
 	}
 
 	_, err = table.Grow(store, 2, ValExternref("grown"))
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 	for i := 0; i < 10; i++ {
 		val, err := table.Get(store, uint32(i))
-		if err != nil {
-			panic(err)
-		}
-		if val.Get().(string) != "init" {
-			panic("bad init")
-		}
+		require.NoError(t, err)
+		require.Equal(t, "init", val.Get().(string))
 	}
 	for i := 10; i < 12; i++ {
 		val, err := table.Get(store, uint32(i))
-		if err != nil {
-			panic(err)
-		}
-		if val.Get().(string) != "grown" {
-			panic("bad init")
-		}
+		require.NoError(t, err)
+		require.Equal(t, "grown", val.Get().(string))
 	}
 
 	err = table.Set(store, 7, ValExternref("lucky"))
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 
 	for i := 0; i < 7; i++ {
 		val, err := table.Get(store, uint32(i))
-		if err != nil {
-			panic(err)
-		}
-		if val.Get().(string) != "init" {
-			panic("bad init")
-		}
+		require.NoError(t, err)
+		require.Equal(t, "init", val.Get().(string))
 	}
 	val, err := table.Get(store, 7)
-	if err != nil {
-		panic(err)
-	}
-	if val.Get().(string) != "lucky" {
-		panic("bad init")
-	}
+	require.NoError(t, err)
+	require.Equal(t, "lucky", val.Get().(string))
+
 	for i := 8; i < 10; i++ {
 		val, err := table.Get(store, uint32(i))
-		if err != nil {
-			panic(err)
-		}
-		if val.Get().(string) != "init" {
-			panic("bad init")
-		}
+		require.NoError(t, err)
+		require.Equal(t, "init", val.Get().(string))
 	}
 	for i := 10; i < 12; i++ {
 		val, err := table.Get(store, uint32(i))
-		if err != nil {
-			panic(err)
-		}
-		if val.Get().(string) != "grown" {
-			panic("bad init")
-		}
+		require.NoError(t, err)
+		require.Equal(t, "grown", val.Get().(string))
 	}
 }
 
@@ -175,21 +122,13 @@ func TestRefTypesGlobal(t *testing.T) {
 		NewGlobalType(NewValType(KindExternref), true),
 		ValExternref("hello"),
 	)
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 
 	val := global.Get(store)
-	if val.Get().(string) != "hello" {
-		panic("bad init")
-	}
+	require.Equal(t, "hello", val.Get().(string))
 	err = global.Set(store, ValExternref("goodbye"))
-	if err != nil {
-		panic(err)
-	}
-	if global.Get(store).Get().(string) != "goodbye" {
-		panic("bad init")
-	}
+	require.NoError(t, err)
+	require.Equal(t, "goodbye", global.Get(store).Get().(string))
 }
 
 func TestRefTypesWrap(t *testing.T) {
@@ -197,76 +136,42 @@ func TestRefTypesWrap(t *testing.T) {
 	f := WrapFunc(store, func() error {
 		return nil
 	})
-	if len(f.Type(store).Params()) != 0 {
-		panic("wrong params")
-	}
-	if len(f.Type(store).Results()) != 1 {
-		panic("wrong results")
-	}
-	if f.Type(store).Results()[0].Kind() != KindExternref {
-		panic("wrong result")
-	}
-	ret, err := f.Call(store)
-	if err != nil {
-		panic(err)
-	}
-	if ret != nil {
-		panic("expected nil error")
-	}
+	require.Len(t, f.Type(store).Params(), 0)
+	require.Len(t, f.Type(store).Results(), 1)
+	require.Equal(t, KindExternref, f.Type(store).Results()[0].Kind())
 
+	ret, err := f.Call(store)
+	require.NoError(t, err)
+	require.Nil(t, ret)
+
+	expectedErr := errors.New("message")
 	f = WrapFunc(store, func() error {
-		return errors.New("message")
+		return expectedErr
 	})
 	ret, err = f.Call(store)
-	if err != nil {
-		panic(err)
-	}
-	if ret.(error).Error() != "message" {
-		panic(ret.(error))
-	}
+	require.NoError(t, err)
+	require.ErrorIs(t, ret.(error), expectedErr)
 
 	f = WrapFunc(store, func(a interface{}, b *Store, f *Func, g error) (error, *Func) {
-		if a.(string) != "message" {
-			panic("bad message")
-		}
-		if g.Error() != "x" {
-			panic("bad error")
-		}
+		require.Equal(t, "message", a.(string))
+		require.Equal(t, "x", g.Error())
+
 		return g, f
 	})
-	if len(f.Type(store).Params()) != 4 {
-		panic("wrong params")
-	}
-	if f.Type(store).Params()[0].Kind() != KindExternref {
-		panic("wrong param")
-	}
-	if f.Type(store).Params()[1].Kind() != KindExternref {
-		panic("wrong param")
-	}
-	if f.Type(store).Params()[2].Kind() != KindFuncref {
-		panic("wrong param")
-	}
-	if f.Type(store).Params()[3].Kind() != KindExternref {
-		panic("wrong param")
-	}
-	if len(f.Type(store).Results()) != 2 {
-		panic("wrong results")
-	}
-	if f.Type(store).Results()[0].Kind() != KindExternref {
-		panic("wrong result")
-	}
-	if f.Type(store).Results()[1].Kind() != KindFuncref {
-		panic("wrong result")
-	}
+	require.Len(t, f.Type(store).Params(), 4)
+	require.Equal(t, KindExternref, f.Type(store).Params()[0].Kind())
+	require.Equal(t, KindExternref, f.Type(store).Params()[1].Kind())
+	require.Equal(t, KindFuncref, f.Type(store).Params()[2].Kind())
+	require.Equal(t, KindExternref, f.Type(store).Params()[3].Kind())
+
+	require.Len(t, f.Type(store).Results(), 2)
+	require.Equal(t, KindExternref, f.Type(store).Results()[0].Kind())
+	require.Equal(t, KindFuncref, f.Type(store).Results()[1].Kind())
 
 	ret, err = f.Call(store, "message", store, f, errors.New("x"))
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 	arr := ret.([]Val)
-	if len(arr) != 2 {
-		panic("bad ret")
-	}
+	require.Len(t, arr, 2)
 }
 
 type GcHit struct {
@@ -294,9 +199,7 @@ func TestGlobalFinalizer(t *testing.T) {
 			NewGlobalType(NewValType(KindExternref), true),
 			ValExternref(nil),
 		)
-		if err != nil {
-			panic(err)
-		}
+		require.NoError(t, err)
 		obj, gc := newObjToDrop()
 		global.Set(store, ValExternref(obj))
 		runtime.GC()
@@ -317,22 +220,18 @@ func TestGlobalFinalizer(t *testing.T) {
 		if gc.hit {
 			break
 		}
-		if i >= 10000 {
-			panic("dtor not run")
-		}
+		require.Less(t, i, 10000)
 	}
 }
 
 func TestFuncFinalizer(t *testing.T) {
-	instance, store := refTypesInstance(`
+	instance, store := refTypesInstance(t, `
 	      (module (func (export "f") (param externref)))
 	`)
 	f := instance.GetFunc(store, "f")
 	obj, gc := newObjToDrop()
 	_, err := f.Call(store, obj)
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 	store.GC()
 	// like above, try real hard to get the Go GC to run the destructor
 	for i := 0; ; i++ {
@@ -340,8 +239,6 @@ func TestFuncFinalizer(t *testing.T) {
 		if gc.hit {
 			break
 		}
-		if i >= 10000 {
-			panic("dtor not run")
-		}
+		require.Less(t, i, 10000)
 	}
 }

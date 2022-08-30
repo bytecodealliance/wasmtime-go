@@ -1,6 +1,10 @@
 package wasmtime
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
 
 func TestValType(t *testing.T) {
 	NewValType(KindI32)
@@ -12,28 +16,11 @@ func TestValType(t *testing.T) {
 }
 
 func TestValTypeKind(t *testing.T) {
-	if NewValType(KindI32).Kind() != KindI32 {
-		t.Fatalf("wrong kind")
-	}
-	if NewValType(KindI64).Kind() != KindI64 {
-		t.Fatalf("wrong kind")
-	}
-	if NewValType(KindF32).Kind() != KindF32 {
-		t.Fatalf("wrong kind")
-	}
-	if NewValType(KindF64).Kind() != KindF64 {
-		t.Fatalf("wrong kind")
-	}
-	if NewValType(KindExternref).Kind() != KindExternref {
-		t.Fatalf("wrong kind")
-	}
-	if NewValType(KindFuncref).Kind() != KindFuncref {
-		t.Fatalf("wrong kind")
-	}
-	if KindI32 == KindI64 {
-		t.Fatalf("unequal kinds equal")
-	}
-	if KindI32 != KindI32 {
-		t.Fatalf("equal kinds unequal")
-	}
+	require.Equal(t, KindI32, NewValType(KindI32).Kind(), "wrong kind")
+	require.Equal(t, NewValType(KindF32).Kind(), KindF32, "wrong kind")
+	require.Equal(t, NewValType(KindF64).Kind(), KindF64, "wrong kind")
+	require.Equal(t, NewValType(KindExternref).Kind(), KindExternref, "wrong kind")
+	require.Equal(t, NewValType(KindFuncref).Kind(), KindFuncref, "wrong kind")
+	require.NotEqual(t, KindI32, KindI64, "unequal kinds equal")
+	require.Equal(t, KindI32, KindI32, "equal kinds unequal")
 }

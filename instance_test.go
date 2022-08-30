@@ -1,6 +1,10 @@
 package wasmtime
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
 
 func TestInstance(t *testing.T) {
 	wasm, err := Wat2Wasm(`
@@ -11,109 +15,58 @@ func TestInstance(t *testing.T) {
             (memory (export "m") 1)
           )
         `)
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 	store := NewStore(NewEngine())
 	module, err := NewModule(store.Engine, wasm)
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 	instance, err := NewInstance(store, module, []AsExtern{})
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 	exports := instance.Exports(store)
-	if len(exports) != 4 {
-		panic("wrong number of exports")
-	}
-	if exports[0].Func() == nil {
-		panic("not a func")
-	}
-	if exports[0].Global() != nil {
-		panic("should be a func")
-	}
-	if exports[0].Memory() != nil {
-		panic("should be a func")
-	}
-	if exports[0].Table() != nil {
-		panic("should be a func")
-	}
-	if exports[1].Func() != nil {
-		panic("should be a global")
-	}
-	if exports[1].Global() == nil {
-		panic("should be a global")
-	}
-	if exports[1].Memory() != nil {
-		panic("should be a func")
-	}
-	if exports[1].Table() != nil {
-		panic("should be a func")
-	}
-	if exports[2].Table() == nil {
-		panic("should be a table")
-	}
-	if exports[3].Memory() == nil {
-		panic("should be a memory")
-	}
+	require.Len(t, exports, 4)
+	require.NotNil(t, exports[0].Func())
+	require.Nil(t, exports[0].Global())
+	require.Nil(t, exports[0].Memory())
+	require.Nil(t, exports[0].Table())
+
+	require.Nil(t, exports[1].Func())
+	require.NotNil(t, exports[1].Global())
+	require.Nil(t, exports[1].Memory())
+	require.Nil(t, exports[1].Table())
+
+	require.NotNil(t, exports[2].Table())
+	require.NotNil(t, exports[3].Memory())
 
 	f := exports[0].Func()
 	g := exports[1].Global()
 	table := exports[2].Table()
 	m := exports[3].Memory()
-
-	if len(f.Type(store).Params()) != 0 {
-		panic("bad params on type")
-	}
-	if len(exports[0].Type(store).FuncType().Params()) != 0 {
-		panic("bad params on type")
-	}
-	if g.Type(store).Content().Kind() != KindI32 {
-		panic("bad global type")
-	}
-	if exports[1].Type(store).GlobalType().Content().Kind() != KindI32 {
-		panic("bad global type")
-	}
-	if table.Type(store).Element().Kind() != KindFuncref {
-		panic("bad table type")
-	}
-	if exports[2].Type(store).TableType().Element().Kind() != KindFuncref {
-		panic("bad table type")
-	}
-	if m.Type(store).Minimum() != 1 {
-		panic("bad memory type")
-	}
-	if exports[3].Type(store).MemoryType().Minimum() != 1 {
-		panic("bad memory type")
-	}
+	require.Len(t, f.Type(store).Params(), 0)
+	require.Len(t, exports[0].Type(store).FuncType().Params(), 0)
+	require.Equal(t, KindI32, g.Type(store).Content().Kind())
+	require.Equal(t, KindI32, exports[1].Type(store).GlobalType().Content().Kind())
+	require.Equal(t, KindFuncref, table.Type(store).Element().Kind())
+	require.Equal(t, KindFuncref, exports[2].Type(store).TableType().Element().Kind())
+	require.Equal(t, uint64(1), m.Type(store).Minimum())
+	require.Equal(t, uint64(1), exports[3].Type(store).MemoryType().Minimum())
 }
 
 func TestInstanceBad(t *testing.T) {
 	store := NewStore(NewEngine())
 	wasm, err := Wat2Wasm(`(module (import "" "" (func)))`)
-	assertNoError(err)
+	require.NoError(t, err)
 	module, err := NewModule(NewEngine(), wasm)
-	assertNoError(err)
+	require.NoError(t, err)
 
 	// wrong number of imports
 	instance, err := NewInstance(store, module, []AsExtern{})
-	if instance != nil {
-		panic("expected nil instance")
-	}
-	if err == nil {
-		panic("expected an error")
-	}
+	require.Nil(t, instance)
+	require.Error(t, err)
 
 	// wrong types of imports
 	f := WrapFunc(store, func(a int32) {})
 	instance, err = NewInstance(store, module, []AsExtern{f})
-	if instance != nil {
-		panic("expected nil instance")
-	}
-	if err == nil {
-		panic("expected an error")
-	}
+	require.Nil(t, instance)
+	require.Error(t, err)
 }
 
 func TestInstanceGetFunc(t *testing.T) {
@@ -123,35 +76,24 @@ func TestInstanceGetFunc(t *testing.T) {
             (global (export "g") i32 (i32.const 0))
           )
 	`)
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
+
 	store := NewStore(NewEngine())
 	module, err := NewModule(store.Engine, wasm)
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
+
 	instance, err := NewInstance(store, module, []AsExtern{})
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 
 	f := instance.GetFunc(store, "f")
-	if f == nil {
-		panic("expected a function")
-	}
+	require.NotNil(t, f, "expected a function")
+
 	_, err = f.Call(store)
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 
 	f = instance.GetFunc(store, "g")
-	if f != nil {
-		panic("expected an error")
-	}
+	require.Nil(t, f, "expected an error")
 
 	f = instance.GetFunc(store, "f2")
-	if f != nil {
-		panic("expected an error")
-	}
+	require.Nil(t, f, "expected an error")
 }

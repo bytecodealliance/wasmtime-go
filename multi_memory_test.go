@@ -1,6 +1,10 @@
 package wasmtime
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
 
 func multiMemoryStore() *Store {
 	config := NewConfig()
@@ -16,43 +20,28 @@ func TestMultiMemoryExported(t *testing.T) {
         (data (memory 0) (i32.const 0x1000) "\01\02\03\04")
         (data (memory 1) (i32.const 0x1000) "\04\03\02\01")
     )`)
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 	store := multiMemoryStore()
 	module, err := NewModule(store.Engine, wasm)
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 	exports := module.Exports()
-	if len(exports) != 2 {
-		panic("wrong number of exports")
-	}
-	if exports[0].Type().MemoryType() == nil {
-		panic("wrong export type")
-	}
-	if exports[0].Type().MemoryType().Minimum() != 2 {
-		panic("wrong memory limits")
-	}
+	require.Len(t, exports, 2)
+	require.NotNil(t, exports[0].Type().MemoryType())
+	require.Equal(t, uint64(2), exports[0].Type().MemoryType().Minimum())
+
 	present, max := exports[0].Type().MemoryType().Maximum()
-	if !present || max != 3 {
-		panic("wrong memory limits")
-	}
-	if exports[1].Type().MemoryType() == nil {
-		panic("wrong export type")
-	}
-	if exports[1].Type().MemoryType().Minimum() != 2 {
-		panic("wrong memory limits")
-	}
+	require.True(t, present, "wrong memory limits")
+	require.Equal(t, uint64(3), max, "wrong memory limits")
+
+	require.NotNil(t, exports[1].Type().MemoryType())
+	require.Equal(t, uint64(2), exports[0].Type().MemoryType().Minimum())
+
 	present, max = exports[1].Type().MemoryType().Maximum()
-	if !present || max != 4 {
-		panic("wrong memory limits")
-	}
+	require.True(t, present, "wrong memory limits")
+	require.Equal(t, uint64(4), max, "wrong memory limits")
 
 	_, err = NewInstance(store, module, nil)
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 }
 
 func TestMultiMemoryImported(t *testing.T) {
@@ -65,36 +54,23 @@ func TestMultiMemoryImported(t *testing.T) {
         i32.load8_s $m
       )
     )`)
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 	store := multiMemoryStore()
 
 	mem0, err := NewMemory(store, NewMemoryType(1, true, 3))
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 	mem1, err := NewMemory(store, NewMemoryType(2, true, 4))
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 
 	module, err := NewModule(store.Engine, wasm)
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 	instance, err := NewInstance(store, module, []AsExtern{mem0, mem1})
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 
 	copy(mem1.UnsafeData(store)[2:3], []byte{100})
 
 	res, err := instance.GetFunc(store, "load1").Call(store)
-	if err != nil {
-		panic(err)
-	}
-	if v, ok := res.(int32); !ok || v != 100 {
-		panic("unexpected result")
-	}
+	require.NoError(t, err)
+	require.IsType(t, res, int32(0))
+	require.Equal(t, int32(100), res.(int32))
 }

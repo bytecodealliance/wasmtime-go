@@ -1,6 +1,10 @@
 package wasmtime
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
 
 func TestFuncType(t *testing.T) {
 	NewFuncType(make([]*ValType, 0), make([]*ValType, 0))
@@ -13,54 +17,27 @@ func TestFuncType(t *testing.T) {
 	NewFuncType([]*ValType{i32, i64, i64}, []*ValType{i32, i64, i64})
 
 	ty := NewFuncType([]*ValType{}, []*ValType{})
-	if len(ty.Params()) != 0 {
-		panic("expect 0 params")
-	}
-	if len(ty.Results()) != 0 {
-		panic("expect 0 results")
-	}
+	require.Len(t, ty.Params(), 0)
+	require.Len(t, ty.Results(), 0)
 
 	ty = NewFuncType([]*ValType{i32, i64, i64}, []*ValType{i32, i64, i64})
 
 	params := ty.Params()
-	if len(params) != 3 {
-		panic("expect 3 params")
-	}
-	if params[0].Kind() != KindI32 {
-		panic("unexpected kind")
-	}
-	if params[1].Kind() != KindI64 {
-		panic("unexpected kind")
-	}
-	if params[2].Kind() != KindI64 {
-		panic("unexpected kind")
-	}
+	require.Len(t, ty.Params(), 3)
+	require.Equal(t, KindI32, params[0].Kind())
+	require.Equal(t, KindI64, params[1].Kind())
+	require.Equal(t, KindI64, params[2].Kind())
+
 	results := ty.Results()
-	if len(results) != 3 {
-		panic("expect 3 results")
-	}
-	if results[0].Kind() != KindI32 {
-		panic("unexpected kind")
-	}
-	if results[1].Kind() != KindI64 {
-		panic("unexpected kind")
-	}
-	if results[2].Kind() != KindI64 {
-		panic("unexpected kind")
-	}
+	require.Len(t, ty.Params(), 3)
+	require.Equal(t, KindI32, results[0].Kind())
+	require.Equal(t, KindI64, results[1].Kind())
+	require.Equal(t, KindI64, results[2].Kind())
 
 	ty = NewFuncType([]*ValType{}, []*ValType{})
 	ty2 := ty.AsExternType().FuncType()
-	if ty2 == nil {
-		panic("unexpected cast")
-	}
-	if ty.AsExternType().GlobalType() != nil {
-		panic("working cast")
-	}
-	if ty.AsExternType().MemoryType() != nil {
-		panic("working cast")
-	}
-	if ty.AsExternType().TableType() != nil {
-		panic("working cast")
-	}
+	require.NotNil(t, ty2)
+	require.Nil(t, ty.AsExternType().GlobalType())
+	require.Nil(t, ty.AsExternType().MemoryType())
+	require.Nil(t, ty.AsExternType().TableType())
 }

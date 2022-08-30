@@ -1,29 +1,21 @@
 package wasmtime
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
 
 func TestImportType(t *testing.T) {
 	fty := NewFuncType([]*ValType{}, []*ValType{})
 	ty := NewImportType("a", "b", fty)
-	if ty.Module() != "a" {
-		panic("invalid module")
-	}
-	if *ty.Name() != "b" {
-		panic("invalid name")
-	}
-	if ty.Type().FuncType() == nil {
-		panic("invalid ty")
-	}
+	require.Equal(t, "a", ty.Module())
+	require.Equal(t, "b", *ty.Name())
+	require.NotNil(t, ty.Type().FuncType())
 
 	gty := NewGlobalType(NewValType(KindI32), true)
 	ty = NewImportType("", "", gty.AsExternType())
-	if ty.Module() != "" {
-		panic("invalid module")
-	}
-	if *ty.Name() != "" {
-		panic("invalid name")
-	}
-	if ty.Type().GlobalType() == nil {
-		panic("invalid ty")
-	}
+	require.Empty(t, ty.Module())
+	require.Empty(t, *ty.Name())
+	require.NotNil(t, ty.Type().GlobalType())
 }

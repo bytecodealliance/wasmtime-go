@@ -1,6 +1,10 @@
 package wasmtime
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
 
 func TestMemoryType(t *testing.T) {
 	ty := NewMemoryType(0, true, 100)
@@ -8,27 +12,17 @@ func TestMemoryType(t *testing.T) {
 	ty.Maximum()
 
 	ty2 := ty.AsExternType().MemoryType()
-	if ty2 == nil {
-		panic("unexpected cast")
-	}
-	if ty.AsExternType().FuncType() != nil {
-		panic("working cast")
-	}
-	if ty.AsExternType().GlobalType() != nil {
-		panic("working cast")
-	}
-	if ty.AsExternType().TableType() != nil {
-		panic("working cast")
-	}
+	require.NotNil(t, ty2)
+	require.Nil(t, ty.AsExternType().FuncType())
+	require.Nil(t, ty.AsExternType().GlobalType())
+	require.Nil(t, ty.AsExternType().TableType())
 }
 
 func TestMemoryType64(t *testing.T) {
 	ty := NewMemoryType64(0x100000000, true, 0x100000001)
-	if ty.Minimum() != 0x100000000 {
-		panic("bad limits")
-	}
+	require.Equal(t, uint64(0x100000000), ty.Minimum())
+
 	present, max := ty.Maximum()
-	if !present || max != 0x100000001 {
-		panic("bad limits")
-	}
+	require.Equal(t, uint64(0x100000001), max)
+	require.True(t, present)
 }

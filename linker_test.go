@@ -2,6 +2,8 @@ package wasmtime
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestLinker(t *testing.T) {
@@ -13,82 +15,63 @@ func TestLinker(t *testing.T) {
 	    (import "" "m" (memory 1))
           )
         `)
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 	store := NewStore(NewEngine())
 	module, err := NewModule(store.Engine, wasm)
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 	linker := NewLinker(store.Engine)
-	assertNoError(linker.Define("", "f", WrapFunc(store, func() {})))
+	require.NoError(t, linker.Define("", "f", WrapFunc(store, func() {})))
 	g, err := NewGlobal(store, NewGlobalType(NewValType(KindI32), false), ValI32(0))
-	assertNoError(err)
-	assertNoError(linker.Define("", "g", g))
+	require.NoError(t, err)
+	require.NoError(t, linker.Define("", "g", g))
 	m, err := NewMemory(store, NewMemoryType(1, true, 300))
-	assertNoError(err)
-	assertNoError(linker.Define("", "m", m))
-	assertNoError(linker.Define("other", "m", m))
+	require.NoError(t, err)
+	require.NoError(t, linker.Define("", "m", m))
+	require.NoError(t, linker.Define("other", "m", m))
 
 	tableWasm, err := Wat2Wasm(`(module (table (export "") 1 funcref))`)
-	assertNoError(err)
+	require.NoError(t, err)
 	tableModule, err := NewModule(store.Engine, tableWasm)
-	assertNoError(err)
+	require.NoError(t, err)
 	instance, err := NewInstance(store, tableModule, []AsExtern{})
-	assertNoError(err)
+	require.NoError(t, err)
 	table := instance.Exports(store)[0].Table()
-	assertNoError(linker.Define("", "t", table))
+	require.NoError(t, linker.Define("", "t", table))
 
 	_, err = linker.Instantiate(store, module)
-	assertNoError(err)
+	require.NoError(t, err)
 
-	assertNoError(linker.DefineFunc(store, "", "", func() {}))
-	assertNoError(linker.DefineInstance(store, "x", instance))
+	require.NoError(t, linker.DefineFunc(store, "", "", func() {}))
+	require.NoError(t, linker.DefineInstance(store, "x", instance))
 	err = linker.DefineInstance(store, "x", instance)
-	if err == nil {
-		panic("expected an error")
-	}
-}
-
-func assertNoError(err error) {
-	if err != nil {
-		panic("found an error")
-	}
+	require.Error(t, err)
 }
 
 func TestLinkerShadowing(t *testing.T) {
 	store := NewStore(NewEngine())
 	linker := NewLinker(store.Engine)
-	assertNoError(linker.Define("", "f", WrapFunc(store, func() {})))
+	require.NoError(t, linker.Define("", "f", WrapFunc(store, func() {})))
 	err := linker.Define("", "f", WrapFunc(store, func() {}))
-	if err == nil {
-		panic("expected an error")
-	}
+	require.Error(t, err)
+
 	linker.AllowShadowing(true)
-	assertNoError(linker.Define("", "f", WrapFunc(store, func() {})))
+	require.NoError(t, linker.Define("", "f", WrapFunc(store, func() {})))
 	linker.AllowShadowing(false)
 	err = linker.Define("", "f", WrapFunc(store, func() {}))
-	if err == nil {
-		panic("expected an error")
-	}
+	require.Error(t, err)
 }
 
 func TestLinkerTrap(t *testing.T) {
 	store := NewStore(NewEngine())
 	wasm, err := Wat2Wasm(`(func unreachable) (start 0)`)
-	assertNoError(err)
+	require.NoError(t, err)
 	module, err := NewModule(store.Engine, wasm)
-	assertNoError(err)
+	require.NoError(t, err)
 
 	linker := NewLinker(store.Engine)
-	i, err := linker.Instantiate(store, module)
-	if i != nil {
-		panic("expected failure")
-	}
-	if err == nil {
-		panic("expected failure")
-	}
+	inst, err := linker.Instantiate(store, module)
+	require.Nil(t, inst)
+	require.Error(t, err)
 }
 
 func TestLinkerModule(t *testing.T) {
@@ -96,30 +79,30 @@ func TestLinkerModule(t *testing.T) {
 	wasm, err := Wat2Wasm(`(module
 	  (func (export "f"))
 	)`)
-	assertNoError(err)
+	require.NoError(t, err)
 	module, err := NewModule(store.Engine, wasm)
-	assertNoError(err)
+	require.NoError(t, err)
 
 	linker := NewLinker(store.Engine)
 	err = linker.DefineModule(store, "foo", module)
-	assertNoError(err)
+	require.NoError(t, err)
 
 	wasm, err = Wat2Wasm(`(module
 	  (import "foo" "f" (func))
 	)`)
-	assertNoError(err)
+	require.NoError(t, err)
 	module, err = NewModule(store.Engine, wasm)
-	assertNoError(err)
+	require.NoError(t, err)
 
 	_, err = linker.Instantiate(store, module)
-	assertNoError(err)
+	require.NoError(t, err)
 }
 
 func TestLinkerGetDefault(t *testing.T) {
 	store := NewStore(NewEngine())
 	linker := NewLinker(store.Engine)
 	f, err := linker.GetDefault(store, "foo")
-	assertNoError(err)
+	require.NoError(t, err)
 	f.Call(store)
 }
 
@@ -132,7 +115,7 @@ func TestLinkerGetOneByName(t *testing.T) {
 	}
 
 	err := linker.DefineFunc(store, "foo", "baz", func() {})
-	assertNoError(err)
+	require.NoError(t, err)
 	f = linker.Get(store, "foo", "baz")
 	f.Func().Call(store)
 }
@@ -144,7 +127,7 @@ func TestLinkerFuncs(t *testing.T) {
 	err := linker.FuncWrap("foo", "bar", func() {
 		called += 1
 	})
-	check(err)
+	require.NoError(t, err)
 
 	wasm, err := Wat2Wasm(`
 	    (module
@@ -152,22 +135,18 @@ func TestLinkerFuncs(t *testing.T) {
 		(start 0)
 	    )
 	`)
-	check(err)
+	require.NoError(t, err)
 
 	module, err := NewModule(engine, wasm)
-	check(err)
+	require.NoError(t, err)
 
 	_, err = linker.Instantiate(NewStore(engine), module)
-	check(err)
-	if called != 1 {
-		panic("expected a call")
-	}
+	require.NoError(t, err)
+	require.Equal(t, 1, called, "expected a call")
 
 	_, err = linker.Instantiate(NewStore(engine), module)
-	check(err)
-	if called != 2 {
-		panic("expected a call")
-	}
+	require.NoError(t, err)
+	require.Equal(t, 2, called, "expected a call")
 
 	cb := func(caller *Caller, args []Val) ([]Val, *Trap) {
 		called += 2
@@ -176,17 +155,13 @@ func TestLinkerFuncs(t *testing.T) {
 	ty := NewFuncType([]*ValType{}, []*ValType{})
 	linker.AllowShadowing(true)
 	err = linker.FuncNew("foo", "bar", ty, cb)
-	check(err)
+	require.NoError(t, err)
 
 	_, err = linker.Instantiate(NewStore(engine), module)
-	check(err)
-	if called != 4 {
-		panic("expected a call")
-	}
+	require.NoError(t, err)
+	require.Equal(t, 4, called, "expected a call")
 
 	_, err = linker.Instantiate(NewStore(engine), module)
-	check(err)
-	if called != 6 {
-		panic("expected a call")
-	}
+	require.NoError(t, err)
+	require.Equal(t, 6, called, "expected a call")
 }

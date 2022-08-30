@@ -1,6 +1,10 @@
 package wasmtime
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
 
 func TestEngine(t *testing.T) {
 	NewEngine()
@@ -9,13 +13,17 @@ func TestEngine(t *testing.T) {
 
 func TestEngineInvalidatesConfig(t *testing.T) {
 	config := NewConfig()
-	NewEngineWithConfig(config)
-	(func() {
+	{
+		engine := NewEngineWithConfig(config)
+		require.NotNil(t, engine)
+	}
+
+	{
 		defer func() {
-			if r := recover(); r == nil {
-				t.Errorf("The code did not panic")
-			}
+			r := recover()
+			require.NotNil(t, r, "The code did not panic")
 		}()
-		NewEngineWithConfig(config)
-	})()
+		engine := NewEngineWithConfig(config)
+		require.Nil(t, engine)
+	}
 }

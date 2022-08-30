@@ -1,6 +1,10 @@
 package wasmtime
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
 
 func TestStore(t *testing.T) {
 	engine := NewEngine()
@@ -19,28 +23,19 @@ func TestInterruptWasm(t *testing.T) {
 	    (loop br 0))
 	  (start 1)
 	`)
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 	module, err := NewModule(store.Engine, wasm)
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 	engine := store.Engine
 	f := WrapFunc(store, func() {
 		engine.IncrementEpoch()
 	})
 	instance, err := NewInstance(store, module, []AsExtern{f})
-	if instance != nil {
-		panic("expected nil instance")
-	}
-	if err == nil {
-		panic("expected an error")
-	}
+	require.Nil(t, instance)
+
+	require.Error(t, err)
 	trap := err.(*Trap)
-	if trap == nil {
-		panic("expected a trap")
-	}
+	require.NotNil(t, trap)
 }
 
 func TestFuelConsumed(t *testing.T) {
@@ -48,12 +43,8 @@ func TestFuelConsumed(t *testing.T) {
 	store := NewStore(engine)
 
 	fuel, enable := store.FuelConsumed()
-	if enable != false {
-		t.Fatal("expected not enable")
-	}
-	if fuel != 0 {
-		t.Fatalf("fuel is %d, not zero", fuel)
-	}
+	require.False(t, enable)
+	require.Equal(t, fuel, uint64(0))
 }
 
 func TestAddFuel(t *testing.T) {
@@ -63,17 +54,12 @@ func TestAddFuel(t *testing.T) {
 	store := NewStore(engine)
 
 	fuel, enable := store.FuelConsumed()
-	if enable != true {
-		t.Fatal("expected enabled")
-	}
-	if fuel != 0 {
-		t.Fatalf("fuel is %d, not zero", fuel)
-	}
+	require.True(t, enable)
+	require.Equal(t, fuel, uint64(0))
 
 	const add_fuel = 3
-	if err := store.AddFuel(add_fuel); err != nil {
-		t.Fatal("expected no error")
-	}
+	err := store.AddFuel(add_fuel)
+	require.NoError(t, err)
 }
 
 func TestConsumeFuel(t *testing.T) {
@@ -83,24 +69,15 @@ func TestConsumeFuel(t *testing.T) {
 	store := NewStore(engine)
 
 	fuel, enable := store.FuelConsumed()
-	if enable != true {
-		t.Fatal("expected enabled")
-	}
-	if fuel != 0 {
-		t.Fatalf("fuel is %d, not zero", fuel)
-	}
+	require.True(t, enable)
+	require.Equal(t, fuel, uint64(0))
 
 	const add_fuel = 3
-	if err := store.AddFuel(add_fuel); err != nil {
-		t.Fatal("expected no error")
-	}
+	err := store.AddFuel(add_fuel)
+	require.NoError(t, err)
 
 	consume_fuel := uint64(1)
 	remaining, err := store.ConsumeFuel(consume_fuel)
-	if err != nil {
-		t.Fatal("expected no error")
-	}
-	if remaining != (add_fuel - consume_fuel) {
-		t.Fatalf("expected %d, but %d", add_fuel-consume_fuel, remaining)
-	}
+	require.NoError(t, err)
+	require.Equal(t, (add_fuel - consume_fuel), remaining)
 }

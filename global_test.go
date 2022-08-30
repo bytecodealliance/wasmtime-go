@@ -1,27 +1,22 @@
 package wasmtime
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
 
 func TestGlobal(t *testing.T) {
 	store := NewStore(NewEngine())
 	g, err := NewGlobal(store, NewGlobalType(NewValType(KindI32), true), ValI32(100))
-	if err != nil {
-		panic(err)
-	}
-	if g.Get(store).I32() != 100 {
-		panic("wrong value in global")
-	}
+	require.NoError(t, err)
+	require.Equal(t, int32(100), g.Get(store).I32())
+
 	g.Set(store, ValI32(200))
-	if g.Get(store).I32() != 200 {
-		panic("wrong value in global")
-	}
+	require.Equal(t, int32(200), g.Get(store).I32())
 
 	_, err = NewGlobal(store, NewGlobalType(NewValType(KindI64), true), ValI32(100))
-	if err == nil {
-		panic("should fail to create global")
-	}
+	require.Error(t, err, "should fail to create global")
 	err = g.Set(store, ValI64(200))
-	if err == nil {
-		panic("should fail to set global")
-	}
+	require.Error(t, err, "should fail to set global")
 }

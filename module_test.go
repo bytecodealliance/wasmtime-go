@@ -4,33 +4,23 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestModule(t *testing.T) {
 	_, err := NewModule(NewEngine(), []byte{})
-	if err == nil {
-		panic("expected an error")
-	}
+	require.Error(t, err)
 	_, err = NewModule(NewEngine(), []byte{1})
-	if err == nil {
-		panic("expected an error")
-	}
+	require.Error(t, err)
 }
 
 func TestModuleValidate(t *testing.T) {
-	if ModuleValidate(NewEngine(), []byte{}) == nil {
-		panic("expected an error")
-	}
-	if ModuleValidate(NewEngine(), []byte{1}) == nil {
-		panic("expected an error")
-	}
+	require.NotNil(t, ModuleValidate(NewEngine(), []byte{}), "expected an error")
+	require.NotNil(t, ModuleValidate(NewEngine(), []byte{1}), "expected an error")
 	wasm, err := Wat2Wasm(`(module)`)
-	if err != nil {
-		panic(err)
-	}
-	if ModuleValidate(NewEngine(), wasm) != nil {
-		panic("expected valid module")
-	}
+	require.NoError(t, err)
+	require.Nil(t, ModuleValidate(NewEngine(), wasm), "expected valid module")
 }
 
 func TestModuleImports(t *testing.T) {
@@ -42,71 +32,31 @@ func TestModuleImports(t *testing.T) {
             (import "" "" (memory 1))
           )
         `)
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 	module, err := NewModule(NewEngine(), wasm)
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 	imports := module.Imports()
-	if len(imports) != 4 {
-		panic("wrong number of imports")
-	}
-	if imports[0].Module() != "" {
-		panic("wrong import module")
-	}
-	if *imports[0].Name() != "f" {
-		panic("wrong import name")
-	}
-	if imports[0].Type().FuncType() == nil {
-		panic("wrong import type")
-	}
-	if len(imports[0].Type().FuncType().Params()) != 0 {
-		panic("wrong import type")
-	}
-	if len(imports[0].Type().FuncType().Results()) != 0 {
-		panic("wrong import type")
-	}
+	require.Len(t, imports, 4)
+	require.Equal(t, "", imports[0].Module())
+	require.Equal(t, "f", *imports[0].Name())
+	require.NotNil(t, imports[0].Type().FuncType())
+	require.Len(t, imports[0].Type().FuncType().Params(), 0)
+	require.Len(t, imports[0].Type().FuncType().Results(), 0)
 
-	if imports[1].Module() != "a" {
-		panic("wrong import module")
-	}
-	if *imports[1].Name() != "g" {
-		panic("wrong import name")
-	}
-	if imports[1].Type().GlobalType() == nil {
-		panic("wrong import type")
-	}
-	if imports[1].Type().GlobalType().Content().Kind() != KindI32 {
-		panic("wrong import type")
-	}
+	require.Equal(t, "a", imports[1].Module())
+	require.Equal(t, "g", *imports[1].Name())
+	require.NotNil(t, imports[1].Type().GlobalType())
+	require.Equal(t, KindI32, imports[1].Type().GlobalType().Content().Kind())
 
-	if imports[2].Module() != "" {
-		panic("wrong import module")
-	}
-	if *imports[2].Name() != "" {
-		panic("wrong import name")
-	}
-	if imports[2].Type().TableType() == nil {
-		panic("wrong import type")
-	}
-	if imports[2].Type().TableType().Element().Kind() != KindFuncref {
-		panic("wrong import type")
-	}
+	require.Empty(t, imports[2].Module())
+	require.Empty(t, *imports[2].Name())
+	require.NotNil(t, imports[2].Type().TableType())
+	require.Equal(t, KindFuncref, imports[2].Type().TableType().Element().Kind())
 
-	if imports[3].Module() != "" {
-		panic("wrong import module")
-	}
-	if *imports[3].Name() != "" {
-		panic("wrong import name")
-	}
-	if imports[3].Type().MemoryType() == nil {
-		panic("wrong import type")
-	}
-	if imports[3].Type().MemoryType().Minimum() != 1 {
-		panic("wrong import type")
-	}
+	require.Empty(t, imports[3].Module())
+	require.Empty(t, *imports[3].Name())
+	require.NotNil(t, imports[3].Type().MemoryType())
+	require.Equal(t, uint64(1), imports[3].Type().MemoryType().Minimum())
 }
 
 func TestModuleExports(t *testing.T) {
@@ -118,59 +68,28 @@ func TestModuleExports(t *testing.T) {
             (memory (export "m") 1)
           )
         `)
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 	module, err := NewModule(NewEngine(), wasm)
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
+
 	exports := module.Exports()
-	if len(exports) != 4 {
-		panic("wrong number of exports")
-	}
-	if exports[0].Name() != "f" {
-		panic("wrong export name")
-	}
-	if exports[0].Type().FuncType() == nil {
-		panic("wrong export type")
-	}
-	if len(exports[0].Type().FuncType().Params()) != 0 {
-		panic("wrong export type")
-	}
-	if len(exports[0].Type().FuncType().Results()) != 0 {
-		panic("wrong export type")
-	}
+	require.Len(t, exports, 4)
+	require.Equal(t, "f", exports[0].Name())
+	require.NotNil(t, exports[0].Type().FuncType())
+	require.Len(t, exports[0].Type().FuncType().Params(), 0)
+	require.Len(t, exports[0].Type().FuncType().Results(), 0)
 
-	if exports[1].Name() != "g" {
-		panic("wrong export name")
-	}
-	if exports[1].Type().GlobalType() == nil {
-		panic("wrong export type")
-	}
-	if exports[1].Type().GlobalType().Content().Kind() != KindI32 {
-		panic("wrong export type")
-	}
+	require.Equal(t, "g", exports[1].Name())
+	require.NotNil(t, exports[1].Type().GlobalType())
+	require.Equal(t, KindI32, exports[1].Type().GlobalType().Content().Kind())
 
-	if exports[2].Name() != "t" {
-		panic("wrong export name")
-	}
-	if exports[2].Type().TableType() == nil {
-		panic("wrong export type")
-	}
-	if exports[2].Type().TableType().Element().Kind() != KindFuncref {
-		panic("wrong export type")
-	}
+	require.Equal(t, "t", exports[2].Name())
+	require.NotNil(t, exports[2].Type().TableType())
+	require.Equal(t, KindFuncref, exports[2].Type().TableType().Element().Kind())
 
-	if exports[3].Name() != "m" {
-		panic("wrong export name")
-	}
-	if exports[3].Type().MemoryType() == nil {
-		panic("wrong export type")
-	}
-	if exports[3].Type().MemoryType().Minimum() != 1 {
-		panic("wrong export type")
-	}
+	require.Equal(t, "m", exports[3].Name())
+	require.NotNil(t, exports[3].Type().MemoryType())
+	require.Equal(t, uint64(1), exports[3].Type().MemoryType().Minimum())
 }
 
 func TestModuleSerialize(t *testing.T) {
@@ -183,35 +102,22 @@ func TestModuleSerialize(t *testing.T) {
             (memory (export "m") 1)
           )
         `)
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 	module, err := NewModule(engine, wasm)
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 	bytes, err := module.Serialize()
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 
 	_, err = NewModuleDeserialize(engine, bytes)
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 
 	tmpfile, err := ioutil.TempFile("", "example")
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 	defer os.Remove(tmpfile.Name())
 
-	if _, err := tmpfile.Write(bytes); err != nil {
-		panic(err)
-	}
+	_, err = tmpfile.Write(bytes)
+	require.NoError(t, err)
 	tmpfile.Close()
 	_, err = NewModuleDeserializeFile(engine, tmpfile.Name())
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 }

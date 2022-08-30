@@ -1,34 +1,25 @@
 package wasmtime
 
-import "testing"
-import "runtime"
+import (
+	"runtime"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
 
 func TestGlobalType(t *testing.T) {
 	ty := NewGlobalType(NewValType(KindI32), true)
-	if ty.Content().Kind() != KindI32 {
-		panic("invalid kind")
-	}
-	if !ty.Mutable() {
-		panic("invalid mutable")
-	}
+	require.Equal(t, KindI32, ty.Content().Kind())
+	require.True(t, ty.Mutable())
+
 	content := ty.Content()
 	runtime.GC()
-	if content.Kind() != KindI32 {
-		panic("invalid kind")
-	}
+	require.Equal(t, KindI32, content.Kind())
 
 	ty = NewGlobalType(NewValType(KindI32), true)
 	ty2 := ty.AsExternType().GlobalType()
-	if ty2 == nil {
-		panic("unexpected cast")
-	}
-	if ty.AsExternType().FuncType() != nil {
-		panic("working cast")
-	}
-	if ty.AsExternType().MemoryType() != nil {
-		panic("working cast")
-	}
-	if ty.AsExternType().TableType() != nil {
-		panic("working cast")
-	}
+	require.NotNil(t, ty2)
+	require.Nil(t, ty.AsExternType().FuncType())
+	require.Nil(t, ty.AsExternType().MemoryType())
+	require.Nil(t, ty.AsExternType().TableType())
 }
