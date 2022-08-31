@@ -3,7 +3,6 @@ package wasmtime_test
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -579,7 +578,7 @@ func ExampleVal_Externref() {
 // An example of linking WASI to the runtime in order to interact with the system.
 // It uses the WAT code from https://github.com/bytecodealliance/wasmtime/blob/main/docs/WASI-tutorial.md#web-assembly-text-example
 func ExampleWasiConfig() {
-	dir, err := ioutil.TempDir("", "out")
+	dir, err := os.MkdirTemp("", "out")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -652,7 +651,7 @@ func ExampleWasiConfig() {
 	}
 
 	// Print WASM stdout
-	out, err := ioutil.ReadFile(stdoutPath)
+	out, err := os.ReadFile(stdoutPath)
 	if err != nil {
 		log.Fatal(err)
 	}

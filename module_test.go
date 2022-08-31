@@ -1,7 +1,6 @@
 package wasmtime
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -111,7 +110,7 @@ func TestModuleSerialize(t *testing.T) {
 	_, err = NewModuleDeserialize(engine, bytes)
 	require.NoError(t, err)
 
-	tmpfile, err := ioutil.TempFile("", "example")
+	tmpfile, err := os.CreateTemp("", "example")
 	require.NoError(t, err)
 	defer os.Remove(tmpfile.Name())
 
