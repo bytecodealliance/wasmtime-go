@@ -68,9 +68,6 @@ func mkTrap(ptr *C.wasm_trap_t) *Trap {
 }
 
 func (t *Trap) ptr() *C.wasm_trap_t {
-	if t == nil {
-		return nil
-	}
 	ret := t._ptr
 	maybeGC()
 	return ret
@@ -78,9 +75,6 @@ func (t *Trap) ptr() *C.wasm_trap_t {
 
 // Message returns the message of the `Trap`
 func (t *Trap) Message() string {
-	if t == nil {
-		return ""
-	}
 	message := C.wasm_byte_vec_t{}
 	C.wasm_trap_message(t.ptr(), &message)
 	ret := C.GoStringN(message.data, C.int(message.size-1))
@@ -91,9 +85,6 @@ func (t *Trap) Message() string {
 
 // Code returns the code of the `Trap` if it exists, nil otherwise.
 func (t *Trap) Code() *TrapCode {
-	if t == nil {
-		return nil
-	}
 	var code C.uint8_t
 	var ret *TrapCode
 	ok := C.wasmtime_trap_code(t.ptr(), &code)
@@ -122,9 +113,6 @@ type frameList struct {
 
 // Frames returns the wasm function frames that make up this trap
 func (t *Trap) Frames() []*Frame {
-	if t == nil {
-		return nil
-	}
 	frames := &frameList{}
 	C.wasm_trap_trace(t.ptr(), &frames.vec)
 	runtime.KeepAlive(t)
