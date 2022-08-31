@@ -17,7 +17,7 @@ func TestTable(t *testing.T) {
 	require.NoError(t, err)
 	require.Nil(t, f.Funcref())
 
-	f, err = table.Get(store, 1)
+	_, err = table.Get(store, 1)
 	require.Error(t, err)
 
 	err = table.Set(store, 0, ValFuncref(nil))
