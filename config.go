@@ -59,80 +59,67 @@ func NewConfig() *Config {
 // SetDebugInfo configures whether dwarf debug information for JIT code is enabled
 func (cfg *Config) SetDebugInfo(enabled bool) {
 	C.wasmtime_config_debug_info_set(cfg.ptr(), C.bool(enabled))
-	runtime.KeepAlive(cfg)
 }
 
 // SetWasmThreads configures whether the wasm threads proposal is enabled
 func (cfg *Config) SetWasmThreads(enabled bool) {
 	C.wasmtime_config_wasm_threads_set(cfg.ptr(), C.bool(enabled))
-	runtime.KeepAlive(cfg)
 }
 
 // SetWasmReferenceTypes configures whether the wasm reference types proposal is enabled
 func (cfg *Config) SetWasmReferenceTypes(enabled bool) {
 	C.wasmtime_config_wasm_reference_types_set(cfg.ptr(), C.bool(enabled))
-	runtime.KeepAlive(cfg)
 }
 
 // SetWasmSIMD configures whether the wasm SIMD proposal is enabled
 func (cfg *Config) SetWasmSIMD(enabled bool) {
 	C.wasmtime_config_wasm_simd_set(cfg.ptr(), C.bool(enabled))
-	runtime.KeepAlive(cfg)
 }
 
 // SetWasmBulkMemory configures whether the wasm bulk memory proposal is enabled
 func (cfg *Config) SetWasmBulkMemory(enabled bool) {
 	C.wasmtime_config_wasm_bulk_memory_set(cfg.ptr(), C.bool(enabled))
-	runtime.KeepAlive(cfg)
 }
 
 // SetWasmMultiValue configures whether the wasm multi value proposal is enabled
 func (cfg *Config) SetWasmMultiValue(enabled bool) {
 	C.wasmtime_config_wasm_multi_value_set(cfg.ptr(), C.bool(enabled))
-	runtime.KeepAlive(cfg)
 }
 
 // SetWasmMultiMemory configures whether the wasm multi memory proposal is enabled
 func (cfg *Config) SetWasmMultiMemory(enabled bool) {
 	C.wasmtime_config_wasm_multi_memory_set(cfg.ptr(), C.bool(enabled))
-	runtime.KeepAlive(cfg)
 }
 
 // SetWasmMemory64 configures whether the wasm memory64 proposal is enabled
 func (cfg *Config) SetWasmMemory64(enabled bool) {
 	C.wasmtime_config_wasm_memory64_set(cfg.ptr(), C.bool(enabled))
-	runtime.KeepAlive(cfg)
 }
 
-// SetConsumFuel configures whether fuel is enabled
+// SetConsumeFuel configures whether fuel is enabled
 func (cfg *Config) SetConsumeFuel(enabled bool) {
 	C.wasmtime_config_consume_fuel_set(cfg.ptr(), C.bool(enabled))
-	runtime.KeepAlive(cfg)
 }
 
 // SetStrategy configures what compilation strategy is used to compile wasm code
 func (cfg *Config) SetStrategy(strat Strategy) {
 	C.wasmtime_config_strategy_set(cfg.ptr(), C.wasmtime_strategy_t(strat))
-	runtime.KeepAlive(cfg)
 }
 
 // SetCraneliftDebugVerifier configures whether the cranelift debug verifier will be active when
 // cranelift is used to compile wasm code.
 func (cfg *Config) SetCraneliftDebugVerifier(enabled bool) {
 	C.wasmtime_config_cranelift_debug_verifier_set(cfg.ptr(), C.bool(enabled))
-	runtime.KeepAlive(cfg)
 }
 
 // SetCraneliftOptLevel configures the cranelift optimization level for generated code
 func (cfg *Config) SetCraneliftOptLevel(level OptLevel) {
 	C.wasmtime_config_cranelift_opt_level_set(cfg.ptr(), C.wasmtime_opt_level_t(level))
-	runtime.KeepAlive(cfg)
 }
 
 // SetProfiler configures what profiler strategy to use for generated code
 func (cfg *Config) SetProfiler(profiler ProfilingStrategy) {
 	C.wasmtime_config_profiler_set(cfg.ptr(), C.wasmtime_profiling_strategy_t(profiler))
-	runtime.KeepAlive(cfg)
 }
 
 // CacheConfigLoadDefault enables compiled code caching for this `Config` using the default settings
@@ -142,7 +129,6 @@ func (cfg *Config) SetProfiler(profiler ProfilingStrategy) {
 // https://bytecodealliance.github.io/wasmtime/cli-cache.html
 func (cfg *Config) CacheConfigLoadDefault() error {
 	err := C.wasmtime_config_cache_config_load(cfg.ptr(), nil)
-	runtime.KeepAlive(cfg)
 	if err != nil {
 		return mkError(err)
 	}
@@ -158,7 +144,6 @@ func (cfg *Config) CacheConfigLoad(path string) error {
 	cstr := C.CString(path)
 	err := C.wasmtime_config_cache_config_load(cfg.ptr(), cstr)
 	C.free(unsafe.Pointer(cstr))
-	runtime.KeepAlive(cfg)
 	if err != nil {
 		return mkError(err)
 	}
@@ -170,7 +155,6 @@ func (cfg *Config) CacheConfigLoad(path string) error {
 // defined threshold.
 func (cfg *Config) SetEpochInterruption(enable bool) {
 	C.wasmtime_config_epoch_interruption_set(cfg.ptr(), C.bool(enable))
-	runtime.KeepAlive(cfg)
 }
 
 // See comments in `ffi.go` for what's going on here
