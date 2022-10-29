@@ -59,8 +59,6 @@ for dylib in glob.glob("build/**/*.dll.a"):
     os.remove(dylib)
 for dylib in glob.glob("build/**/*.dylib"):
     os.remove(dylib)
-for dylib in glob.glob("build/**/*.so"):
-    os.remove(dylib)
 
 for subdir, dirs, files in os.walk("build"):
     dir_name = os.path.basename(os.path.normpath(subdir))
