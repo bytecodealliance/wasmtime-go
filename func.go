@@ -1,4 +1,4 @@
-package wasmtime
+package v2
 
 // #include "shims.h"
 import "C"
@@ -515,6 +515,11 @@ func enterWasm(store Storelike, wasm func(**C.wasm_trap_t) *C.wasmtime_error_t) 
 
 	var trap *C.wasm_trap_t
 	err := wasm(&trap)
+
+	// uncomment this to see that the trap is nil when you run just the TestFuncTrap by itself
+	// go test -v -run TestFuncTrap
+	//log.Printf("@achrichton: trap=>%#v, %v and err=>%#v", trap, trap == nil, err)
+	// you'll also need to import "log" in the imports at the very top of the file
 
 	// Take ownership of any returned values to ensure we properly run
 	// destructors for them.

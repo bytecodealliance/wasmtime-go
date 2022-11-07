@@ -10,22 +10,22 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bytecodealliance/wasmtime-go"
+	"github.com/bytecodealliance/wasmtime-go/v2"
 )
 
 // Example of limiting a WebAssembly function's runtime using "fuel consumption".
 func ExampleConfig_fuel() {
-	config := wasmtime.NewConfig()
+	config := v2.NewConfig()
 	config.SetConsumeFuel(true)
-	engine := wasmtime.NewEngineWithConfig(config)
-	store := wasmtime.NewStore(engine)
+	engine := v2.NewEngineWithConfig(config)
+	store := v2.NewStore(engine)
 	err := store.AddFuel(10000)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Compile and instantiate a small example with an infinite loop.
-	wasm, err := wasmtime.Wat2Wasm(`
+	wasm, err := v2.Wat2Wasm(`
 	(module
 	  (func $fibonacci (param $n i32) (result i32)
 	    (if
@@ -43,11 +43,11 @@ func ExampleConfig_fuel() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	module, err := wasmtime.NewModule(store.Engine, wasm)
+	module, err := v2.NewModule(store.Engine, wasm)
 	if err != nil {
 		log.Fatal(err)
 	}
-	instance, err := wasmtime.NewInstance(store, module, []wasmtime.AsExtern{})
+	instance, err := v2.NewInstance(store, module, []v2.AsExtern{})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -92,14 +92,14 @@ func ExampleConfig_fuel() {
 func ExampleConfig_interrupt() {
 	// Enable interruptable code via `Config` and then create an interrupt
 	// handle which we'll use later to interrupt running code.
-	config := wasmtime.NewConfig()
+	config := v2.NewConfig()
 	config.SetEpochInterruption(true)
-	engine := wasmtime.NewEngineWithConfig(config)
-	store := wasmtime.NewStore(engine)
+	engine := v2.NewEngineWithConfig(config)
+	store := v2.NewStore(engine)
 	store.SetEpochDeadline(1)
 
 	// Compile and instantiate a small example with an infinite loop.
-	wasm, err := wasmtime.Wat2Wasm(`
+	wasm, err := v2.Wat2Wasm(`
 	(module
 	  (func (export "run")
 	    (loop
@@ -110,11 +110,11 @@ func ExampleConfig_interrupt() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	module, err := wasmtime.NewModule(store.Engine, wasm)
+	module, err := v2.NewModule(store.Engine, wasm)
 	if err != nil {
 		log.Fatal(err)
 	}
-	instance, err := wasmtime.NewInstance(store, module, []wasmtime.AsExtern{})
+	instance, err := v2.NewInstance(store, module, []v2.AsExtern{})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -132,7 +132,7 @@ func ExampleConfig_interrupt() {
 
 	fmt.Println("Entering infinite loop ...")
 	_, err = run.Call(store)
-	var trap *wasmtime.Trap
+	var trap *v2.Trap
 	if !errors.As(err, &trap) {
 		log.Fatal("Unexpected error")
 	}
@@ -152,11 +152,11 @@ func ExampleConfig_interrupt() {
 func ExampleConfig_multi() {
 	// Configure our `Store`, but be sure to use a `Config` that enables the
 	// wasm multi-value feature since it's not stable yet.
-	config := wasmtime.NewConfig()
+	config := v2.NewConfig()
 	config.SetWasmMultiValue(true)
-	store := wasmtime.NewStore(wasmtime.NewEngineWithConfig(config))
+	store := v2.NewStore(v2.NewEngineWithConfig(config))
 
-	wasm, err := wasmtime.Wat2Wasm(`
+	wasm, err := v2.Wat2Wasm(`
 	(module
 	  (func $f (import "" "f") (param i32 i64) (result i64 i32))
 
@@ -185,16 +185,16 @@ func ExampleConfig_multi() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	module, err := wasmtime.NewModule(store.Engine, wasm)
+	module, err := v2.NewModule(store.Engine, wasm)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	callback := wasmtime.WrapFunc(store, func(a int32, b int64) (int64, int32) {
+	callback := v2.WrapFunc(store, func(a int32, b int64) (int64, int32) {
 		return b + 1, a + 1
 	})
 
-	instance, err := wasmtime.NewInstance(store, module, []wasmtime.AsExtern{callback})
+	instance, err := v2.NewInstance(store, module, []v2.AsExtern{callback})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -205,7 +205,7 @@ func ExampleConfig_multi() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	arr := results.([]wasmtime.Val)
+	arr := results.([]v2.Val)
 	a := arr[0].I64()
 	b := arr[1].I32()
 	fmt.Printf("> %d %d\n", a, b)
@@ -222,7 +222,7 @@ func ExampleConfig_multi() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	arr = results.([]wasmtime.Val)
+	arr = results.([]v2.Val)
 
 	for i := 0; i < len(arr); i++ {
 		fmt.Printf(" %d", arr[i].Get())
@@ -235,10 +235,10 @@ func ExampleConfig_multi() {
 }
 
 func ExampleLinker() {
-	store := wasmtime.NewStore(wasmtime.NewEngine())
+	store := v2.NewStore(v2.NewEngine())
 
 	// Compile two wasm modules where the first references the second
-	wasm1, err := wasmtime.Wat2Wasm(`
+	wasm1, err := v2.Wat2Wasm(`
 	(module
 	  (import "wasm2" "double" (func $double (param i32) (result i32)))
 	  (func (export "double_and_add") (param i32 i32) (result i32)
@@ -253,7 +253,7 @@ func ExampleLinker() {
 		log.Fatal(err)
 	}
 
-	wasm2, err := wasmtime.Wat2Wasm(`
+	wasm2, err := v2.Wat2Wasm(`
 	(module
 	  (func (export "double") (param i32) (result i32)
 	    local.get 0
@@ -267,16 +267,16 @@ func ExampleLinker() {
 	}
 
 	// Next compile both modules
-	module1, err := wasmtime.NewModule(store.Engine, wasm1)
+	module1, err := v2.NewModule(store.Engine, wasm1)
 	if err != nil {
 		log.Fatal(err)
 	}
-	module2, err := wasmtime.NewModule(store.Engine, wasm2)
+	module2, err := v2.NewModule(store.Engine, wasm2)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	linker := wasmtime.NewLinker(store.Engine)
+	linker := v2.NewLinker(store.Engine)
 
 	// The second module is instantiated first since it has no imports, and
 	// then we insert the instance back into the linker under the name
@@ -309,8 +309,8 @@ func ExampleLinker() {
 func ExampleMemory() {
 	// Create our `Store` context and then compile a module and create an
 	// instance from the compiled module all in one go.
-	store := wasmtime.NewStore(wasmtime.NewEngine())
-	wasm, err := wasmtime.Wat2Wasm(`
+	store := v2.NewStore(v2.NewEngine())
+	wasm, err := v2.Wat2Wasm(`
 	(module
 	  (memory (export "memory") 2 3)
 
@@ -328,11 +328,11 @@ func ExampleMemory() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	module, err := wasmtime.NewModule(store.Engine, wasm)
+	module, err := v2.NewModule(store.Engine, wasm)
 	if err != nil {
 		log.Fatal(err)
 	}
-	instance, err := wasmtime.NewInstance(store, module, []wasmtime.AsExtern{})
+	instance, err := v2.NewInstance(store, module, []v2.AsExtern{})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -344,22 +344,22 @@ func ExampleMemory() {
 	storeFn := instance.GetFunc(store, "store")
 
 	// some helper functions we'll use below
-	call32 := func(f *wasmtime.Func, args ...interface{}) int32 {
+	call32 := func(f *v2.Func, args ...interface{}) int32 {
 		ret, err := f.Call(store, args...)
 		if err != nil {
 			log.Fatal(err)
 		}
 		return ret.(int32)
 	}
-	call := func(f *wasmtime.Func, args ...interface{}) {
+	call := func(f *v2.Func, args ...interface{}) {
 		_, err := f.Call(store, args...)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
-	assertTraps := func(f *wasmtime.Func, args ...interface{}) {
+	assertTraps := func(f *v2.Func, args ...interface{}) {
 		_, err := f.Call(store, args...)
-		_, ok := err.(*wasmtime.Trap)
+		_, ok := err.(*v2.Trap)
 		if !ok {
 			log.Fatal("expected a trap")
 		}
@@ -419,8 +419,8 @@ func ExampleMemory() {
 
 	// Finally we can also create standalone memories to get imported by
 	// wasm modules too.
-	memorytype := wasmtime.NewMemoryType(5, true, 5)
-	memory2, err := wasmtime.NewMemory(store, memorytype)
+	memorytype := v2.NewMemoryType(5, true, 5)
+	memory2, err := v2.NewMemory(store, memorytype)
 	assert(err == nil)
 	assert(memory2.Size(store) == 5)
 	_, err = memory2.Grow(store, 1)
@@ -435,10 +435,10 @@ func ExampleMemory() {
 // instantiate it from the compilation artifacts.
 func ExampleModule_serialize() {
 	// Configure the initial compilation environment.
-	engine := wasmtime.NewEngine()
+	engine := v2.NewEngine()
 
 	// Compile the wasm module into an in-memory instance of a `Module`.
-	wasm, err := wasmtime.Wat2Wasm(`
+	wasm, err := v2.Wat2Wasm(`
 	(module
 	  (func $hello (import "" "hello"))
 	  (func (export "run") (call $hello))
@@ -447,7 +447,7 @@ func ExampleModule_serialize() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	module, err := wasmtime.NewModule(engine, wasm)
+	module, err := v2.NewModule(engine, wasm)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -457,17 +457,17 @@ func ExampleModule_serialize() {
 	}
 
 	// Configure the initial compilation environment.
-	store := wasmtime.NewStore(wasmtime.NewEngine())
+	store := v2.NewStore(v2.NewEngine())
 
 	// Deserialize the compiled module.
-	module, err = wasmtime.NewModuleDeserialize(store.Engine, bytes)
+	module, err = v2.NewModuleDeserialize(store.Engine, bytes)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Here we handle the imports of the module, which in this case is our
 	// `helloFunc` callback.
-	helloFunc := wasmtime.WrapFunc(store, func() {
+	helloFunc := v2.WrapFunc(store, func() {
 		fmt.Println("Calling back...")
 		fmt.Println("> Hello World!")
 	})
@@ -475,7 +475,7 @@ func ExampleModule_serialize() {
 	// Once we've got that all set up we can then move to the instantiation
 	// phase, pairing together a compiled module as well as a set of imports.
 	// Note that this is where the wasm `start` function, if any, would run.
-	instance, err := wasmtime.NewInstance(store, module, []wasmtime.AsExtern{helloFunc})
+	instance, err := v2.NewInstance(store, module, []v2.AsExtern{helloFunc})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -500,10 +500,10 @@ func ExampleModule_serialize() {
 
 // Small example of how to use `externref`s.
 func ExampleVal_Externref() {
-	config := wasmtime.NewConfig()
+	config := v2.NewConfig()
 	config.SetWasmReferenceTypes(true)
-	store := wasmtime.NewStore(wasmtime.NewEngineWithConfig(config))
-	wasm, err := wasmtime.Wat2Wasm(`
+	store := v2.NewStore(v2.NewEngineWithConfig(config))
+	wasm, err := v2.Wat2Wasm(`
 	(module
 	  (table $table (export "table") 10 externref)
 
@@ -517,16 +517,16 @@ func ExampleVal_Externref() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	module, err := wasmtime.NewModule(store.Engine, wasm)
+	module, err := v2.NewModule(store.Engine, wasm)
 	if err != nil {
 		log.Fatal(err)
 	}
-	instance, err := wasmtime.NewInstance(store, module, []wasmtime.AsExtern{})
+	instance, err := v2.NewInstance(store, module, []v2.AsExtern{})
 	if err != nil {
 		log.Fatal(err)
 	}
 	// Create a new `externref` value.
-	value := wasmtime.ValExternref("Hello, World!")
+	value := v2.ValExternref("Hello, World!")
 	// The `externref`'s wrapped data should be the string "Hello, World!".
 	externRef := value.Externref()
 	if externRef != "Hello, World!" {
@@ -585,10 +585,10 @@ func ExampleWasiConfig() {
 	defer os.RemoveAll(dir)
 	stdoutPath := filepath.Join(dir, "stdout")
 
-	engine := wasmtime.NewEngine()
+	engine := v2.NewEngine()
 
 	// Create our module
-	wasm, err := wasmtime.Wat2Wasm(`
+	wasm, err := v2.Wat2Wasm(`
 	(module
 	  ;; Import the required fd_write WASI function which will write the given io vectors to stdout
 	  ;; The function signature for fd_write is:
@@ -620,13 +620,13 @@ func ExampleWasiConfig() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	module, err := wasmtime.NewModule(engine, wasm)
+	module, err := v2.NewModule(engine, wasm)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Create a linker with WASI functions defined within it
-	linker := wasmtime.NewLinker(engine)
+	linker := v2.NewLinker(engine)
 	err = linker.DefineWasi()
 	if err != nil {
 		log.Fatal(err)
@@ -634,9 +634,9 @@ func ExampleWasiConfig() {
 
 	// Configure WASI imports to write stdout into a file, and then create
 	// a `Store` using this wasi configuration.
-	wasiConfig := wasmtime.NewWasiConfig()
+	wasiConfig := v2.NewWasiConfig()
 	wasiConfig.SetStdoutFile(stdoutPath)
-	store := wasmtime.NewStore(engine)
+	store := v2.NewStore(engine)
 	store.SetWasi(wasiConfig)
 	instance, err := linker.Instantiate(store, module)
 	if err != nil {
@@ -664,12 +664,12 @@ func ExampleWasiConfig() {
 func Example_hello() {
 	// Almost all operations in wasmtime require a contextual `store`
 	// argument to share, so create that first
-	store := wasmtime.NewStore(wasmtime.NewEngine())
+	store := v2.NewStore(v2.NewEngine())
 
 	// Compiling modules requires WebAssembly binary input, but the wasmtime
 	// package also supports converting the WebAssembly text format to the
 	// binary format.
-	wasm, err := wasmtime.Wat2Wasm(`
+	wasm, err := v2.Wat2Wasm(`
 	(module
 	  (import "" "hello" (func $hello))
 	  (func (export "run")
@@ -683,20 +683,20 @@ func Example_hello() {
 
 	// Once we have our binary `wasm` we can compile that into a `*Module`
 	// which represents compiled JIT code.
-	module, err := wasmtime.NewModule(store.Engine, wasm)
+	module, err := v2.NewModule(store.Engine, wasm)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Our `hello.wat` file imports one item, so we create that function
 	// here.
-	item := wasmtime.WrapFunc(store, func() {
+	item := v2.WrapFunc(store, func() {
 		fmt.Println("Hello from Go!")
 	})
 
 	// Next up we instantiate a module which is where we link in all our
 	// imports. We've got one import so we pass that in here.
-	instance, err := wasmtime.NewInstance(store, module, []wasmtime.AsExtern{item})
+	instance, err := v2.NewInstance(store, module, []v2.AsExtern{item})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -713,8 +713,8 @@ func Example_hello() {
 
 // An example of a wasm module which calculates the GCD of two numbers
 func Example_gcd() {
-	store := wasmtime.NewStore(wasmtime.NewEngine())
-	wasm, err := wasmtime.Wat2Wasm(`
+	store := v2.NewStore(v2.NewEngine())
+	wasm, err := v2.Wat2Wasm(`
 	(module
 	  (func $gcd (param i32 i32) (result i32)
 	    (local i32)
@@ -746,11 +746,11 @@ func Example_gcd() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	module, err := wasmtime.NewModule(store.Engine, wasm)
+	module, err := v2.NewModule(store.Engine, wasm)
 	if err != nil {
 		log.Fatal(err)
 	}
-	instance, err := wasmtime.NewInstance(store, module, []wasmtime.AsExtern{})
+	instance, err := v2.NewInstance(store, module, []v2.AsExtern{})
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -1,7 +1,7 @@
 //go:build includebuild
 // +build includebuild
 
-package wasmtime
+package v2
 
 // This file is not built and not included in BUILD.bazel;
 // it is only used to prevent "go mod vendor" to prune the

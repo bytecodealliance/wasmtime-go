@@ -1,4 +1,4 @@
-package wasmtime
+package v2
 
 // #include "shims.h"
 import "C"

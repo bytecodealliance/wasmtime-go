@@ -1,4 +1,4 @@
-package wasmtime
+package v2
 
 // #include <wasi.h>
 // #include <stdlib.h>

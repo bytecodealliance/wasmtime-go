@@ -1,4 +1,4 @@
-package wasmtime
+package v2
 
 // #cgo CFLAGS:-I${SRCDIR}/build/include
 // #cgo !windows LDFLAGS:-lwasmtime -lm -ldl -pthread

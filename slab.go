@@ -1,4 +1,4 @@
-package wasmtime
+package v2
 
 type slab struct {
 	list []int
