@@ -30,3 +30,13 @@ func (e *Error) Error() string {
 	C.wasm_byte_vec_delete(&message)
 	return ret
 }
+
+// ExitStatus returns an `int32` exit status if this was a WASI-defined exit
+// code. The `bool` returned indicates whether it was a WASI-defined exit or
+// not.
+func (e *Error) ExitStatus() (int32, bool) {
+	status := C.int(0)
+	ok := C.wasmtime_error_exit_status(e.ptr(), &status)
+	runtime.KeepAlive(e)
+	return int32(status), bool(ok)
+}

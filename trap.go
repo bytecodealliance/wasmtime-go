@@ -108,12 +108,13 @@ func unwrapStrOr(s *string, other string) string {
 }
 
 type frameList struct {
-	vec C.wasm_frame_vec_t
+	vec   C.wasm_frame_vec_t
+	owner interface{}
 }
 
 // Frames returns the wasm function frames that make up this trap
 func (t *Trap) Frames() []*Frame {
-	frames := &frameList{}
+	frames := &frameList{owner: t}
 	C.wasm_trap_trace(t.ptr(), &frames.vec)
 	runtime.KeepAlive(t)
 	runtime.SetFinalizer(frames, func(frames *frameList) {
