@@ -39,8 +39,8 @@ func TestFuncTrap(t *testing.T) {
 	if results != nil {
 		panic("bad results")
 	}
-	trap := err.(*Trap)
-	if trap.Message() != "x" {
+	trap := err.(*Error)
+	if trap.Error() != "x" {
 		panic("bad message")
 	}
 }
@@ -232,9 +232,9 @@ func TestFuncWrapRetErrorTrap(t *testing.T) {
 	})
 	_, err := f.Call(store)
 	require.Error(t, err, "expected trap")
-	require.IsType(t, err, &Trap{})
-	trap := err.(*Trap)
-	require.Equal(t, trap.Message(), "x", "wrong trap")
+	require.IsType(t, err, &Error{})
+	trap := err.(*Error)
+	require.Equal(t, trap.Error(), "x", "wrong trap")
 }
 
 func TestFuncWrapMultiRetWithTrap(t *testing.T) {

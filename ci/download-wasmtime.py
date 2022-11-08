@@ -10,13 +10,14 @@ import shutil
 import glob
 
 
-version = '2.0.0'
+#version = 'v2.0.0'
+version = 'dev'
 urls = [
-    ['wasmtime-v{}-x86_64-mingw-c-api.zip', 'windows-x86_64'],
-    ['wasmtime-v{}-x86_64-linux-c-api.tar.xz', 'linux-x86_64'],
-    ['wasmtime-v{}-x86_64-macos-c-api.tar.xz', 'macos-x86_64'],
-    ['wasmtime-v{}-aarch64-linux-c-api.tar.xz', 'linux-aarch64'],
-    ['wasmtime-v{}-aarch64-macos-c-api.tar.xz', 'macos-aarch64'],
+    ['wasmtime-{}-x86_64-mingw-c-api.zip', 'windows-x86_64'],
+    ['wasmtime-{}-x86_64-linux-c-api.tar.xz', 'linux-x86_64'],
+    ['wasmtime-{}-x86_64-macos-c-api.tar.xz', 'macos-x86_64'],
+    ['wasmtime-{}-aarch64-linux-c-api.tar.xz', 'linux-aarch64'],
+    ['wasmtime-{}-aarch64-macos-c-api.tar.xz', 'macos-aarch64'],
 ]
 
 try:
@@ -31,7 +32,7 @@ except FileNotFoundError:
 for i, arr in enumerate(urls):
     filename, dirname = arr
     filename = filename.format(version)
-    url = 'https://github.com/bytecodealliance/wasmtime/releases/download/v{}/'
+    url = 'https://github.com/bytecodealliance/wasmtime/releases/download/{}/'
     url += filename
     url = url.format(version)
     print('Download', url)
