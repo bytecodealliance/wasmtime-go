@@ -12,8 +12,8 @@
     <a href="https://github.com/bytecodealliance/wasmtime-go/actions?query=workflow%3ACI">
       <img src="https://github.com/bytecodealliance/wasmtime-go/workflows/CI/badge.svg" alt="CI status"/>
     </a>
-    <a href="https://pkg.go.dev/github.com/bytecodealliance/wasmtime-go">
-      <img src="https://godoc.org/github.com/bytecodealliance/wasmtime-go?status.svg" alt="Documentation"/>
+    <a href="https://pkg.go.dev/github.com/bytecodealliance/wasmtime-go/v3">
+      <img src="https://godoc.org/github.com/bytecodealliance/wasmtime-go/v3?status.svg" alt="Documentation"/>
     </a>
     <a href="https://bytecodealliance.github.io/wasmtime-go/coverage.html">
       <img src="https://img.shields.io/badge/coverage-main-green" alt="Code Coverage"/>
@@ -39,7 +39,7 @@ need to arrange to build Wasmtime and use `CGO_*` env vars to compile correctly.
 
 This project has been tested with Go 1.13 or later.
 
-[api]: https://pkg.go.dev/github.com/bytecodealliance/wasmtime-go
+[api]: https://pkg.go.dev/github.com/bytecodealliance/wasmtime-go/v3
 [wasmtime]: https://github.com/bytecodealliance/wasmtime
 
 If you are a bazel user, add following to your WORKSPACE file:
@@ -61,7 +61,7 @@ package main
 
 import (
     "fmt"
-    "github.com/bytecodealliance/wasmtime-go"
+    "github.com/bytecodealliance/wasmtime-go/v3"
 )
 
 func main() {
