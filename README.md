@@ -48,7 +48,7 @@ If you are a bazel user, add following to your WORKSPACE file:
 go_repository(
     name = "com_github_bytecodealliance_wasmtime_go",
     importpath = "github.com/bytecodealliance/wasmtime-go/v4",
-    version = "v4.0.2",
+    version = "v4.0.0",
 )
 ```
 
