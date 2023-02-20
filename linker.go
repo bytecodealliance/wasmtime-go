@@ -40,10 +40,11 @@ func (l *Linker) AllowShadowing(allow bool) {
 
 // Define defines a new item in this linker with the given module/name pair. Returns
 // an error if shadowing is disallowed and the module/name is already defined.
-func (l *Linker) Define(module, name string, item AsExtern) error {
+func (l *Linker) Define(store Storelike, module, name string, item AsExtern) error {
 	extern := item.AsExtern()
 	err := C.wasmtime_linker_define(
 		l.ptr(),
+		store.Context(),
 		C._GoStringPtr(module),
 		C._GoStringLen(module),
 		C._GoStringPtr(name),
@@ -54,6 +55,7 @@ func (l *Linker) Define(module, name string, item AsExtern) error {
 	runtime.KeepAlive(module)
 	runtime.KeepAlive(name)
 	runtime.KeepAlive(item)
+	runtime.KeepAlive(store)
 	if err == nil {
 		return nil
 	}
@@ -65,7 +67,7 @@ func (l *Linker) Define(module, name string, item AsExtern) error {
 //
 // Returns an error if shadowing is disabled and the name is already defined.
 func (l *Linker) DefineFunc(store Storelike, module, name string, f interface{}) error {
-	return l.Define(module, name, WrapFunc(store, f))
+	return l.Define(store, module, name, WrapFunc(store, f))
 }
 
 // FuncNew defines a function in this linker in the same style as `NewFunc`
