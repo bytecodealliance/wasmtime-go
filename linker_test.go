@@ -20,14 +20,14 @@ func TestLinker(t *testing.T) {
 	module, err := NewModule(store.Engine, wasm)
 	require.NoError(t, err)
 	linker := NewLinker(store.Engine)
-	require.NoError(t, linker.Define("", "f", WrapFunc(store, func() {})))
+	require.NoError(t, linker.Define(store, "", "f", WrapFunc(store, func() {})))
 	g, err := NewGlobal(store, NewGlobalType(NewValType(KindI32), false), ValI32(0))
 	require.NoError(t, err)
-	require.NoError(t, linker.Define("", "g", g))
+	require.NoError(t, linker.Define(store, "", "g", g))
 	m, err := NewMemory(store, NewMemoryType(1, true, 300))
 	require.NoError(t, err)
-	require.NoError(t, linker.Define("", "m", m))
-	require.NoError(t, linker.Define("other", "m", m))
+	require.NoError(t, linker.Define(store, "", "m", m))
+	require.NoError(t, linker.Define(store, "other", "m", m))
 
 	tableWasm, err := Wat2Wasm(`(module (table (export "") 1 funcref))`)
 	require.NoError(t, err)
@@ -36,7 +36,7 @@ func TestLinker(t *testing.T) {
 	instance, err := NewInstance(store, tableModule, []AsExtern{})
 	require.NoError(t, err)
 	table := instance.Exports(store)[0].Table()
-	require.NoError(t, linker.Define("", "t", table))
+	require.NoError(t, linker.Define(store, "", "t", table))
 
 	_, err = linker.Instantiate(store, module)
 	require.NoError(t, err)
@@ -50,14 +50,14 @@ func TestLinker(t *testing.T) {
 func TestLinkerShadowing(t *testing.T) {
 	store := NewStore(NewEngine())
 	linker := NewLinker(store.Engine)
-	require.NoError(t, linker.Define("", "f", WrapFunc(store, func() {})))
-	err := linker.Define("", "f", WrapFunc(store, func() {}))
+	require.NoError(t, linker.Define(store, "", "f", WrapFunc(store, func() {})))
+	err := linker.Define(store, "", "f", WrapFunc(store, func() {}))
 	require.Error(t, err)
 
 	linker.AllowShadowing(true)
-	require.NoError(t, linker.Define("", "f", WrapFunc(store, func() {})))
+	require.NoError(t, linker.Define(store, "", "f", WrapFunc(store, func() {})))
 	linker.AllowShadowing(false)
-	err = linker.Define("", "f", WrapFunc(store, func() {}))
+	err = linker.Define(store, "", "f", WrapFunc(store, func() {}))
 	require.Error(t, err)
 }
 
