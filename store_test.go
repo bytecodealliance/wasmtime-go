@@ -81,3 +81,41 @@ func TestConsumeFuel(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, (add_fuel - consume_fuel), remaining)
 }
+
+func TestLimiterMemorySizeFail(t *testing.T) {
+	engine := NewEngine()
+	store := NewStore(engine)
+
+	store.Limiter(2*64*1024, -1, -1, -1, -1)
+	wasm, err := Wat2Wasm(`
+	(module
+	  (memory 3)
+	)
+	`)
+	require.NoError(t, err)
+
+	module, err := NewModule(store.Engine, wasm)
+	require.NoError(t, err)
+
+	_, err = NewInstance(store, module, []AsExtern{})
+	require.Error(t, err, "memory minimum size of 3 pages exceeds memory limits")
+}
+
+func TestLimiterMemorySizeSuccess(t *testing.T) {
+	engine := NewEngine()
+	store := NewStore(engine)
+
+	store.Limiter(4*64*1024, -1, -1, -1, -1)
+	wasm, err := Wat2Wasm(`
+	(module
+	  (memory 3)
+	)
+	`)
+	require.NoError(t, err)
+
+	module, err := NewModule(store.Engine, wasm)
+	require.NoError(t, err)
+
+	_, err = NewInstance(store, module, []AsExtern{})
+	require.NoError(t, err)
+}
