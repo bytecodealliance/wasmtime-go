@@ -286,3 +286,23 @@ func (store *Store) ConsumeFuel(fuel uint64) (uint64, error) {
 
 	return uint64(c_remaining), nil
 }
+
+// Limiter provides limits for a store. Used by hosts to limit resource
+// consumption of instances. Use negative value to keep the default value
+// for the limit.
+func (store *Store) Limiter(
+	memorySize int64,
+	tableElements int64,
+	instances int64,
+	tables int64,
+	memories int64,
+) {
+	C.wasmtime_store_limiter(
+		store._ptr,
+		C.int64_t(memorySize),
+		C.int64_t(tableElements),
+		C.int64_t(instances),
+		C.int64_t(tables),
+		C.int64_t(memories),
+	)
+}
