@@ -8,6 +8,7 @@ import (
 
 func TestConfig(t *testing.T) {
 	NewConfig().SetDebugInfo(true)
+	NewConfig().SetMaxWasmStack(8388608)
 	NewConfig().SetWasmThreads(true)
 	NewConfig().SetWasmReferenceTypes(true)
 	NewConfig().SetWasmSIMD(true)
