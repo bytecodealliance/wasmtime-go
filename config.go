@@ -62,6 +62,15 @@ func (cfg *Config) SetDebugInfo(enabled bool) {
 	runtime.KeepAlive(cfg)
 }
 
+// SetMaxWasmStack configures the maximum stack size, in bytes, that JIT code can use.
+// The amount of stack space that wasm takes is always relative to the first invocation of wasm on the stack.
+// Recursive calls with host frames in the middle will all need to fit within this setting.
+// Note that this setting is not interpreted with 100% precision.
+func (cfg *Config) SetMaxWasmStack(size int) {
+	C.wasmtime_config_max_wasm_stack_set(cfg.ptr(), C.size_t(size))
+	runtime.KeepAlive(cfg)
+}
+
 // SetWasmThreads configures whether the wasm threads proposal is enabled
 func (cfg *Config) SetWasmThreads(enabled bool) {
 	C.wasmtime_config_wasm_threads_set(cfg.ptr(), C.bool(enabled))
