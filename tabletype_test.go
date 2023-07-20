@@ -7,15 +7,15 @@ import (
 )
 
 func TestTableType(t *testing.T) {
-	ty := NewTableType(NewValType(KindI32), 0, false, 0)
-	require.Equal(t, KindI32, ty.Element().Kind())
+	ty := NewTableType(NewValType(KindFuncref), 0, false, 0)
+	require.Equal(t, KindFuncref, ty.Element().Kind())
 	require.Equal(t, uint32(0), ty.Minimum())
 
 	present, _ := ty.Maximum()
 	require.False(t, present)
 
-	ty = NewTableType(NewValType(KindF64), 1, true, 129)
-	require.Equal(t, KindF64, ty.Element().Kind())
+	ty = NewTableType(NewValType(KindExternref), 1, true, 129)
+	require.Equal(t, KindExternref, ty.Element().Kind())
 	require.Equal(t, uint32(1), ty.Minimum())
 
 	present, max := ty.Maximum()
