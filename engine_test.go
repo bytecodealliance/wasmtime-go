@@ -27,3 +27,10 @@ func TestEngineInvalidatesConfig(t *testing.T) {
 		require.Nil(t, engine)
 	}
 }
+
+func TestEngineMaxStackSize(t *testing.T) {
+	config := NewConfig()
+	config.SetMaxWasmStack(8388608) // 8MiB
+	engine := NewEngineWithConfig(config)
+	require.NotNil(t, engine)
+}
