@@ -24,7 +24,6 @@ func TestConfig(t *testing.T) {
 	NewConfig().SetCraneliftOptLevel(OptLevelSpeed)
 	NewConfig().SetCraneliftOptLevel(OptLevelSpeedAndSize)
 	NewConfig().SetProfiler(ProfilingStrategyNone)
-	NewConfig().SetWasmMemory64(true)
 	if runtime.GOARCH == "amd64" && runtime.GOOS == "linux" {
 		NewConfig().SetTarget("x86_64-unknown-linux-gnu")
 	}
