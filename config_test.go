@@ -1,6 +1,7 @@
 package wasmtime
 
 import (
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -23,7 +24,10 @@ func TestConfig(t *testing.T) {
 	NewConfig().SetCraneliftOptLevel(OptLevelSpeed)
 	NewConfig().SetCraneliftOptLevel(OptLevelSpeedAndSize)
 	NewConfig().SetProfiler(ProfilingStrategyNone)
-	NewConfig().SetTarget("x86_64-unknown-linux-gnu")
+	NewConfig().SetWasmMemory64(true)
+	if runtime.GOARCH == "amd64" && runtime.GOOS == "linux" {
+		NewConfig().SetTarget("x86_64-unknown-linux-gnu")
+	}
 	NewConfig().SetCraneliftFlag("opt_level", "none")
 	NewConfig().EnableCraneliftFlag("unwind_info")
 	err := NewConfig().CacheConfigLoadDefault()
