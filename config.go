@@ -182,6 +182,57 @@ func (cfg *Config) SetEpochInterruption(enable bool) {
 	runtime.KeepAlive(cfg)
 }
 
+// SetTarget configures the target triple that this configuration will produce
+// machine code for.
+//
+// This option defaults to the native host. Calling this method will
+// additionally disable inference of the native features of the host (e.g.
+// detection of SSE4.2 on x86_64 hosts). Native features can be reenabled with
+// the `cranelift_flag_{set,enable}` properties.
+//
+// For more information see the Rust documentation at
+// https://docs.wasmtime.dev/api/wasmtime/struct.Config.html#method.config
+func (cfg *Config) SetTarget(target string) error {
+	cstr := C.CString(target)
+	err := C.wasmtime_config_target_set(cfg.ptr(), cstr)
+	C.free(unsafe.Pointer(cstr))
+	runtime.KeepAlive(cfg)
+	if err != nil {
+		return mkError(err)
+	}
+	return nil
+}
+
+// EnableCraneliftFlag enables a target-specific flag in Cranelift.
+//
+// This can be used, for example, to enable SSE4.2 on x86_64 hosts. Settings can
+// be explored with `wasmtime settings` on the CLI.
+//
+// For more information see the Rust documentation at
+// https://docs.wasmtime.dev/api/wasmtime/struct.Config.html#method.cranelift_flag_enable
+func (cfg *Config) EnableCraneliftFlag(flag string) {
+	cstr := C.CString(flag)
+	C.wasmtime_config_cranelift_flag_enable(cfg.ptr(), cstr)
+	C.free(unsafe.Pointer(cstr))
+	runtime.KeepAlive(cfg)
+}
+
+// SetCraneliftFlag sets a target-specific flag in Cranelift to the specified value.
+//
+// This can be used, for example, to enable SSE4.2 on x86_64 hosts. Settings can
+// be explored with `wasmtime settings` on the CLI.
+//
+// For more information see the Rust documentation at
+// https://docs.wasmtime.dev/api/wasmtime/struct.Config.html#method.cranelift_flag_set
+func (cfg *Config) SetCraneliftFlag(name string, value string) {
+	cstrName := C.CString(name)
+	cstrValue := C.CString(value)
+	C.wasmtime_config_cranelift_flag_set(cfg.ptr(), cstrName, cstrValue)
+	C.free(unsafe.Pointer(cstrName))
+	C.free(unsafe.Pointer(cstrValue))
+	runtime.KeepAlive(cfg)
+}
+
 // See comments in `ffi.go` for what's going on here
 func (cfg *Config) ptr() *C.wasm_config_t {
 	ret := cfg._ptr
