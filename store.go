@@ -113,6 +113,13 @@ func (store *Store) SetWasi(wasi *WasiConfig) {
 	runtime.KeepAlive(store)
 }
 
+func (store *Store) GetWasiCtx() *WasiCtx {
+	C.wasmtime_context_set_default_wasi_if_not_exist(store.Context())
+	ret := C.wasmtime_context_get_wasi_ctx(store.Context())
+	// runtime.KeepAlive(store)
+	return &WasiCtx{_ptr: ret}
+}
+
 // Implementation of the `Storelike` interface
 func (store *Store) Context() *C.wasmtime_context_t {
 	ret := C.wasmtime_store_context(store._ptr)
