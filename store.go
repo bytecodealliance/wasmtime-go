@@ -113,11 +113,14 @@ func (store *Store) SetWasi(wasi *WasiConfig) {
 	runtime.KeepAlive(store)
 }
 
-func (store *Store) GetWasiCtx() *WasiCtx {
-	C.wasmtime_context_set_default_wasi_if_not_exist(store.Context())
-	ret := C.wasmtime_context_get_wasi_ctx(store.Context())
-	// runtime.KeepAlive(store)
-	return &WasiCtx{_ptr: ret}
+// WasiCtx exports the `WasiCtx` within this store.
+//
+// It essentially wraps the `Store` and therefore can be called for multiple
+// times and at any time, even if `SetWasi` has not been called yet.
+// However, functions within the `WasiCtx` can be invoked only after
+// `SetWasi` has been called on the store.
+func (store *Store) WasiCtx() *WasiCtx {
+	return &WasiCtx{store}
 }
 
 // Implementation of the `Storelike` interface

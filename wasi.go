@@ -1,6 +1,7 @@
 package wasmtime
 
 // #include <wasi.h>
+// #include <wasmtime.h>
 // #include <stdlib.h>
 // #include <stdint.h>
 import "C"
@@ -186,19 +187,17 @@ const (
 	READ_WRITE = READ | WRITE
 )
 
+// WasiCtx maps to the Rust `WasiCtx` type.
+//
+// Instead of wrapping a pointer to the type directly, this type is a wrapper
+// around a Store in order to call the `wasmtime_context_*` functions.
 type WasiCtx struct {
-	_ptr *C.wasi_ctx_t
-}
-
-func (ctx *WasiCtx) ptr() *C.wasi_ctx_t {
-	ret := ctx._ptr
-	maybeGC()
-	return ret
+	store *Store
 }
 
 func (ctx *WasiCtx) InsertFile(guestFD uint32, file *os.File, accessMode WasiFileAccessMode) {
-	C.wasi_ctx_insert_file(ctx.ptr(), C.uint32_t(guestFD), C.uint32_t(file.Fd()), C.uint32_t(accessMode))
-	runtime.KeepAlive(ctx)
+	C.wasmtime_context_insert_file(ctx.store.Context(), C.uint32_t(guestFD), unsafe.Pointer(file.Fd()), C.uint32_t(accessMode))
+	runtime.KeepAlive(ctx.store)
 	runtime.KeepAlive(file)
 }
 
@@ -206,8 +205,8 @@ func (ctx *WasiCtx) PushFile(file *os.File, accessMode WasiFileAccessMode) (uint
 	var fd uint32
 	c_fd := C.uint32_t(fd)
 
-	err := C.wasi_ctx_push_file(ctx.ptr(), C.uint32_t(file.Fd()), C.uint32_t(accessMode), &c_fd)
-	runtime.KeepAlive(ctx)
+	err := C.wasmtime_context_push_file(ctx.store.Context(), unsafe.Pointer(file.Fd()), C.uint32_t(accessMode), &c_fd)
+	runtime.KeepAlive(ctx.store)
 	runtime.KeepAlive(file)
 	if err != nil {
 		return 0, mkError(err)
