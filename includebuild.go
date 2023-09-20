@@ -12,11 +12,11 @@ import (
 	// included in vendored dependencies.
 	// Cf. https://github.com/golang/go/issues/26366
 
-	_ "github.com/bytecodealliance/wasmtime-go/v12/build/include"
-	_ "github.com/bytecodealliance/wasmtime-go/v12/build/include/wasmtime"
-	_ "github.com/bytecodealliance/wasmtime-go/v12/build/linux-aarch64"
-	_ "github.com/bytecodealliance/wasmtime-go/v12/build/linux-x86_64"
-	_ "github.com/bytecodealliance/wasmtime-go/v12/build/macos-aarch64"
-	_ "github.com/bytecodealliance/wasmtime-go/v12/build/macos-x86_64"
-	_ "github.com/bytecodealliance/wasmtime-go/v12/build/windows-x86_64"
+	_ "github.com/bytecodealliance/wasmtime-go/v13/build/include"
+	_ "github.com/bytecodealliance/wasmtime-go/v13/build/include/wasmtime"
+	_ "github.com/bytecodealliance/wasmtime-go/v13/build/linux-aarch64"
+	_ "github.com/bytecodealliance/wasmtime-go/v13/build/linux-x86_64"
+	_ "github.com/bytecodealliance/wasmtime-go/v13/build/macos-aarch64"
+	_ "github.com/bytecodealliance/wasmtime-go/v13/build/macos-x86_64"
+	_ "github.com/bytecodealliance/wasmtime-go/v13/build/windows-x86_64"
 )
