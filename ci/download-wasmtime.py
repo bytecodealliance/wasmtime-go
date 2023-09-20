@@ -10,7 +10,7 @@ import shutil
 import glob
 
 
-version = 'dev'
+version = 'v13.0.0'
 urls = [
     ['wasmtime-{}-x86_64-mingw-c-api.zip', 'windows-x86_64'],
     ['wasmtime-{}-x86_64-linux-c-api.tar.xz', 'linux-x86_64'],
