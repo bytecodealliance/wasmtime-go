@@ -50,6 +50,8 @@ const (
 	UnreachableCodeReached
 	// Interrupt: execution has been interrupted.
 	Interrupt
+	// OutOfFuel: Execution has run out of the configured fuel amount.
+	OutOfFuel
 )
 
 // NewTrap creates a new `Trap` with the `name` and the type provided.
