@@ -7,7 +7,6 @@ import "runtime"
 // Extern is an external value, which is the runtime representation of an entity that can be imported or exported.
 // It is an address denoting either a function instance, table instance, memory instance, or global instances in the shared store.
 // Read more in [spec](https://webassembly.github.io/spec/core/exec/runtime.html#external-values)
-//
 type Extern struct {
 	_ptr *C.wasmtime_extern_t
 }
