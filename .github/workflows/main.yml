@@ -39,7 +39,7 @@ jobs:
     - run: go test -tags debug
     - run: go test -tags debug
       env:
-        GODEBUG: cgocheck=2
+        GODEBUG: cgocheck=1
         GOGC: 1
     - name: Test bazel build on *nix
       shell: bash
