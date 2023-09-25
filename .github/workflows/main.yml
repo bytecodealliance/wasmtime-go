@@ -41,6 +41,7 @@ jobs:
       env:
         GODEBUG: cgocheck=1
         GOGC: 1
+    - run: go clean -cache
     - name: Test bazel build on *nix
       shell: bash
       run: |
