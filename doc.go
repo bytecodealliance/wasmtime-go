@@ -14,5 +14,6 @@ https://github.com/bytecodealliance/wasmtime-go/issues/new.
 
 It's also worth pointing out that the authors of this package up to this point
 primarily work in Rust, so if you've got suggestions of how to make this package
-more idiomatic for Go we'd love to hear your thoughts! */
+more idiomatic for Go we'd love to hear your thoughts!
+*/
 package wasmtime
