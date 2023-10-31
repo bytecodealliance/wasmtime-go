@@ -56,13 +56,8 @@ func (mem *Memory) Data(store Storelike) unsafe.Pointer {
 // `m` alive for long enough while you're using the `[]byte` slice. If the
 // `[]byte` slice is used after `m` is GC'd then that is undefined behavior.
 func (mem *Memory) UnsafeData(store Storelike) []byte {
-	// see https://github.com/golang/go/wiki/cgo#turning-c-arrays-into-go-slices
-	const MaxLen = 1 << 32
 	length := mem.DataSize(store)
-	if length >= MaxLen {
-		panic("memory is too big")
-	}
-	return (*[MaxLen]byte)(mem.Data(store))[:length:length]
+	return unsafe.Slice((*byte)(mem.Data(store)), length)
 }
 
 // DataSize returns the size, in bytes, that `Data()` is valid for
