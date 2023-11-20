@@ -57,21 +57,21 @@ func ExampleConfig_fuel() {
 	if fibonacci == nil {
 		log.Fatal("Failed to find function export `fibonacci`")
 	}
-        fuel := uint64(10000)
+	fuel := uint64(10000)
 	for n := 0; ; n++ {
-	        err := store.SetFuel(fuel)
-                if err != nil {
-                        log.Fatal(err)
-                }
+		err := store.SetFuel(fuel)
+		if err != nil {
+			log.Fatal(err)
+		}
 		output, err := fibonacci.Call(store, n)
 		if err != nil {
 			break
 		}
 		fuelAfter, err := store.GetFuel()
-                if err != nil {
-                        log.Fatal(err)
-                }
-		fmt.Printf("fib(%d) = %d [consumed %d fuel]\n", n, output, fuel - fuelAfter)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("fib(%d) = %d [consumed %d fuel]\n", n, output, fuel-fuelAfter)
 	}
 	// Output:
 	// fib(0) = 0 [consumed 6 fuel]
