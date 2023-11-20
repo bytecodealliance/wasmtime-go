@@ -42,8 +42,8 @@ func TestFuelConsumed(t *testing.T) {
 	engine := NewEngine()
 	store := NewStore(engine)
 
-	fuel, enable := store.FuelConsumed()
-	require.False(t, enable)
+	fuel, enable := store.GetFuel()
+	require.Error(t, enable)
 	require.Equal(t, fuel, uint64(0))
 }
 
@@ -53,33 +53,13 @@ func TestAddFuel(t *testing.T) {
 	engine := NewEngineWithConfig(config)
 	store := NewStore(engine)
 
-	fuel, enable := store.FuelConsumed()
-	require.True(t, enable)
+	fuel, enable := store.GetFuel()
+	require.NoError(t, enable)
 	require.Equal(t, fuel, uint64(0))
 
 	const add_fuel = 3
-	err := store.AddFuel(add_fuel)
+	err := store.SetFuel(add_fuel)
 	require.NoError(t, err)
-}
-
-func TestConsumeFuel(t *testing.T) {
-	config := NewConfig()
-	config.SetConsumeFuel(true)
-	engine := NewEngineWithConfig(config)
-	store := NewStore(engine)
-
-	fuel, enable := store.FuelConsumed()
-	require.True(t, enable)
-	require.Equal(t, fuel, uint64(0))
-
-	const add_fuel = 3
-	err := store.AddFuel(add_fuel)
-	require.NoError(t, err)
-
-	consume_fuel := uint64(1)
-	remaining, err := store.ConsumeFuel(consume_fuel)
-	require.NoError(t, err)
-	require.Equal(t, (add_fuel - consume_fuel), remaining)
 }
 
 func TestLimiterMemorySizeFail(t *testing.T) {

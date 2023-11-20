@@ -10,7 +10,7 @@ import shutil
 import glob
 
 
-version = 'v14.0.0'
+version = 'v15.0.0'
 urls = [
     ['wasmtime-{}-x86_64-mingw-c-api.zip', 'windows-x86_64'],
     ['wasmtime-{}-x86_64-linux-c-api.tar.xz', 'linux-x86_64'],
@@ -60,6 +60,8 @@ for dylib in glob.glob("build/**/*.dll.a"):
 for dylib in glob.glob("build/**/*.dylib"):
     os.remove(dylib)
 for dylib in glob.glob("build/**/*.so"):
+    os.remove(dylib)
+for dylib in glob.glob("build/**/*-min.a"):
     os.remove(dylib)
 
 for subdir, dirs, files in os.walk("build"):

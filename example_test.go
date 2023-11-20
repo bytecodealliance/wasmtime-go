@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bytecodealliance/wasmtime-go/v14"
+	"github.com/bytecodealliance/wasmtime-go/v15"
 )
 
 // Example of limiting a WebAssembly function's runtime using "fuel consumption".
@@ -19,7 +19,7 @@ func ExampleConfig_fuel() {
 	config.SetConsumeFuel(true)
 	engine := wasmtime.NewEngineWithConfig(config)
 	store := wasmtime.NewStore(engine)
-	err := store.AddFuel(10000)
+	err := store.SetFuel(10000)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -57,18 +57,21 @@ func ExampleConfig_fuel() {
 	if fibonacci == nil {
 		log.Fatal("Failed to find function export `fibonacci`")
 	}
+        fuel := uint64(10000)
 	for n := 0; ; n++ {
-		fuelBefore, _ := store.FuelConsumed()
+	        err := store.SetFuel(fuel)
+                if err != nil {
+                        log.Fatal(err)
+                }
 		output, err := fibonacci.Call(store, n)
 		if err != nil {
 			break
 		}
-		fuelAfter, _ := store.FuelConsumed()
-		fmt.Printf("fib(%d) = %d [consumed %d fuel]\n", n, output, fuelAfter-fuelBefore)
-		err = store.AddFuel(fuelAfter - fuelBefore)
-		if err != nil {
-			log.Fatal(err)
-		}
+		fuelAfter, err := store.GetFuel()
+                if err != nil {
+                        log.Fatal(err)
+                }
+		fmt.Printf("fib(%d) = %d [consumed %d fuel]\n", n, output, fuel - fuelAfter)
 	}
 	// Output:
 	// fib(0) = 0 [consumed 6 fuel]
