@@ -227,23 +227,27 @@ func goFinalizeFuncWrap(env unsafe.Pointer) {
 	gEngineFuncWrapSlab.deallocate(idx)
 }
 
-// FuelConsumed returns the amount of fuel consumed by this context's store
-// execution so far.
+// GetFuel returns the amount of fuel remaining in this store.
 //
-// If fuel consumption is not enabled via `Config.SetConsumeFuel` then this function
-// will return false. Otherwise true is returned and the fuel parameter is
-// filled in with fuel consumed so far.
+// If fuel consumption is not enabled via `Config.SetConsumeFuel` then
+// this function will return an error. Otherwise this will retrieve the fuel
+// remaining and return it.
 //
-// Also note that fuel, if enabled, must be originally configured via `Store.AddFuel`.
-func (store *Store) FuelConsumed() (uint64, bool) {
-	fuel := C.uint64_t(0)
-	enable := C.wasmtime_context_fuel_consumed(store.Context(), &fuel)
+// Also note that fuel, if enabled, must be originally configured via
+// `Store.SetFuel`.
+func (store *Store) GetFuel() (uint64, error) {
+	var remaining uint64
+	c_remaining := C.uint64_t(remaining)
+	err := C.wasmtime_context_get_fuel(store.Context(), &c_remaining)
 	runtime.KeepAlive(store)
+	if err != nil {
+		return 0, mkError(err)
+	}
 
-	return uint64(fuel), bool(enable)
+	return uint64(c_remaining), nil
 }
 
-// AddFuel adds fuel to this context's store for wasm to consume while executing.
+// SetFuel sets this store's fuel to the specified value.
 //
 // For this method to work fuel consumption must be enabled via
 // `Config.SetConsumeFuel`. By default a store starts with 0 fuel
@@ -255,36 +259,14 @@ func (store *Store) FuelConsumed() (uint64, bool) {
 // wasm to trap. More usages of fuel are planned for the future.
 //
 // If fuel is not enabled within this store then an error is returned.
-func (store *Store) AddFuel(fuel uint64) error {
-	err := C.wasmtime_context_add_fuel(store.Context(), C.uint64_t(fuel))
+func (store *Store) SetFuel(fuel uint64) error {
+	err := C.wasmtime_context_set_fuel(store.Context(), C.uint64_t(fuel))
 	runtime.KeepAlive(store)
 	if err != nil {
 		return mkError(err)
 	}
 
 	return nil
-}
-
-// ConsumeFuel attempts to manually consume fuel from the store.
-//
-// If fuel consumption is not enabled via `Config.SetConsumeFuel` then
-// this function will return an error. Otherwise this will attempt to consume
-// the specified amount of `fuel` from the store. If successful the remaining
-// amount of fuel is returned. If `fuel` couldn't be consumed
-// then an error is returned.
-//
-// Also note that fuel, if enabled, must be originally configured via
-// `Store.AddFuel`.
-func (store *Store) ConsumeFuel(fuel uint64) (uint64, error) {
-	var remaining uint64
-	c_remaining := C.uint64_t(remaining)
-	err := C.wasmtime_context_consume_fuel(store.Context(), C.uint64_t(fuel), &c_remaining)
-	runtime.KeepAlive(store)
-	if err != nil {
-		return 0, mkError(err)
-	}
-
-	return uint64(c_remaining), nil
 }
 
 // Limiter provides limits for a store. Used by hosts to limit resource
