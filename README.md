@@ -131,16 +131,17 @@ Next up you'll want to have a [local Wasmtime build
 available](https://bytecodealliance.github.io/wasmtime/contributing-building.html).
 
 You'll need to build at least the `wasmtime-c-api` crate, which, at the time of
-this writing, would be:
+this writing, would be (apple m1 example):
 
 ```sh
-$ cargo +nightly build -p wasmtime-c-api --release
+$ rustup target add aarch64-apple-darwin
+$ cargo build --release --target aarch64-apple-darwin  -p wasmtime-c-api
 ```
 
-Once you've got that you can set up the environment of this library with:
+Once you've got that you can set up the environment of this library with (apple m1 example):
 
 ```sh
-$ ./ci/local.sh /path/to/wasmtime
+$ ./ci/local.sh /path/to/wasmtime aarch64-apple-darwin
 ```
 
 This will create a `build` directory which has the compiled libraries and header
