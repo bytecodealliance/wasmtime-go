@@ -151,3 +151,36 @@ $ go test
 ```
 
 And after that you should be good to go!
+
+### Release Checklist
+
+First run:
+
+```
+$ python3 ci/download-wasmtime.py
+$ go test
+```
+
+Make sure everything passes at the current version.
+
+Next run:
+
+```
+$ git ls-files | xargs sed -i 's/v16/v17/g'
+$ python3 ci/download-wasmtime.py
+$ go test
+```
+
+Fix all errors and such and then commit and make a PR.
+
+Once merged checkout `main` and do:
+
+```
+$ rm .gitignore
+$ python3 ci/download-wasmtime.py
+$ git add .
+$ git commit -m 'v17.0.0 release artifacts'
+$ git tag v17.0.0
+```
+
+and push up the tag
