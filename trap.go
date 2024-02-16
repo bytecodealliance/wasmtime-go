@@ -71,8 +71,23 @@ func mkTrap(ptr *C.wasm_trap_t) *Trap {
 
 func (t *Trap) ptr() *C.wasm_trap_t {
 	ret := t._ptr
+	if ret == nil {
+		panic("object has been closed already")
+	}
 	maybeGC()
 	return ret
+}
+
+// Close will deallocate this type's state explicitly.
+//
+// For more information see the documentation for engine.Close()
+func (t *Trap) Close() {
+	if t._ptr == nil {
+		return
+	}
+	runtime.SetFinalizer(t, nil)
+	C.wasm_trap_delete(t._ptr)
+	t._ptr = nil
 }
 
 // Message returns the message of the `Trap`
@@ -138,6 +153,9 @@ func (t *Trap) Frames() []*Frame {
 
 func (f *Frame) ptr() *C.wasm_frame_t {
 	ret := f._ptr
+	if ret == nil {
+		panic("object has been closed already")
+	}
 	maybeGC()
 	return ret
 }

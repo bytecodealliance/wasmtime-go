@@ -51,7 +51,7 @@ type Config struct {
 func NewConfig() *Config {
 	config := &Config{_ptr: C.wasm_config_new()}
 	runtime.SetFinalizer(config, func(config *Config) {
-		C.wasm_config_delete(config._ptr)
+		config.Close()
 	})
 	return config
 }
@@ -236,9 +236,21 @@ func (cfg *Config) SetCraneliftFlag(name string, value string) {
 // See comments in `ffi.go` for what's going on here
 func (cfg *Config) ptr() *C.wasm_config_t {
 	ret := cfg._ptr
-	maybeGC()
 	if ret == nil {
 		panic("Config has already been used up")
 	}
+	maybeGC()
 	return ret
+}
+
+// Close will deallocate this config's state explicitly.
+//
+// For more information see the documentation for engine.Close()
+func (cfg *Config) Close() {
+	if cfg._ptr == nil {
+		return
+	}
+	runtime.SetFinalizer(cfg, nil)
+	C.wasm_config_delete(cfg._ptr)
+	cfg._ptr = nil
 }

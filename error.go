@@ -11,13 +11,16 @@ type Error struct {
 func mkError(ptr *C.wasmtime_error_t) *Error {
 	err := &Error{_ptr: ptr}
 	runtime.SetFinalizer(err, func(err *Error) {
-		C.wasmtime_error_delete(err._ptr)
+		err.Close()
 	})
 	return err
 }
 
 func (e *Error) ptr() *C.wasmtime_error_t {
 	ret := e._ptr
+	if ret == nil {
+		panic("object has been closed already")
+	}
 	maybeGC()
 	return ret
 }
@@ -39,4 +42,17 @@ func (e *Error) ExitStatus() (int32, bool) {
 	ok := C.wasmtime_error_exit_status(e.ptr(), &status)
 	runtime.KeepAlive(e)
 	return int32(status), bool(ok)
+}
+
+// Close will deallocate this error's state explicitly.
+//
+// For more information see the documentation for engine.Close()
+func (e *Error) Close() {
+	if e._ptr == nil {
+		return
+	}
+	runtime.SetFinalizer(e, nil)
+	C.wasmtime_error_delete(e._ptr)
+	e._ptr = nil
+
 }

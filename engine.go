@@ -18,7 +18,7 @@ type Engine struct {
 func NewEngine() *Engine {
 	engine := &Engine{_ptr: C.wasm_engine_new()}
 	runtime.SetFinalizer(engine, func(engine *Engine) {
-		C.wasm_engine_delete(engine._ptr)
+		engine.Close()
 	})
 	return engine
 }
@@ -34,13 +34,41 @@ func NewEngineWithConfig(config *Config) *Engine {
 	runtime.SetFinalizer(config, nil)
 	config._ptr = nil
 	runtime.SetFinalizer(engine, func(engine *Engine) {
-		C.wasm_engine_delete(engine._ptr)
+		engine.Close()
 	})
 	return engine
 }
 
+// Close will deallocate this engine's state explicitly.
+//
+// By default state is cleaned up automatically when an engine is garbage
+// collected but the Go GC. The Go GC, however, does not provide strict
+// guarantees about finalizers especially in terms of timing. Additionally the
+// Go GC is not aware of the full weight of an engine because it holds onto
+// allocations in Wasmtime not tracked by the Go GC. For these reasons, it's
+// recommended to where possible explicitly call this method and deallocate an
+// engine to avoid relying on the Go GC.
+//
+// This method will deallocate Wasmtime-owned state. Future use of the engine
+// will panic because the Wasmtime state is no longer there.
+//
+// Close can be called multiple times without error. Only the first time will
+// deallocate resources.
+func (engine *Engine) Close() {
+	if engine._ptr == nil {
+		return
+	}
+	runtime.SetFinalizer(engine, nil)
+	C.wasm_engine_delete(engine.ptr())
+	engine._ptr = nil
+
+}
+
 func (engine *Engine) ptr() *C.wasm_engine_t {
 	ret := engine._ptr
+	if ret == nil {
+		panic("object has been closed already")
+	}
 	maybeGC()
 	return ret
 }

@@ -17,15 +17,31 @@ func NewWasiConfig() *WasiConfig {
 	ptr := C.wasi_config_new()
 	config := &WasiConfig{_ptr: ptr}
 	runtime.SetFinalizer(config, func(config *WasiConfig) {
-		C.wasi_config_delete(config._ptr)
+		config.Close()
 	})
 	return config
 }
 
 func (c *WasiConfig) ptr() *C.wasi_config_t {
 	ret := c._ptr
+	if ret == nil {
+		panic("object has been closed already")
+	}
 	maybeGC()
 	return ret
+}
+
+// Close will deallocate this WASI configuration's state explicitly.
+//
+// For more information see the documentation for engine.Close()
+func (c *WasiConfig) Close() {
+	if c._ptr == nil {
+		return
+	}
+	runtime.SetFinalizer(c, nil)
+	C.wasi_config_delete(c._ptr)
+	c._ptr = nil
+
 }
 
 // SetArgv will explicitly configure the argv for this WASI configuration.

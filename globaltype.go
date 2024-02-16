@@ -28,7 +28,7 @@ func mkGlobalType(ptr *C.wasm_globaltype_t, owner interface{}) *GlobalType {
 	globaltype := &GlobalType{_ptr: ptr, _owner: owner}
 	if owner == nil {
 		runtime.SetFinalizer(globaltype, func(globaltype *GlobalType) {
-			C.wasm_globaltype_delete(globaltype._ptr)
+			globaltype.Close()
 		})
 	}
 	return globaltype
@@ -36,6 +36,9 @@ func mkGlobalType(ptr *C.wasm_globaltype_t, owner interface{}) *GlobalType {
 
 func (ty *GlobalType) ptr() *C.wasm_globaltype_t {
 	ret := ty._ptr
+	if ret == nil {
+		panic("object has been closed already")
+	}
 	maybeGC()
 	return ret
 }
@@ -45,6 +48,18 @@ func (ty *GlobalType) owner() interface{} {
 		return ty._owner
 	}
 	return ty
+}
+
+// Close will deallocate this type's state explicitly.
+//
+// For more information see the documentation for engine.Close()
+func (ty *GlobalType) Close() {
+	if ty._ptr == nil || ty._owner != nil {
+		return
+	}
+	runtime.SetFinalizer(ty, nil)
+	C.wasm_globaltype_delete(ty._ptr)
+	ty._ptr = nil
 }
 
 // Content returns the type of value stored in this global

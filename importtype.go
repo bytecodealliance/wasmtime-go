@@ -34,7 +34,7 @@ func mkImportType(ptr *C.wasm_importtype_t, owner interface{}) *ImportType {
 	importtype := &ImportType{_ptr: ptr, _owner: owner}
 	if owner == nil {
 		runtime.SetFinalizer(importtype, func(importtype *ImportType) {
-			C.wasm_importtype_delete(importtype._ptr)
+			importtype.Close()
 		})
 	}
 	return importtype
@@ -42,6 +42,9 @@ func mkImportType(ptr *C.wasm_importtype_t, owner interface{}) *ImportType {
 
 func (ty *ImportType) ptr() *C.wasm_importtype_t {
 	ret := ty._ptr
+	if ret == nil {
+		panic("object has been closed already")
+	}
 	maybeGC()
 	return ret
 }
@@ -51,6 +54,18 @@ func (ty *ImportType) owner() interface{} {
 		return ty._owner
 	}
 	return ty
+}
+
+// Close will deallocate this type's state explicitly.
+//
+// For more information see the documentation for engine.Close()
+func (ty *ImportType) Close() {
+	if ty._ptr == nil || ty._owner != nil {
+		return
+	}
+	runtime.SetFinalizer(ty, nil)
+	C.wasm_importtype_delete(ty._ptr)
+	ty._ptr = nil
 }
 
 // Module returns the name in the module this import type is importing

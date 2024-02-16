@@ -32,7 +32,7 @@ func mkExportType(ptr *C.wasm_exporttype_t, owner interface{}) *ExportType {
 	exporttype := &ExportType{_ptr: ptr, _owner: owner}
 	if owner == nil {
 		runtime.SetFinalizer(exporttype, func(exporttype *ExportType) {
-			C.wasm_exporttype_delete(exporttype._ptr)
+			exporttype.Close()
 		})
 	}
 	return exporttype
@@ -40,6 +40,9 @@ func mkExportType(ptr *C.wasm_exporttype_t, owner interface{}) *ExportType {
 
 func (ty *ExportType) ptr() *C.wasm_exporttype_t {
 	ret := ty._ptr
+	if ret == nil {
+		panic("object has been closed already")
+	}
 	maybeGC()
 	return ret
 }
@@ -49,6 +52,18 @@ func (ty *ExportType) owner() interface{} {
 		return ty._owner
 	}
 	return ty
+}
+
+// Close will deallocate this type's state explicitly.
+//
+// For more information see the documentation for engine.Close()
+func (ty *ExportType) Close() {
+	if ty._ptr == nil || ty._owner != nil {
+		return
+	}
+	runtime.SetFinalizer(ty, nil)
+	C.wasm_exporttype_delete(ty._ptr)
+	ty._ptr = nil
 }
 
 // Name returns the name in the module this export type is exporting

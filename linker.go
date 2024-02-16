@@ -20,15 +20,31 @@ func NewLinker(engine *Engine) *Linker {
 	ptr := C.wasmtime_linker_new(engine.ptr())
 	linker := &Linker{_ptr: ptr, Engine: engine}
 	runtime.SetFinalizer(linker, func(linker *Linker) {
-		C.wasmtime_linker_delete(linker._ptr)
+		linker.Close()
 	})
 	return linker
 }
 
 func (l *Linker) ptr() *C.wasmtime_linker_t {
 	ret := l._ptr
+	if ret == nil {
+		panic("object has been closed already")
+	}
 	maybeGC()
 	return ret
+}
+
+// Close will deallocate this linker's state explicitly.
+//
+// For more information see the documentation for engine.Close()
+func (l *Linker) Close() {
+	if l._ptr == nil {
+		return
+	}
+	runtime.SetFinalizer(l, nil)
+	C.wasmtime_linker_delete(l._ptr)
+	l._ptr = nil
+
 }
 
 // AllowShadowing configures whether names can be redefined after they've already been defined
