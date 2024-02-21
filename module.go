@@ -81,15 +81,31 @@ func ModuleValidate(engine *Engine, wasm []byte) error {
 func mkModule(ptr *C.wasmtime_module_t) *Module {
 	module := &Module{_ptr: ptr}
 	runtime.SetFinalizer(module, func(module *Module) {
-		C.wasmtime_module_delete(module._ptr)
+		module.Close()
 	})
 	return module
 }
 
 func (m *Module) ptr() *C.wasmtime_module_t {
 	ret := m._ptr
+	if ret == nil {
+		panic("object has been closed already")
+	}
 	maybeGC()
 	return ret
+}
+
+// Close will deallocate this module's state explicitly.
+//
+// For more information see the documentation for engine.Close()
+func (m *Module) Close() {
+	if m._ptr == nil {
+		return
+	}
+	runtime.SetFinalizer(m, nil)
+	C.wasmtime_module_delete(m._ptr)
+	m._ptr = nil
+
 }
 
 // Imports returns a list of `ImportType` which are the items imported by

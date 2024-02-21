@@ -16,6 +16,7 @@ func TestFunc(t *testing.T) {
 
 func TestFuncCall(t *testing.T) {
 	store := NewStore(NewEngine())
+	defer store.Close()
 	called := false
 	cb := func(caller *Caller, args []Val) ([]Val, *Trap) {
 		called = true

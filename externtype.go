@@ -19,7 +19,7 @@ func mkExternType(ptr *C.wasm_externtype_t, owner interface{}) *ExternType {
 	externtype := &ExternType{_ptr: ptr, _owner: owner}
 	if owner == nil {
 		runtime.SetFinalizer(externtype, func(externtype *ExternType) {
-			C.wasm_externtype_delete(externtype._ptr)
+			externtype.Close()
 		})
 	}
 	return externtype
@@ -27,6 +27,9 @@ func mkExternType(ptr *C.wasm_externtype_t, owner interface{}) *ExternType {
 
 func (ty *ExternType) ptr() *C.wasm_externtype_t {
 	ret := ty._ptr
+	if ret == nil {
+		panic("object has been closed already")
+	}
 	maybeGC()
 	return ret
 }
@@ -36,6 +39,18 @@ func (ty *ExternType) owner() interface{} {
 		return ty._owner
 	}
 	return ty
+}
+
+// Close will deallocate this type's state explicitly.
+//
+// For more information see the documentation for engine.Close()
+func (ty *ExternType) Close() {
+	if ty._ptr == nil || ty._owner != nil {
+		return
+	}
+	runtime.SetFinalizer(ty, nil)
+	C.wasm_externtype_delete(ty._ptr)
+	ty._ptr = nil
 }
 
 // FuncType returns the underlying `FuncType` for this `ExternType` if it's a function

@@ -20,6 +20,7 @@ func TestLinker(t *testing.T) {
 	module, err := NewModule(store.Engine, wasm)
 	require.NoError(t, err)
 	linker := NewLinker(store.Engine)
+	defer linker.Close()
 	require.NoError(t, linker.Define(store, "", "f", WrapFunc(store, func() {})))
 	g, err := NewGlobal(store, NewGlobalType(NewValType(KindI32), false), ValI32(0))
 	require.NoError(t, err)

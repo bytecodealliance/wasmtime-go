@@ -115,8 +115,23 @@ func (v Val) setDtor() {
 
 func (v Val) ptr() *C.wasmtime_val_t {
 	ret := v._raw
+	if ret == nil {
+		panic("object has been closed already")
+	}
 	maybeGC()
 	return ret
+}
+
+// Close will deallocate this value's state explicitly.
+//
+// For more information see the documentation for engine.Close()
+func (v Val) Close() {
+	if v._raw == nil {
+		return
+	}
+	runtime.SetFinalizer(v._raw, nil)
+	C.wasmtime_val_delete(v._raw)
+	v._raw = nil
 }
 
 // Kind returns the kind of value that this `Val` contains.

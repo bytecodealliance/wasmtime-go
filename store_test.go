@@ -8,7 +8,9 @@ import (
 
 func TestStore(t *testing.T) {
 	engine := NewEngine()
-	NewStore(engine)
+	defer engine.Close()
+	store := NewStore(engine)
+	defer store.Close()
 }
 
 func TestInterruptWasm(t *testing.T) {

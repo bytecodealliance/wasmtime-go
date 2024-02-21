@@ -34,6 +34,7 @@ func TestModuleImports(t *testing.T) {
 	require.NoError(t, err)
 	module, err := NewModule(NewEngine(), wasm)
 	require.NoError(t, err)
+	defer module.Close()
 	imports := module.Imports()
 	require.Len(t, imports, 4)
 	require.Equal(t, "", imports[0].Module())

@@ -69,7 +69,7 @@ func NewStore(engine *Engine) *Store {
 		Engine: engine,
 	}
 	runtime.SetFinalizer(store, func(store *Store) {
-		C.wasmtime_store_delete(store._ptr)
+		store.Close()
 	})
 	return store
 }
@@ -85,6 +85,27 @@ func goFinalizeStore(env unsafe.Pointer) {
 	defer gStoreLock.Unlock()
 	delete(gStoreMap, idx)
 	gStoreSlab.deallocate(idx)
+}
+
+func (store *Store) ptr() *C.wasmtime_store_t {
+	ret := store._ptr
+	if ret == nil {
+		panic("object has been closed already")
+	}
+	maybeGC()
+	return ret
+}
+
+// Close will deallocate this store's state explicitly.
+//
+// For more information see the documentation for engine.Close()
+func (store *Store) Close() {
+	if store._ptr == nil {
+		return
+	}
+	runtime.SetFinalizer(store, nil)
+	C.wasmtime_store_delete(store._ptr)
+	store._ptr = nil
 }
 
 // GC will clean up any `externref` values that are no longer actually
@@ -106,17 +127,15 @@ func (store *Store) SetWasi(wasi *WasiConfig) {
 	runtime.SetFinalizer(wasi, nil)
 	ptr := wasi.ptr()
 	wasi._ptr = nil
-	if ptr == nil {
-		panic("reuse of already-consumed WasiConfig")
-	}
 	C.wasmtime_context_set_wasi(store.Context(), ptr)
 	runtime.KeepAlive(store)
 }
 
 // Implementation of the `Storelike` interface
 func (store *Store) Context() *C.wasmtime_context_t {
-	ret := C.wasmtime_store_context(store._ptr)
+	ret := C.wasmtime_store_context(store.ptr())
 	maybeGC()
+	runtime.KeepAlive(store)
 	return ret
 }
 
@@ -280,11 +299,12 @@ func (store *Store) Limiter(
 	memories int64,
 ) {
 	C.wasmtime_store_limiter(
-		store._ptr,
+		store.ptr(),
 		C.int64_t(memorySize),
 		C.int64_t(tableElements),
 		C.int64_t(instances),
 		C.int64_t(tables),
 		C.int64_t(memories),
 	)
+	runtime.KeepAlive(store)
 }

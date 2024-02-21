@@ -9,6 +9,7 @@ import (
 
 func TestGlobalType(t *testing.T) {
 	ty := NewGlobalType(NewValType(KindI32), true)
+	defer ty.Close()
 	require.Equal(t, KindI32, ty.Content().Kind())
 	require.True(t, ty.Mutable())
 

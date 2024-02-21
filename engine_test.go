@@ -7,7 +7,8 @@ import (
 )
 
 func TestEngine(t *testing.T) {
-	NewEngine()
+	engine := NewEngine()
+	defer engine.Close()
 	NewEngineWithConfig(NewConfig())
 }
 

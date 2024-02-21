@@ -46,7 +46,7 @@ func mkMemoryType(ptr *C.wasm_memorytype_t, owner interface{}) *MemoryType {
 	memorytype := &MemoryType{_ptr: ptr, _owner: owner}
 	if owner == nil {
 		runtime.SetFinalizer(memorytype, func(memorytype *MemoryType) {
-			C.wasm_memorytype_delete(memorytype._ptr)
+			memorytype.Close()
 		})
 	}
 	return memorytype
@@ -54,6 +54,9 @@ func mkMemoryType(ptr *C.wasm_memorytype_t, owner interface{}) *MemoryType {
 
 func (ty *MemoryType) ptr() *C.wasm_memorytype_t {
 	ret := ty._ptr
+	if ret == nil {
+		panic("object has been closed already")
+	}
 	maybeGC()
 	return ret
 }
@@ -63,6 +66,18 @@ func (ty *MemoryType) owner() interface{} {
 		return ty._owner
 	}
 	return ty
+}
+
+// Close will deallocate this type's state explicitly.
+//
+// For more information see the documentation for engine.Close()
+func (ty *MemoryType) Close() {
+	if ty._ptr == nil || ty._owner != nil {
+		return
+	}
+	runtime.SetFinalizer(ty, nil)
+	C.wasm_memorytype_delete(ty._ptr)
+	ty._ptr = nil
 }
 
 // Minimum returns the minimum size of this memory, in WebAssembly pages

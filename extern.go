@@ -18,16 +18,32 @@ type AsExtern interface {
 
 func mkExtern(ptr *C.wasmtime_extern_t) *Extern {
 	f := &Extern{_ptr: ptr}
-	runtime.SetFinalizer(f, func(f *Extern) {
-		C.wasmtime_extern_delete(f._ptr)
+	runtime.SetFinalizer(f, func(e *Extern) {
+		e.Close()
 	})
 	return f
 }
 
 func (e *Extern) ptr() *C.wasmtime_extern_t {
 	ret := e._ptr
+	if ret == nil {
+		panic("object already closed")
+	}
 	maybeGC()
 	return ret
+}
+
+// Close will deallocate this extern's state explicitly.
+//
+// For more information see the documentation for engine.Close()
+func (e *Extern) Close() {
+	if e._ptr == nil {
+		return
+	}
+	runtime.SetFinalizer(e, nil)
+	C.wasmtime_extern_delete(e._ptr)
+	e._ptr = nil
+
 }
 
 // Type returns the type of this export
