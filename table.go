@@ -23,10 +23,12 @@ type Table struct {
 // `ty`.
 func NewTable(store Storelike, ty *TableType, init Val) (*Table, error) {
 	var ret C.wasmtime_table_t
-	err := C.wasmtime_table_new(store.Context(), ty.ptr(), init.ptr(), &ret)
+	var raw_val C.wasmtime_val_t
+	init.initialize(store, &raw_val)
+	err := C.wasmtime_table_new(store.Context(), ty.ptr(), &raw_val, &ret)
+	C.wasmtime_val_delete(store.Context(), &raw_val)
 	runtime.KeepAlive(store)
 	runtime.KeepAlive(ty)
-	runtime.KeepAlive(init)
 	if err != nil {
 		return nil, mkError(err)
 	}
@@ -51,9 +53,11 @@ func (t *Table) Size(store Storelike) uint32 {
 // table if growth was successful.
 func (t *Table) Grow(store Storelike, delta uint32, init Val) (uint32, error) {
 	var prev C.uint32_t
-	err := C.wasmtime_table_grow(store.Context(), &t.val, C.uint32_t(delta), init.ptr(), &prev)
+	var raw_val C.wasmtime_val_t
+	init.initialize(store, &raw_val)
+	err := C.wasmtime_table_grow(store.Context(), &t.val, C.uint32_t(delta), &raw_val, &prev)
+	C.wasmtime_val_delete(store.Context(), &raw_val)
 	runtime.KeepAlive(store)
-	runtime.KeepAlive(init)
 	if err != nil {
 		return 0, mkError(err)
 	}
@@ -73,16 +77,18 @@ func (t *Table) Get(store Storelike, idx uint32) (Val, error) {
 	if !ok {
 		return Val{}, errors.New("index out of bounds")
 	}
-	return takeVal(&val), nil
+	return takeVal(store, &val), nil
 }
 
 // Set sets an item in this table at the specified index.
 //
 // Returns an error if the index is out of bounds.
 func (t *Table) Set(store Storelike, idx uint32, val Val) error {
-	err := C.wasmtime_table_set(store.Context(), &t.val, C.uint32_t(idx), val.ptr())
+	var raw_val C.wasmtime_val_t
+	val.initialize(store, &raw_val)
+	err := C.wasmtime_table_set(store.Context(), &t.val, C.uint32_t(idx), &raw_val)
+	C.wasmtime_val_delete(store.Context(), &raw_val)
 	runtime.KeepAlive(store)
-	runtime.KeepAlive(val)
 	if err != nil {
 		return mkError(err)
 	}
