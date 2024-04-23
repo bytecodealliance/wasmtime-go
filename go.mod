@@ -1,4 +1,4 @@
-module github.com/bytecodealliance/wasmtime-go/v19
+module github.com/bytecodealliance/wasmtime-go/v20
 
 go 1.18
 

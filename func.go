@@ -86,7 +86,7 @@ func goTrampolineNew(
 	base := unsafe.Pointer(argsPtr)
 	for i := 0; i < len(params); i++ {
 		ptr := (*C.wasmtime_val_t)(unsafe.Pointer(uintptr(base) + uintptr(i)*unsafe.Sizeof(val)))
-		params[i] = mkVal(ptr)
+		params[i] = mkVal(caller, ptr)
 	}
 
 	var results []Val
@@ -126,7 +126,7 @@ func goTrampolineNew(
 	base = unsafe.Pointer(resultsPtr)
 	for i := 0; i < len(results); i++ {
 		ptr := (*C.wasmtime_val_t)(unsafe.Pointer(uintptr(base) + uintptr(i)*unsafe.Sizeof(val)))
-		C.wasmtime_val_copy(ptr, results[i].ptr())
+		results[i].initialize(caller, ptr)
 	}
 	runtime.KeepAlive(results)
 	return nil
@@ -262,7 +262,7 @@ func goTrampolineWrap(
 			params[i] = reflect.ValueOf(caller)
 		} else {
 			ptr := (*C.wasmtime_val_t)(base)
-			val := mkVal(ptr)
+			val := mkVal(caller, ptr)
 			params[i] = reflect.ValueOf(val.Get())
 			base = unsafe.Pointer(uintptr(base) + unsafe.Sizeof(raw))
 		}
@@ -290,15 +290,15 @@ func goTrampolineWrap(
 		ptr := (*C.wasmtime_val_t)(base)
 		switch val := result.Interface().(type) {
 		case int32:
-			*ptr = *ValI32(val).ptr()
+			ValI32(val).initialize(caller, ptr)
 		case int64:
-			*ptr = *ValI64(val).ptr()
+			ValI64(val).initialize(caller, ptr)
 		case float32:
-			*ptr = *ValF32(val).ptr()
+			ValF32(val).initialize(caller, ptr)
 		case float64:
-			*ptr = *ValF64(val).ptr()
+			ValF64(val).initialize(caller, ptr)
 		case *Func:
-			*ptr = *ValFuncref(val).ptr()
+			ValFuncref(val).initialize(caller, ptr)
 		case *Trap:
 			if val != nil {
 				runtime.SetFinalizer(val, nil)
@@ -312,9 +312,7 @@ func goTrampolineWrap(
 				}
 			}
 		default:
-			raw := ValExternref(val)
-			C.wasmtime_val_copy(ptr, raw.ptr())
-			runtime.KeepAlive(raw)
+			ValExternref(val).initialize(caller, ptr)
 		}
 		base = unsafe.Pointer(uintptr(base) + unsafe.Sizeof(raw))
 	}
@@ -401,14 +399,19 @@ func (f *Func) Call(store Storelike, args ...interface{}) (interface{}, error) {
 			C.go_wasmtime_val_f64_set(dst, C.double(val))
 		case *Func:
 			dst.kind = C.WASMTIME_FUNCREF
-			C.go_wasmtime_val_funcref_set(dst, val.val)
+			if val != nil {
+				C.go_wasmtime_val_funcref_set(dst, val.val)
+			} else {
+				empty := C.wasmtime_func_t{}
+				C.go_wasmtime_val_funcref_set(dst, empty)
+			}
 		case Val:
-			*dst = *val.ptr()
+			val.initialize(store, dst)
 
 		default:
 			externref := ValExternref(val)
 			externrefs = append(externrefs, externref)
-			*dst = *externref.ptr()
+			externref.initialize(store, dst)
 		}
 
 	}
@@ -447,12 +450,12 @@ func (f *Func) Call(store Storelike, args ...interface{}) (interface{}, error) {
 	if len(resultVals) == 0 {
 		return nil, nil
 	} else if len(resultVals) == 1 {
-		ret := takeVal(&resultVals[0]).Get()
+		ret := takeVal(store, &resultVals[0]).Get()
 		return ret, nil
 	} else {
 		results := make([]Val, len(resultVals))
 		for i := 0; i < len(results); i++ {
-			results[i] = takeVal(&resultVals[i])
+			results[i] = takeVal(store, &resultVals[i])
 		}
 		return results, nil
 	}

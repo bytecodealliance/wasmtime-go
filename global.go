@@ -19,15 +19,17 @@ func NewGlobal(
 	val Val,
 ) (*Global, error) {
 	var ret C.wasmtime_global_t
+	var raw_val C.wasmtime_val_t
+	val.initialize(store, &raw_val)
 	err := C.wasmtime_global_new(
 		store.Context(),
 		ty.ptr(),
-		val.ptr(),
+		&raw_val,
 		&ret,
 	)
+	C.wasmtime_val_delete(store.Context(), &raw_val)
 	runtime.KeepAlive(store)
 	runtime.KeepAlive(ty)
-	runtime.KeepAlive(val)
 	if err != nil {
 		return nil, mkError(err)
 	}
@@ -51,14 +53,16 @@ func (g *Global) Get(store Storelike) Val {
 	ret := C.wasmtime_val_t{}
 	C.wasmtime_global_get(store.Context(), &g.val, &ret)
 	runtime.KeepAlive(store)
-	return takeVal(&ret)
+	return takeVal(store, &ret)
 }
 
 // Set sets the value of this global
 func (g *Global) Set(store Storelike, val Val) error {
-	err := C.wasmtime_global_set(store.Context(), &g.val, val.ptr())
+	var raw_val C.wasmtime_val_t
+	val.initialize(store, &raw_val)
+	err := C.wasmtime_global_set(store.Context(), &g.val, &raw_val)
+	C.wasmtime_val_delete(store.Context(), &raw_val)
 	runtime.KeepAlive(store)
-	runtime.KeepAlive(val)
 	if err == nil {
 		return nil
 	}

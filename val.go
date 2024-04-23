@@ -16,46 +16,35 @@ var gExternrefSlab slab
 // Val is a primitive numeric value.
 // Moreover, in the definition of programs, immutable sequences of values occur to represent more complex data, such as text strings or other vectors.
 type Val struct {
-	_raw *C.wasmtime_val_t
+	kind C.wasmtime_valkind_t
+	val  interface{}
 }
 
 // ValI32 converts a go int32 to a i32 Val
 func ValI32(val int32) Val {
-	ret := Val{_raw: &C.wasmtime_val_t{kind: C.WASMTIME_I32}}
-	C.go_wasmtime_val_i32_set(ret.ptr(), C.int32_t(val))
-	return ret
+	return Val{kind: C.WASMTIME_I32, val: val}
 }
 
 // ValI64 converts a go int64 to a i64 Val
 func ValI64(val int64) Val {
-	ret := Val{_raw: &C.wasmtime_val_t{kind: C.WASMTIME_I64}}
-	C.go_wasmtime_val_i64_set(ret.ptr(), C.int64_t(val))
-	return ret
+	return Val{kind: C.WASMTIME_I64, val: val}
 }
 
 // ValF32 converts a go float32 to a f32 Val
 func ValF32(val float32) Val {
-	ret := Val{_raw: &C.wasmtime_val_t{kind: C.WASMTIME_F32}}
-	C.go_wasmtime_val_f32_set(ret.ptr(), C.float(val))
-	return ret
+	return Val{kind: C.WASMTIME_F32, val: val}
 }
 
 // ValF64 converts a go float64 to a f64 Val
 func ValF64(val float64) Val {
-	ret := Val{_raw: &C.wasmtime_val_t{kind: C.WASMTIME_F64}}
-	C.go_wasmtime_val_f64_set(ret.ptr(), C.double(val))
-	return ret
+	return Val{kind: C.WASMTIME_F64, val: val}
 }
 
 // ValFuncref converts a Func to a funcref Val
 //
 // Note that `f` can be `nil` to represent a null `funcref`.
 func ValFuncref(f *Func) Val {
-	ret := Val{_raw: &C.wasmtime_val_t{kind: C.WASMTIME_FUNCREF}}
-	if f != nil {
-		C.go_wasmtime_val_funcref_set(ret.ptr(), f.val)
-	}
-	return ret
+	return Val{kind: C.WASMTIME_FUNCREF, val: f}
 }
 
 // ValExternref converts a go value to a externref Val
@@ -64,24 +53,7 @@ func ValFuncref(f *Func) Val {
 // module for it to store. Later, when you get a `Val`, you can extract the type
 // with the `Externref()` method.
 func ValExternref(val interface{}) Val {
-	ret := Val{_raw: &C.wasmtime_val_t{kind: C.WASMTIME_EXTERNREF}}
-
-	// If we have a non-nil value then store it in our global map of all
-	// externref values. Otherwise there's nothing for us to do since the
-	// `ref` field will already be a nil pointer.
-	//
-	// Note that we add 1 so all non-null externref values are created with
-	// non-null pointers.
-	if val != nil {
-		gExternrefLock.Lock()
-		defer gExternrefLock.Unlock()
-		index := gExternrefSlab.allocate()
-		gExternrefMap[index] = val
-		ptr := C.go_externref_new(C.size_t(index + 1))
-		C.go_wasmtime_val_externref_set(ret.ptr(), ptr)
-		ret.setDtor()
-	}
-	return ret
+	return Val{kind: C.WASMTIME_EXTERNREF, val: val}
 }
 
 //export goFinalizeExternref
@@ -93,50 +65,48 @@ func goFinalizeExternref(env unsafe.Pointer) {
 	gExternrefSlab.deallocate(idx)
 }
 
-func mkVal(src *C.wasmtime_val_t) Val {
-	ret := Val{_raw: &C.wasmtime_val_t{}}
-	C.wasmtime_val_copy(ret.ptr(), src)
-	ret.setDtor()
-	return ret
-}
+func mkVal(store Storelike, src *C.wasmtime_val_t) Val {
+	switch src.kind {
+	case C.WASMTIME_I32:
+		return ValI32(int32(C.go_wasmtime_val_i32_get(src)))
+	case C.WASMTIME_I64:
+		return ValI64(int64(C.go_wasmtime_val_i64_get(src)))
+	case C.WASMTIME_F32:
+		return ValF32(float32(C.go_wasmtime_val_f32_get(src)))
+	case C.WASMTIME_F64:
+		return ValF64(float64(C.go_wasmtime_val_f64_get(src)))
+	case C.WASMTIME_FUNCREF:
+		val := C.go_wasmtime_val_funcref_get(src)
+		if val.store_id == 0 {
+			return ValFuncref(nil)
+		} else {
+			return ValFuncref(mkFunc(val))
+		}
+	case C.WASMTIME_EXTERNREF:
+		val := C.go_wasmtime_val_externref_get(src)
+		if val == nil {
+			return ValExternref(nil)
+		}
+		data := C.wasmtime_externref_data(store.Context(), val)
+		runtime.KeepAlive(store)
 
-func takeVal(src *C.wasmtime_val_t) Val {
-	ret := Val{_raw: &C.wasmtime_val_t{}}
-	*ret.ptr() = *src
-	ret.setDtor()
-	return ret
-}
-
-func (v Val) setDtor() {
-	runtime.SetFinalizer(v.ptr(), func(ptr *C.wasmtime_val_t) {
-		C.wasmtime_val_delete(ptr)
-	})
-}
-
-func (v Val) ptr() *C.wasmtime_val_t {
-	ret := v._raw
-	if ret == nil {
-		panic("object has been closed already")
+		gExternrefLock.Lock()
+		defer gExternrefLock.Unlock()
+		return ValExternref(gExternrefMap[int(uintptr(data))-1])
 	}
-	maybeGC()
-	return ret
+	panic("failed to get kind of `Val`")
 }
 
-// Close will deallocate this value's state explicitly.
-//
-// For more information see the documentation for engine.Close()
-func (v Val) Close() {
-	if v._raw == nil {
-		return
-	}
-	runtime.SetFinalizer(v._raw, nil)
-	C.wasmtime_val_delete(v._raw)
-	v._raw = nil
+func takeVal(store Storelike, src *C.wasmtime_val_t) Val {
+	ret := mkVal(store, src)
+	C.wasmtime_val_delete(store.Context(), src)
+	runtime.KeepAlive(store)
+	return ret
 }
 
 // Kind returns the kind of value that this `Val` contains.
 func (v Val) Kind() ValKind {
-	switch v.ptr().kind {
+	switch v.kind {
 	case C.WASMTIME_I32:
 		return KindI32
 	case C.WASMTIME_I64:
@@ -158,7 +128,7 @@ func (v Val) I32() int32 {
 	if v.Kind() != KindI32 {
 		panic("not an i32")
 	}
-	return int32(C.go_wasmtime_val_i32_get(v.ptr()))
+	return v.val.(int32)
 }
 
 // I64 returns the underlying 64-bit integer if this is an `i64`, or panics.
@@ -166,7 +136,7 @@ func (v Val) I64() int64 {
 	if v.Kind() != KindI64 {
 		panic("not an i64")
 	}
-	return int64(C.go_wasmtime_val_i64_get(v.ptr()))
+	return v.val.(int64)
 }
 
 // F32 returns the underlying 32-bit float if this is an `f32`, or panics.
@@ -174,7 +144,7 @@ func (v Val) F32() float32 {
 	if v.Kind() != KindF32 {
 		panic("not an f32")
 	}
-	return float32(C.go_wasmtime_val_f32_get(v.ptr()))
+	return v.val.(float32)
 }
 
 // F64 returns the underlying 64-bit float if this is an `f64`, or panics.
@@ -182,7 +152,7 @@ func (v Val) F64() float64 {
 	if v.Kind() != KindF64 {
 		panic("not an f64")
 	}
-	return float64(C.go_wasmtime_val_f64_get(v.ptr()))
+	return v.val.(float64)
 }
 
 // Funcref returns the underlying function if this is a `funcref`, or panics.
@@ -192,12 +162,7 @@ func (v Val) Funcref() *Func {
 	if v.Kind() != KindFuncref {
 		panic("not a funcref")
 	}
-	val := C.go_wasmtime_val_funcref_get(v.ptr())
-	if val.store_id == 0 {
-		return nil
-	} else {
-		return mkFunc(val)
-	}
+	return v.val.(*Func)
 }
 
 // Externref returns the underlying value if this is an `externref`, or panics.
@@ -207,32 +172,52 @@ func (v Val) Externref() interface{} {
 	if v.Kind() != KindExternref {
 		panic("not an externref")
 	}
-	val := C.go_wasmtime_val_externref_get(v.ptr())
-	if val == nil {
-		return nil
-	}
-	data := C.wasmtime_externref_data(val)
-
-	gExternrefLock.Lock()
-	defer gExternrefLock.Unlock()
-	return gExternrefMap[int(uintptr(data))-1]
+	return v.val
 }
 
 // Get returns the underlying 64-bit float if this is an `f64`, or panics.
 func (v Val) Get() interface{} {
-	switch v.Kind() {
-	case KindI32:
-		return v.I32()
-	case KindI64:
-		return v.I64()
-	case KindF32:
-		return v.F32()
-	case KindF64:
-		return v.F64()
-	case KindFuncref:
-		return v.Funcref()
-	case KindExternref:
-		return v.Externref()
+	return v.val
+}
+
+func (v Val) initialize(store Storelike, ptr *C.wasmtime_val_t) {
+	ptr.kind = v.kind
+	switch v.kind {
+	case C.WASMTIME_I32:
+		C.go_wasmtime_val_i32_set(ptr, C.int32_t(v.val.(int32)))
+	case C.WASMTIME_I64:
+		C.go_wasmtime_val_i64_set(ptr, C.int64_t(v.val.(int64)))
+	case C.WASMTIME_F32:
+		C.go_wasmtime_val_f32_set(ptr, C.float(v.val.(float32)))
+	case C.WASMTIME_F64:
+		C.go_wasmtime_val_f64_set(ptr, C.double(v.val.(float64)))
+	case C.WASMTIME_FUNCREF:
+		val := v.val.(*Func)
+		if val != nil {
+			C.go_wasmtime_val_funcref_set(ptr, val.val)
+		} else {
+			empty := C.wasmtime_func_t{}
+			C.go_wasmtime_val_funcref_set(ptr, empty)
+		}
+	case C.WASMTIME_EXTERNREF:
+		// If we have a non-nil value then store it in our global map
+		// of all externref values. Otherwise there's nothing for us to
+		// do since the `ref` field will already be a nil pointer.
+		//
+		// Note that we add 1 so all non-null externref values are
+		// created with non-null pointers.
+		if v.val == nil {
+			C.go_wasmtime_val_externref_set(ptr, nil)
+		} else {
+			gExternrefLock.Lock()
+			defer gExternrefLock.Unlock()
+			index := gExternrefSlab.allocate()
+			gExternrefMap[index] = v.val
+			externref := C.go_externref_new(store.Context(), C.size_t(index+1))
+			runtime.KeepAlive(store)
+			C.go_wasmtime_val_externref_set(ptr, externref)
+		}
+	default:
+		panic("failed to get kind of `Val`")
 	}
-	panic("failed to get value of `Val`")
 }
