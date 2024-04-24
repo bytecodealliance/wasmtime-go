@@ -233,6 +233,31 @@ func (cfg *Config) SetCraneliftFlag(name string, value string) {
 	runtime.KeepAlive(cfg)
 }
 
+func (cfg *Config) SetStaticMemoryForced(enable bool) {
+	C.wasmtime_config_static_memory_forced_set(cfg.ptr(), C.bool(enable))
+	runtime.KeepAlive(cfg)
+}
+
+func (cfg *Config) SetStaticMemoryMaximumSize(size uint64) {
+	C.wasmtime_config_static_memory_maximum_size_set(cfg.ptr(), C.uint64_t(size))
+	runtime.KeepAlive(cfg)
+}
+
+func (cfg *Config) SetStaticMemoryGuardSize(size uint64) {
+	C.wasmtime_config_static_memory_guard_size_set(cfg.ptr(), C.uint64_t(size))
+	runtime.KeepAlive(cfg)
+}
+
+func (cfg *Config) SetDynamicMemoryGuardSize(size uint64) {
+	C.wasmtime_config_dynamic_memory_guard_size_set(cfg.ptr(), C.uint64_t(size))
+	runtime.KeepAlive(cfg)
+}
+
+func (cfg *Config) SetDynamicMemoryReservedForGrowth(size uint64) {
+	C.wasmtime_config_dynamic_memory_reserved_for_growth_set(cfg.ptr(), C.uint64_t(size))
+	runtime.KeepAlive(cfg)
+}
+
 // See comments in `ffi.go` for what's going on here
 func (cfg *Config) ptr() *C.wasm_config_t {
 	ret := cfg._ptr
