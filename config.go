@@ -89,6 +89,12 @@ func (cfg *Config) SetWasmSIMD(enabled bool) {
 	runtime.KeepAlive(cfg)
 }
 
+// SetWasmRelaxedSIMD configures whether the wasm RelaxedSIMD proposal is enabled
+func (cfg *Config) SetWasmRelaxedSIMD(enabled bool) {
+       C.wasmtime_config_wasm_relaxed_simd_set(cfg.ptr(), C.bool(enabled))
+       runtime.KeepAlive(cfg)
+}
+
 // SetWasmBulkMemory configures whether the wasm bulk memory proposal is enabled
 func (cfg *Config) SetWasmBulkMemory(enabled bool) {
 	C.wasmtime_config_wasm_bulk_memory_set(cfg.ptr(), C.bool(enabled))
