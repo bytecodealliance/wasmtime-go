@@ -32,4 +32,4 @@ done
 
 cp "$wasmtime"/crates/c-api/include/*.h build/include
 cp -r "$wasmtime"/crates/c-api/include/wasmtime build/include
-cp "$wasmtime"/crates/c-api/wasm-c-api/include/*.h build/include
+#cp "$wasmtime"/crates/c-api/wasm-c-api/include/*.h build/include
