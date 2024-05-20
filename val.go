@@ -84,10 +84,10 @@ func mkVal(store Storelike, src *C.wasmtime_val_t) Val {
 		}
 	case C.WASMTIME_EXTERNREF:
 		val := C.go_wasmtime_val_externref_get(src)
-		if val == nil {
+		if val.store_id == 0 {
 			return ValExternref(nil)
 		}
-		data := C.wasmtime_externref_data(store.Context(), val)
+		data := C.wasmtime_externref_data(store.Context(), &val)
 		runtime.KeepAlive(store)
 
 		gExternrefLock.Lock()
@@ -99,7 +99,7 @@ func mkVal(store Storelike, src *C.wasmtime_val_t) Val {
 
 func takeVal(store Storelike, src *C.wasmtime_val_t) Val {
 	ret := mkVal(store, src)
-	C.wasmtime_val_delete(store.Context(), src)
+	C.wasmtime_val_unroot(store.Context(), src)
 	runtime.KeepAlive(store)
 	return ret
 }
@@ -207,15 +207,20 @@ func (v Val) initialize(store Storelike, ptr *C.wasmtime_val_t) {
 		// Note that we add 1 so all non-null externref values are
 		// created with non-null pointers.
 		if v.val == nil {
-			C.go_wasmtime_val_externref_set(ptr, nil)
+			C.go_wasmtime_val_externref_set(ptr, C.wasmtime_externref_t{})
 		} else {
 			gExternrefLock.Lock()
 			defer gExternrefLock.Unlock()
 			index := gExternrefSlab.allocate()
 			gExternrefMap[index] = v.val
-			externref := C.go_externref_new(store.Context(), C.size_t(index+1))
+			var ref C.wasmtime_externref_t
+			ok := C.go_externref_new(store.Context(), C.size_t(index+1), &ref)
 			runtime.KeepAlive(store)
-			C.go_wasmtime_val_externref_set(ptr, externref)
+			if ok {
+				C.go_wasmtime_val_externref_set(ptr, ref)
+			} else {
+				panic("failed to create an externref")
+			}
 		}
 	default:
 		panic("failed to get kind of `Val`")
