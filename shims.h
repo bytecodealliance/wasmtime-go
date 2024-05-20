@@ -13,14 +13,14 @@ wasmtime_error_t *go_linker_define_func(
     int wrap,
     size_t env
 );
-wasmtime_externref_t *go_externref_new(wasmtime_context_t *cx, size_t env);
+bool go_externref_new(wasmtime_context_t *cx, size_t env, wasmtime_externref_t *ref);
 
 #define EACH_UNION_ACCESSOR(name) \
   UNION_ACCESSOR(wasmtime_val, i32, int32_t) \
   UNION_ACCESSOR(wasmtime_val, i64, int64_t) \
   UNION_ACCESSOR(wasmtime_val, f32, float) \
   UNION_ACCESSOR(wasmtime_val, f64, double) \
-  UNION_ACCESSOR(wasmtime_val, externref, wasmtime_externref_t*) \
+  UNION_ACCESSOR(wasmtime_val, externref, wasmtime_externref_t) \
   UNION_ACCESSOR(wasmtime_val, funcref, wasmtime_func_t) \
   \
   UNION_ACCESSOR(wasmtime_extern, func, wasmtime_func_t) \

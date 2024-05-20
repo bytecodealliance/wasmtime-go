@@ -55,7 +55,7 @@ func (c *WasiConfig) SetArgv(argv []string) {
 	if len(ptrs) > 0 {
 		argvRaw = &ptrs[0]
 	}
-	C.wasi_config_set_argv(c.ptr(), C.int(len(argv)), argvRaw)
+	C.wasi_config_set_argv(c.ptr(), C.size_t(len(argv)), argvRaw)
 	runtime.KeepAlive(c)
 	for _, ptr := range ptrs {
 		C.free(unsafe.Pointer(ptr))
@@ -87,7 +87,7 @@ func (c *WasiConfig) SetEnv(keys, values []string) {
 		namesRaw = &namePtrs[0]
 		valuesRaw = &valuePtrs[0]
 	}
-	C.wasi_config_set_env(c.ptr(), C.int(len(keys)), namesRaw, valuesRaw)
+	C.wasi_config_set_env(c.ptr(), C.size_t(len(keys)), namesRaw, valuesRaw)
 	runtime.KeepAlive(c)
 	for i, ptr := range namePtrs {
 		C.free(unsafe.Pointer(ptr))
