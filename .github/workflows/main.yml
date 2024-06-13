@@ -120,7 +120,7 @@ jobs:
   deploy:
     name: Deploy github-pages
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: build
+    needs: upload_docs
     permissions:
       pages: write
       id-token: write
