@@ -109,10 +109,25 @@ jobs:
       with:
         name: coverage
     - run: find .
-    - name: Push to gh-pages
-      run: curl -LsSf https://git.io/fhJ8n | rustc - && (cd coverage && ../rust_out)
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-      env:
-        GITHUB_DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
-        BUILD_REPOSITORY_ID: ${{ github.repository }}
-        BUILD_SOURCEVERSION: ${{ github.sha }}
+
+    - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: actions/configure-pages@v5
+    - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: "coverage"
+
+  deploy:
+    name: Deploy github-pages
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
