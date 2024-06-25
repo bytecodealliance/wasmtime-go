@@ -13,6 +13,8 @@ func TestConfig(t *testing.T) {
 	NewConfig().SetWasmThreads(true)
 	NewConfig().SetWasmReferenceTypes(true)
 	NewConfig().SetWasmSIMD(true)
+	NewConfig().SetWasmRelaxedSIMD(true)
+	NewConfig().SetWasmRelaxedSIMDDeterministic(true)
 	NewConfig().SetWasmBulkMemory(true)
 	NewConfig().SetWasmMultiValue(true)
 	NewConfig().SetWasmMultiMemory(true)
