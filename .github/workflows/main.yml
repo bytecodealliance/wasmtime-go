@@ -22,7 +22,7 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
         go: ['1.20.x', '1.21.x']
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     # first download wasmtime's last static library build using python
     - uses: actions/setup-python@v2
@@ -75,7 +75,7 @@ jobs:
   coverage:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - uses: actions/setup-python@v2
       with:
         python-version: 3.8
@@ -85,7 +85,7 @@ jobs:
         go-version: '1.20'
     - run: go test -coverprofile cover.out ./...
     - run: go tool cover -html=cover.out -o coverage.html
-    - uses: actions/upload-artifact@v1
+    - uses: actions/upload-artifact@v4
       with:
         name: coverage
         path: coverage.html
@@ -93,7 +93,7 @@ jobs:
   fmt:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - uses: actions/setup-go@v2
       with:
         go-version: '1.20'
@@ -104,8 +104,8 @@ jobs:
     needs: [coverage]
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/download-artifact@v1
+    - uses: actions/checkout@v4
+    - uses: actions/download-artifact@v4
       with:
         name: coverage
     - run: find .
