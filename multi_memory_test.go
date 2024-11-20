@@ -57,9 +57,9 @@ func TestMultiMemoryImported(t *testing.T) {
 	require.NoError(t, err)
 	store := multiMemoryStore()
 
-	mem0, err := NewMemory(store, NewMemoryType(1, true, 3))
+	mem0, err := NewMemory(store, NewMemoryType(1, true, 3, false))
 	require.NoError(t, err)
-	mem1, err := NewMemory(store, NewMemoryType(2, true, 4))
+	mem1, err := NewMemory(store, NewMemoryType(2, true, 4, false))
 	require.NoError(t, err)
 
 	module, err := NewModule(store.Engine, wasm)

@@ -40,10 +40,10 @@ func mkTable(val C.wasmtime_table_t) *Table {
 }
 
 // Size returns the size of this table in units of elements.
-func (t *Table) Size(store Storelike) uint32 {
+func (t *Table) Size(store Storelike) uint64 {
 	ret := C.wasmtime_table_size(store.Context(), &t.val)
 	runtime.KeepAlive(store)
-	return uint32(ret)
+	return uint64(ret)
 }
 
 // Grow grows this table by the number of units specified, using the
@@ -51,18 +51,18 @@ func (t *Table) Size(store Storelike) uint32 {
 //
 // Returns an error if the table failed to grow, or the previous size of the
 // table if growth was successful.
-func (t *Table) Grow(store Storelike, delta uint32, init Val) (uint32, error) {
-	var prev C.uint32_t
+func (t *Table) Grow(store Storelike, delta uint64, init Val) (uint64, error) {
+	var prev C.uint64_t
 	var raw_val C.wasmtime_val_t
 	init.initialize(store, &raw_val)
-	err := C.wasmtime_table_grow(store.Context(), &t.val, C.uint32_t(delta), &raw_val, &prev)
+	err := C.wasmtime_table_grow(store.Context(), &t.val, C.uint64_t(delta), &raw_val, &prev)
 	C.wasmtime_val_unroot(store.Context(), &raw_val)
 	runtime.KeepAlive(store)
 	if err != nil {
 		return 0, mkError(err)
 	}
 
-	return uint32(prev), nil
+	return uint64(prev), nil
 }
 
 // Get gets an item from this table from the specified index.
@@ -70,9 +70,9 @@ func (t *Table) Grow(store Storelike, delta uint32, init Val) (uint32, error) {
 // Returns an error if the index is out of bounds, or returns a value (which
 // may be internally null) if the index is in bounds corresponding to the entry
 // at the specified index.
-func (t *Table) Get(store Storelike, idx uint32) (Val, error) {
+func (t *Table) Get(store Storelike, idx uint64) (Val, error) {
 	var val C.wasmtime_val_t
-	ok := C.wasmtime_table_get(store.Context(), &t.val, C.uint32_t(idx), &val)
+	ok := C.wasmtime_table_get(store.Context(), &t.val, C.uint64_t(idx), &val)
 	runtime.KeepAlive(store)
 	if !ok {
 		return Val{}, errors.New("index out of bounds")
@@ -83,10 +83,10 @@ func (t *Table) Get(store Storelike, idx uint32) (Val, error) {
 // Set sets an item in this table at the specified index.
 //
 // Returns an error if the index is out of bounds.
-func (t *Table) Set(store Storelike, idx uint32, val Val) error {
+func (t *Table) Set(store Storelike, idx uint64, val Val) error {
 	var raw_val C.wasmtime_val_t
 	val.initialize(store, &raw_val)
-	err := C.wasmtime_table_set(store.Context(), &t.val, C.uint32_t(idx), &raw_val)
+	err := C.wasmtime_table_set(store.Context(), &t.val, C.uint64_t(idx), &raw_val)
 	C.wasmtime_val_unroot(store.Context(), &raw_val)
 	runtime.KeepAlive(store)
 	if err != nil {

@@ -73,7 +73,7 @@ func TestRefTypesTable(t *testing.T) {
 	require.NoError(t, err)
 
 	for i := 0; i < 10; i++ {
-		val, err := table.Get(store, uint32(i))
+		val, err := table.Get(store, uint64(i))
 		require.NoError(t, err)
 		require.Equal(t, "init", val.Get().(string))
 	}
@@ -81,12 +81,12 @@ func TestRefTypesTable(t *testing.T) {
 	_, err = table.Grow(store, 2, ValExternref("grown"))
 	require.NoError(t, err)
 	for i := 0; i < 10; i++ {
-		val, err := table.Get(store, uint32(i))
+		val, err := table.Get(store, uint64(i))
 		require.NoError(t, err)
 		require.Equal(t, "init", val.Get().(string))
 	}
 	for i := 10; i < 12; i++ {
-		val, err := table.Get(store, uint32(i))
+		val, err := table.Get(store, uint64(i))
 		require.NoError(t, err)
 		require.Equal(t, "grown", val.Get().(string))
 	}
@@ -95,7 +95,7 @@ func TestRefTypesTable(t *testing.T) {
 	require.NoError(t, err)
 
 	for i := 0; i < 7; i++ {
-		val, err := table.Get(store, uint32(i))
+		val, err := table.Get(store, uint64(i))
 		require.NoError(t, err)
 		require.Equal(t, "init", val.Get().(string))
 	}
@@ -104,12 +104,12 @@ func TestRefTypesTable(t *testing.T) {
 	require.Equal(t, "lucky", val.Get().(string))
 
 	for i := 8; i < 10; i++ {
-		val, err := table.Get(store, uint32(i))
+		val, err := table.Get(store, uint64(i))
 		require.NoError(t, err)
 		require.Equal(t, "init", val.Get().(string))
 	}
 	for i := 10; i < 12; i++ {
-		val, err := table.Get(store, uint32(i))
+		val, err := table.Get(store, uint64(i))
 		require.NoError(t, err)
 		require.Equal(t, "grown", val.Get().(string))
 	}

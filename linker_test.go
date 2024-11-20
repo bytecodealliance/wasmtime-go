@@ -25,7 +25,7 @@ func TestLinker(t *testing.T) {
 	g, err := NewGlobal(store, NewGlobalType(NewValType(KindI32), false), ValI32(0))
 	require.NoError(t, err)
 	require.NoError(t, linker.Define(store, "", "g", g))
-	m, err := NewMemory(store, NewMemoryType(1, true, 300))
+	m, err := NewMemory(store, NewMemoryType(1, true, 300, false))
 	require.NoError(t, err)
 	require.NoError(t, linker.Define(store, "", "m", m))
 	require.NoError(t, linker.Define(store, "other", "m", m))
