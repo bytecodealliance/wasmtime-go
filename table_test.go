@@ -11,7 +11,7 @@ func TestTable(t *testing.T) {
 	ty := NewTableType(NewValType(KindFuncref), 1, true, 3)
 	table, err := NewTable(store, ty, ValFuncref(nil))
 	require.NoError(t, err)
-	require.Equal(t, uint32(1), table.Size(store))
+	require.Equal(t, uint64(1), table.Size(store))
 
 	f, err := table.Get(store, 0)
 	require.NoError(t, err)
@@ -32,7 +32,7 @@ func TestTable(t *testing.T) {
 
 	prevSize, err := table.Grow(store, 1, ValFuncref(nil))
 	require.NoError(t, err)
-	require.Equal(t, uint32(1), prevSize)
+	require.Equal(t, uint64(1), prevSize)
 
 	f, err = table.Get(store, 1)
 	require.NoError(t, err)

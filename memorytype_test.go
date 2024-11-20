@@ -7,7 +7,7 @@ import (
 )
 
 func TestMemoryType(t *testing.T) {
-	ty := NewMemoryType(0, true, 100)
+	ty := NewMemoryType(0, true, 100, false)
 	ty.Minimum()
 	ty.Maximum()
 
@@ -19,8 +19,10 @@ func TestMemoryType(t *testing.T) {
 }
 
 func TestMemoryType64(t *testing.T) {
-	ty := NewMemoryType64(0x100000000, true, 0x100000001)
+	ty := NewMemoryType64(0x100000000, true, 0x100000001, false)
 	require.Equal(t, uint64(0x100000000), ty.Minimum())
+	require.True(t, ty.Is64())
+	require.False(t, ty.IsShared())
 
 	present, max := ty.Maximum()
 	require.Equal(t, uint64(0x100000001), max)
