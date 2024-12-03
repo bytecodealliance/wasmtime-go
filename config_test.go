@@ -26,6 +26,16 @@ func TestConfig(t *testing.T) {
 	NewConfig().SetCraneliftOptLevel(OptLevelSpeed)
 	NewConfig().SetCraneliftOptLevel(OptLevelSpeedAndSize)
 	NewConfig().SetProfiler(ProfilingStrategyNone)
+	NewConfig().SetTailCall(true)
+	NewConfig().SetFunctionReferences(true)
+	NewConfig().SetGC(true)
+	NewConfig().SetWideArithmetic(true)
+	NewConfig().SetParallelCompilation(true)
+	NewConfig().SetCraneliftNanCanonicalization(true)
+	NewConfig().SetNativeUnwindInfo(true)
+	NewConfig().SetMacOSUseMachPorts(false)
+	NewConfig().SetMemoryInitCOWSet(true)
+	NewConfig().SetStaticMemoryForced(true)
 	if runtime.GOARCH == "amd64" && runtime.GOOS == "linux" {
 		NewConfig().SetTarget("x86_64-unknown-linux-gnu")
 	}
