@@ -125,9 +125,84 @@ func (cfg *Config) SetWasmMemory64(enabled bool) {
 	runtime.KeepAlive(cfg)
 }
 
+// SetTailCall configures whether tail calls are enabled
+func (cfg *Config) SetWasmTailCall(enabled bool) {
+	C.wasmtime_config_wasm_tail_call_set(cfg.ptr(), C.bool(enabled))
+	runtime.KeepAlive(cfg)
+}
+
+// SetFunctionReferences configures whether function references are enabled
+func (cfg *Config) SetWasmFunctionReferences(enabled bool) {
+	C.wasmtime_config_wasm_function_references_set(cfg.ptr(), C.bool(enabled))
+	runtime.KeepAlive(cfg)
+}
+
+// SetGC configures whether garbage collection is enabled
+func (cfg *Config) SetWasmGC(enabled bool) {
+	C.wasmtime_config_wasm_gc_set(cfg.ptr(), C.bool(enabled))
+	runtime.KeepAlive(cfg)
+}
+
+// SetWideArithmetic configures whether wide arithmetic is enabled
+func (cfg *Config) SetWasmWideArithmetic(enabled bool) {
+	C.wasmtime_config_wasm_wide_arithmetic_set(cfg.ptr(), C.bool(enabled))
+	runtime.KeepAlive(cfg)
+}
+
 // SetConsumFuel configures whether fuel is enabled
 func (cfg *Config) SetConsumeFuel(enabled bool) {
 	C.wasmtime_config_consume_fuel_set(cfg.ptr(), C.bool(enabled))
+	runtime.KeepAlive(cfg)
+}
+
+// SetParallelCompilation configures whether compilation should use multiple threads
+func (cfg *Config) SetParallelCompilation(enabled bool) {
+	C.wasmtime_config_parallel_compilation_set(cfg.ptr(), C.bool(enabled))
+	runtime.KeepAlive(cfg)
+}
+
+// SetCraneliftNanCanonicalization configures whether whether Cranelift should perform a
+// NaN-canonicalization pass.
+//
+// When Cranelift is used as a code generation backend this will configure it to replace NaNs with a single
+// canonical value. This is useful for users requiring entirely deterministic WebAssembly computation.
+//
+// This is not required by the WebAssembly spec, so it is not enabled by default.
+func (cfg *Config) SetCraneliftNanCanonicalization(enabled bool) {
+	C.wasmtime_config_cranelift_nan_canonicalization_set(cfg.ptr(), C.bool(enabled))
+	runtime.KeepAlive(cfg)
+}
+
+// SetNativeUnwindInfo whether to generate native unwind information (e.g. .eh_frame on Linux).
+func (cfg *Config) SetNativeUnwindInfo(enabled bool) {
+	C.wasmtime_config_native_unwind_info_set(cfg.ptr(), C.bool(enabled))
+	runtime.KeepAlive(cfg)
+}
+
+// SetMacOSUseMachPorts configures whether, when on macOS, Mach ports are used for exception handling instead
+// of traditional Unix-based signal handling.
+func (cfg *Config) SetMacOSUseMachPorts(enabled bool) {
+	C.wasmtime_config_macos_use_mach_ports_set(cfg.ptr(), C.bool(enabled))
+	runtime.KeepAlive(cfg)
+}
+
+// Configures the “static” style of memory to always be used.
+// For more information see the Rust documentation at
+// https://bytecodealliance.github.io/wasmtime/api/wasmtime/struct.Config.html#method.static_memory_forced.
+func (cfg *Config) SetStaticMemoryForced(enabled bool) {
+	C.wasmtime_config_static_memory_forced_set(cfg.ptr(), C.bool(enabled))
+	runtime.KeepAlive(cfg)
+}
+
+// SetMemoryInitCOWSet Configures whether copy-on-write memory-mapped data is used to initialize a linear memory.
+//
+// Initializing linear memory via a copy-on-write mapping can drastically improve instantiation costs of a
+// WebAssembly module because copying memory is deferred. Additionally if a page of memory is only ever read from
+// WebAssembly and never written too then the same underlying page of data will be reused between all
+// instantiations of a module meaning that if a module is instantiated many times this can lower the overall
+// memory required needed to run that module.
+func (cfg *Config) SetMemoryInitCOWSet(enabled bool) {
+	C.wasmtime_config_memory_init_cow_set(cfg.ptr(), C.bool(enabled))
 	runtime.KeepAlive(cfg)
 }
 

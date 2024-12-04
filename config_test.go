@@ -18,6 +18,10 @@ func TestConfig(t *testing.T) {
 	NewConfig().SetWasmBulkMemory(true)
 	NewConfig().SetWasmMultiValue(true)
 	NewConfig().SetWasmMultiMemory(true)
+	NewConfig().SetWasmTailCall(true)
+	NewConfig().SetWasmFunctionReferences(true)
+	NewConfig().SetWasmGC(true)
+	NewConfig().SetWasmWideArithmetic(true)
 	NewConfig().SetConsumeFuel(true)
 	NewConfig().SetStrategy(StrategyAuto)
 	NewConfig().SetStrategy(StrategyCranelift)
@@ -26,6 +30,12 @@ func TestConfig(t *testing.T) {
 	NewConfig().SetCraneliftOptLevel(OptLevelSpeed)
 	NewConfig().SetCraneliftOptLevel(OptLevelSpeedAndSize)
 	NewConfig().SetProfiler(ProfilingStrategyNone)
+	NewConfig().SetParallelCompilation(true)
+	NewConfig().SetCraneliftNanCanonicalization(true)
+	NewConfig().SetNativeUnwindInfo(true)
+	NewConfig().SetMacOSUseMachPorts(false)
+	NewConfig().SetMemoryInitCOWSet(true)
+	NewConfig().SetStaticMemoryForced(true)
 	if runtime.GOARCH == "amd64" && runtime.GOOS == "linux" {
 		NewConfig().SetTarget("x86_64-unknown-linux-gnu")
 	}
