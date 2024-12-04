@@ -125,33 +125,33 @@ func (cfg *Config) SetWasmMemory64(enabled bool) {
 	runtime.KeepAlive(cfg)
 }
 
-// SetConsumFuel configures whether fuel is enabled
-func (cfg *Config) SetConsumeFuel(enabled bool) {
-	C.wasmtime_config_consume_fuel_set(cfg.ptr(), C.bool(enabled))
-	runtime.KeepAlive(cfg)
-}
-
 // SetTailCall configures whether tail calls are enabled
-func (cfg *Config) SetTailCall(enabled bool) {
+func (cfg *Config) SetWasmTailCall(enabled bool) {
 	C.wasmtime_config_wasm_tail_call_set(cfg.ptr(), C.bool(enabled))
 	runtime.KeepAlive(cfg)
 }
 
 // SetFunctionReferences configures whether function references are enabled
-func (cfg *Config) SetFunctionReferences(enabled bool) {
+func (cfg *Config) SetWasmFunctionReferences(enabled bool) {
 	C.wasmtime_config_wasm_function_references_set(cfg.ptr(), C.bool(enabled))
 	runtime.KeepAlive(cfg)
 }
 
-// SetGC configures whether GC is enabled
-func (cfg *Config) SetGC(enabled bool) {
+// SetGC configures whether garbage collection is enabled
+func (cfg *Config) SetWasmGC(enabled bool) {
 	C.wasmtime_config_wasm_gc_set(cfg.ptr(), C.bool(enabled))
 	runtime.KeepAlive(cfg)
 }
 
 // SetWideArithmetic configures whether wide arithmetic is enabled
-func (cfg *Config) SetWideArithmetic(enabled bool) {
+func (cfg *Config) SetWasmWideArithmetic(enabled bool) {
 	C.wasmtime_config_wasm_wide_arithmetic_set(cfg.ptr(), C.bool(enabled))
+	runtime.KeepAlive(cfg)
+}
+
+// SetConsumFuel configures whether fuel is enabled
+func (cfg *Config) SetConsumeFuel(enabled bool) {
+	C.wasmtime_config_consume_fuel_set(cfg.ptr(), C.bool(enabled))
 	runtime.KeepAlive(cfg)
 }
 
