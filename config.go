@@ -186,14 +186,6 @@ func (cfg *Config) SetMacOSUseMachPorts(enabled bool) {
 	runtime.KeepAlive(cfg)
 }
 
-// Configures the “static” style of memory to always be used.
-// For more information see the Rust documentation at
-// https://bytecodealliance.github.io/wasmtime/api/wasmtime/struct.Config.html#method.static_memory_forced.
-func (cfg *Config) SetStaticMemoryForced(enabled bool) {
-	C.wasmtime_config_static_memory_forced_set(cfg.ptr(), C.bool(enabled))
-	runtime.KeepAlive(cfg)
-}
-
 // SetMemoryInitCOWSet Configures whether copy-on-write memory-mapped data is used to initialize a linear memory.
 //
 // Initializing linear memory via a copy-on-write mapping can drastically improve instantiation costs of a

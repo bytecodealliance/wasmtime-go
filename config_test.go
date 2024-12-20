@@ -35,7 +35,6 @@ func TestConfig(t *testing.T) {
 	NewConfig().SetNativeUnwindInfo(true)
 	NewConfig().SetMacOSUseMachPorts(false)
 	NewConfig().SetMemoryInitCOWSet(true)
-	NewConfig().SetStaticMemoryForced(true)
 	if runtime.GOARCH == "amd64" && runtime.GOOS == "linux" {
 		NewConfig().SetTarget("x86_64-unknown-linux-gnu")
 	}
