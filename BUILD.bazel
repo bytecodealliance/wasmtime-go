@@ -63,7 +63,7 @@ go_library(
         ],
         "//conditions:default": [],
     }),
-    importpath = "github.com/bytecodealliance/wasmtime-go/v27",
+    importpath = "github.com/bytecodealliance/wasmtime-go/v28",
     visibility = ["//visibility:public"],
 )
 
