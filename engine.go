@@ -82,3 +82,12 @@ func (engine *Engine) IncrementEpoch() {
 	C.wasmtime_engine_increment_epoch(engine.ptr())
 	runtime.KeepAlive(engine)
 }
+
+// IsPulley will return whether the current engine's execution is backed by
+// the Pulley interpreter inside of Wasmtime. If this returns false then
+// native execution is used instead.
+func (engine *Engine) IsPulley() bool {
+	ret := C.wasmtime_engine_is_pulley(engine.ptr())
+	runtime.KeepAlive(engine)
+	return bool(ret)
+}
