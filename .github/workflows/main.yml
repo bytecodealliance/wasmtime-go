@@ -19,8 +19,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        go: ['1.20.x', '1.21.x']
+        os: [ubuntu-latest, macos-latest, windows-2025]
+        go: ['1.20.x', '1.21.x', '1.22.x', '1.23.x', '1.24.x']
     steps:
     - uses: actions/checkout@v4
 
@@ -51,7 +51,7 @@ jobs:
         bazelisk build --subcommands=pretty_print --verbose_failures :go_default_library
         bazelisk test --subcommands=pretty_print --verbose_failures :go_default_test
       # TODO: need to fix bazel tests
-      if: matrix.os != 'windows-latest' && false
+      if: runner.os != 'Windows' && false
     - name: Ready msys2
       uses: msys2/setup-msys2@v2
       with:
@@ -59,7 +59,7 @@ jobs:
         update: true
         install: git mingw-w64-x86_64-toolchain
         path-type: inherit
-      if: matrix.os == 'windows-latest'
+      if: runner.os == 'Windows'
     - name: Test bazel build on Windows
       shell: msys2 {0}
       run: |
@@ -67,11 +67,11 @@ jobs:
         bazelisk build --subcommands=pretty_print --verbose_failures --compiler=mingw-gcc :go_default_library
         bazelisk test --subcommands=pretty_print --verbose_failures --compiler=mingw-gcc :go_default_test
       # TODO: need to reenable when MinGW shenanigans are fixed
-      if: matrix.os == 'windows-latest' && false
+      if: runner.os == 'Windows' && false
     - name: Test vendoring on *nix
       shell: bash
       run: ./ci/test-vendoring.sh
-      if: matrix.os != 'windows-latest'
+      if: runner.os != 'Windows'
 
   coverage:
     runs-on: ubuntu-latest
