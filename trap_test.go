@@ -39,9 +39,9 @@ func TestTrapFrames(t *testing.T) {
 	require.Equal(t, uint32(0), frames[2].FuncIndex(), "bad function index")
 
 	expected := `error while executing at wasm backtrace:
-    0:   0x26 - <unknown>!bar
-    1:   0x21 - <unknown>!foo
-    2:   0x1c - <unknown>!<wasm function 0>
+    0:     0x26 - <unknown>!bar
+    1:     0x21 - <unknown>!foo
+    2:     0x1c - <unknown>!<wasm function 0>
 
 Caused by:
     wasm trap: wasm ` + "`unreachable` instruction executed"
