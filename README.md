@@ -12,8 +12,8 @@
     <a href="https://github.com/bytecodealliance/wasmtime-go/actions?query=workflow%3ACI">
       <img src="https://github.com/bytecodealliance/wasmtime-go/workflows/CI/badge.svg" alt="CI status"/>
     </a>
-    <a href="https://pkg.go.dev/github.com/bytecodealliance/wasmtime-go/v34">
-      <img src="https://godoc.org/github.com/bytecodealliance/wasmtime-go/v34?status.svg" alt="Documentation"/>
+    <a href="https://pkg.go.dev/github.com/bytecodealliance/wasmtime-go/v35">
+      <img src="https://godoc.org/github.com/bytecodealliance/wasmtime-go/v35?status.svg" alt="Documentation"/>
     </a>
     <a href="https://bytecodealliance.github.io/wasmtime-go/coverage.html">
       <img src="https://img.shields.io/badge/coverage-main-green" alt="Code Coverage"/>
@@ -25,7 +25,7 @@
 ## Installation
 
 ```sh
-go get -u github.com/bytecodealliance/wasmtime-go/v34@v34.0.0
+go get -u github.com/bytecodealliance/wasmtime-go/v35@v35.0.0
 ```
 
 Be sure to check out the [API documentation][api]!
@@ -39,7 +39,7 @@ need to arrange to build Wasmtime and use `CGO_*` env vars to compile correctly.
 
 This project has been tested with Go 1.13 or later.
 
-[api]: https://pkg.go.dev/github.com/bytecodealliance/wasmtime-go/v34
+[api]: https://pkg.go.dev/github.com/bytecodealliance/wasmtime-go/v35
 [wasmtime]: https://github.com/bytecodealliance/wasmtime
 
 If you are a bazel user, add following to your WORKSPACE file:
@@ -47,8 +47,8 @@ If you are a bazel user, add following to your WORKSPACE file:
 ```
 go_repository(
     name = "com_github_bytecodealliance_wasmtime_go",
-    importpath = "github.com/bytecodealliance/wasmtime-go/v34",
-    version = "v34.0.0",
+    importpath = "github.com/bytecodealliance/wasmtime-go/v35",
+    version = "v35.0.0",
 )
 ```
 
@@ -61,7 +61,7 @@ package main
 
 import (
     "fmt"
-    "github.com/bytecodealliance/wasmtime-go/v34"
+    "github.com/bytecodealliance/wasmtime-go/v35"
 )
 
 func main() {
@@ -179,8 +179,8 @@ Once merged checkout `main` and do:
 $ rm .gitignore
 $ python3 ci/download-wasmtime.py
 $ git add .
-$ git commit -m 'v34.0.0 release artifacts'
-$ git tag v34.0.0
+$ git commit -m 'v35.0.0 release artifacts'
+$ git tag v35.0.0
 ```
 
 and push up the tag
