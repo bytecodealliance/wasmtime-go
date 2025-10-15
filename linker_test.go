@@ -166,3 +166,83 @@ func TestLinkerFuncs(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 6, called, "expected a call")
 }
+
+func TestPanicInHostFunctionDuringInstantiate(t *testing.T) {
+	engine := NewEngine()
+	linker := NewLinker(engine)
+	store := NewStore(engine)
+	err := linker.FuncWrap("foo", "bar", func() {
+		panic("hi")
+	})
+	require.NoError(t, err)
+
+	wasm, err := Wat2Wasm(`
+	    (module
+		(import "foo" "bar" (func))
+		(start 0)
+	    )
+	`)
+	require.NoError(t, err)
+
+	module, err := NewModule(engine, wasm)
+	require.NoError(t, err)
+	require.PanicsWithValue(t, "hi", func() {
+		linker.Instantiate(store, module)
+	})
+}
+
+func TestPanicInHostFunctionDuringCall(t *testing.T) {
+	engine := NewEngine()
+	linker := NewLinker(engine)
+	store := NewStore(engine)
+	err := linker.FuncWrap("foo", "bar", func() {
+		panic("hi")
+	})
+	require.NoError(t, err)
+
+	wasm, err := Wat2Wasm(`
+	    (module
+		(import "foo" "bar" (func))
+		(func (export "foo") call 0)
+	    )
+	`)
+	require.NoError(t, err)
+
+	module, err := NewModule(engine, wasm)
+	require.NoError(t, err)
+	instance, err := linker.Instantiate(store, module)
+	require.NoError(t, err)
+	foo := instance.GetFunc(store, "foo")
+	require.NotNil(t, foo)
+	require.PanicsWithValue(t, "hi", func() {
+		foo.Call(store)
+	})
+}
+
+func TestPanicInHostFunctionDuringCallWithCaller(t *testing.T) {
+	engine := NewEngine()
+	linker := NewLinker(engine)
+	store := NewStore(engine)
+	err := linker.FuncWrap("foo", "bar", func(c *Caller) int32 {
+		panic("hi")
+	})
+	require.NoError(t, err)
+
+	wasm, err := Wat2Wasm(`
+	    (module
+		(import "foo" "bar" (func (result i32)))
+		(func (export "foo") call 0 drop)
+	    )
+	`)
+	require.NoError(t, err)
+
+	module, err := NewModule(engine, wasm)
+	require.NoError(t, err)
+	instance, err := linker.Instantiate(store, module)
+	require.NoError(t, err)
+	foo := instance.GetFunc(store, "foo")
+	require.NotNil(t, foo)
+	require.PanicsWithValue(t, "hi", func() {
+		foo.Call(store)
+	})
+}
