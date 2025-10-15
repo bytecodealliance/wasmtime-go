@@ -93,7 +93,7 @@ func ExampleConfig_fuel() {
 // Small example of how you can interrupt the execution of a wasm module to
 // ensure that it doesn't run for too long.
 func ExampleConfig_interrupt() {
-	// Enable interruptable code via `Config` and then create an interrupt
+	// Enable interruptible code via `Config` and then create an interrupt
 	// handle which we'll use later to interrupt running code.
 	config := wasmtime.NewConfig()
 	config.SetEpochInterruption(true)
