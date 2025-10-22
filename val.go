@@ -99,7 +99,7 @@ func mkVal(store Storelike, src *C.wasmtime_val_t) Val {
 
 func takeVal(store Storelike, src *C.wasmtime_val_t) Val {
 	ret := mkVal(store, src)
-	C.wasmtime_val_unroot(store.Context(), src)
+	C.wasmtime_val_unroot(src)
 	runtime.KeepAlive(store)
 	return ret
 }

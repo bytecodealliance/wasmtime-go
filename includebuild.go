@@ -12,12 +12,12 @@ import (
 	// included in vendored dependencies.
 	// Cf. https://github.com/golang/go/issues/26366
 
-	_ "github.com/bytecodealliance/wasmtime-go/v37/build/include"
-	_ "github.com/bytecodealliance/wasmtime-go/v37/build/include/wasmtime"
-	_ "github.com/bytecodealliance/wasmtime-go/v37/build/include/wasmtime/component"
-	_ "github.com/bytecodealliance/wasmtime-go/v37/build/linux-aarch64"
-	_ "github.com/bytecodealliance/wasmtime-go/v37/build/linux-x86_64"
-	_ "github.com/bytecodealliance/wasmtime-go/v37/build/macos-aarch64"
-	_ "github.com/bytecodealliance/wasmtime-go/v37/build/macos-x86_64"
-	_ "github.com/bytecodealliance/wasmtime-go/v37/build/windows-x86_64"
+	_ "github.com/bytecodealliance/wasmtime-go/v38/build/include"
+	_ "github.com/bytecodealliance/wasmtime-go/v38/build/include/wasmtime"
+	_ "github.com/bytecodealliance/wasmtime-go/v38/build/include/wasmtime/component"
+	_ "github.com/bytecodealliance/wasmtime-go/v38/build/linux-aarch64"
+	_ "github.com/bytecodealliance/wasmtime-go/v38/build/linux-x86_64"
+	_ "github.com/bytecodealliance/wasmtime-go/v38/build/macos-aarch64"
+	_ "github.com/bytecodealliance/wasmtime-go/v38/build/macos-x86_64"
+	_ "github.com/bytecodealliance/wasmtime-go/v38/build/windows-x86_64"
 )

@@ -27,7 +27,7 @@ func NewGlobal(
 		&raw_val,
 		&ret,
 	)
-	C.wasmtime_val_unroot(store.Context(), &raw_val)
+	C.wasmtime_val_unroot(&raw_val)
 	runtime.KeepAlive(store)
 	runtime.KeepAlive(ty)
 	if err != nil {
@@ -61,7 +61,7 @@ func (g *Global) Set(store Storelike, val Val) error {
 	var raw_val C.wasmtime_val_t
 	val.initialize(store, &raw_val)
 	err := C.wasmtime_global_set(store.Context(), &g.val, &raw_val)
-	C.wasmtime_val_unroot(store.Context(), &raw_val)
+	C.wasmtime_val_unroot(&raw_val)
 	runtime.KeepAlive(store)
 	if err == nil {
 		return nil

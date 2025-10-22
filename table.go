@@ -26,7 +26,7 @@ func NewTable(store Storelike, ty *TableType, init Val) (*Table, error) {
 	var raw_val C.wasmtime_val_t
 	init.initialize(store, &raw_val)
 	err := C.wasmtime_table_new(store.Context(), ty.ptr(), &raw_val, &ret)
-	C.wasmtime_val_unroot(store.Context(), &raw_val)
+	C.wasmtime_val_unroot(&raw_val)
 	runtime.KeepAlive(store)
 	runtime.KeepAlive(ty)
 	if err != nil {
@@ -56,7 +56,7 @@ func (t *Table) Grow(store Storelike, delta uint64, init Val) (uint64, error) {
 	var raw_val C.wasmtime_val_t
 	init.initialize(store, &raw_val)
 	err := C.wasmtime_table_grow(store.Context(), &t.val, C.uint64_t(delta), &raw_val, &prev)
-	C.wasmtime_val_unroot(store.Context(), &raw_val)
+	C.wasmtime_val_unroot(&raw_val)
 	runtime.KeepAlive(store)
 	if err != nil {
 		return 0, mkError(err)
@@ -87,7 +87,7 @@ func (t *Table) Set(store Storelike, idx uint64, val Val) error {
 	var raw_val C.wasmtime_val_t
 	val.initialize(store, &raw_val)
 	err := C.wasmtime_table_set(store.Context(), &t.val, C.uint64_t(idx), &raw_val)
-	C.wasmtime_val_unroot(store.Context(), &raw_val)
+	C.wasmtime_val_unroot(&raw_val)
 	runtime.KeepAlive(store)
 	if err != nil {
 		return mkError(err)
