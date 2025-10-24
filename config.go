@@ -186,7 +186,7 @@ func (cfg *Config) SetMacOSUseMachPorts(enabled bool) {
 	runtime.KeepAlive(cfg)
 }
 
-// SetMemoryInitCOWSet Configures whether copy-on-write memory-mapped data is used to initialize a linear memory.
+// SetMemoryInitCOWSet configures whether copy-on-write memory-mapped data is used to initialize a linear memory.
 //
 // Initializing linear memory via a copy-on-write mapping can drastically improve instantiation costs of a
 // WebAssembly module because copying memory is deferred. Additionally if a page of memory is only ever read from

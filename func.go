@@ -471,7 +471,7 @@ func (f *Func) AsExtern() C.wasmtime_extern_t {
 
 // GetExport gets an exported item from the caller's module.
 //
-// May return `nil` if the export doesn't, if it's not a memory, if there isn't
+// May return `nil` if the export doesn't exist, if it's not a memory, if there isn't
 // a caller, etc.
 func (c *Caller) GetExport(name string) *Extern {
 	if c.ptr == nil {

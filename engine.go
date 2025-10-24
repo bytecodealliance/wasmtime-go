@@ -46,7 +46,7 @@ func NewEngineWithConfig(config *Config) *Engine {
 // guarantees about finalizers especially in terms of timing. Additionally the
 // Go GC is not aware of the full weight of an engine because it holds onto
 // allocations in Wasmtime not tracked by the Go GC. For these reasons, it's
-// recommended to where possible explicitly call this method and deallocate an
+// recommended to, where possible, explicitly call this method and deallocate an
 // engine to avoid relying on the Go GC.
 //
 // This method will deallocate Wasmtime-owned state. Future use of the engine
