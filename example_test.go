@@ -765,3 +765,77 @@ func Example_gcd() {
 	fmt.Printf("gcd(6, 27) = %d\n", result.(int32))
 	// Output: gcd(6, 27) = 3
 }
+
+type sessionData struct {
+	request_id int32
+}
+
+// An example of using [NewStoreWithData] to associate arbitrary data with a [Store], accessible in
+// a callback function via [Caller.Data]
+func Example_storedata() {
+	// First, create an engine. This'll hold our linker and compiled module.
+	engine := wasmtime.NewEngine()
+
+	// Create our wasm module in text format (wat)
+	wasm, err := wasmtime.Wat2Wasm(`
+	(module
+	  (import "" "hello" (func $hello (param i32)))
+	  (import "session" "get_request_id" (func $get_req_id (result i32)))
+	  (func (export "run")
+	    (call $hello (call $get_req_id))
+	  )
+	)
+	`)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Once we have our binary `wasm` we can compile that into a `*Module`
+	// which represents compiled JIT code.
+	module, err := wasmtime.NewModule(engine, wasm)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Our wasm module imports two functions, which we're going to implement on the linker.
+	linker := wasmtime.NewLinker(engine)
+
+	// Implement host function session::get_request_id
+	linker.FuncWrap("session", "get_request_id", func(c *wasmtime.Caller) int32 {
+		data := c.Data().(*sessionData)
+		return data.request_id
+	})
+
+	// Implement host function ::hello
+	linker.FuncWrap("", "hello", func(arg0 int32) {
+		fmt.Printf("Hello request %d\n", arg0)
+	})
+
+	// Now, we're going to create 5 instances of our module using this linker, and each instance
+	// will have its own request id.
+	for i := 0; i < 5; i++ {
+		store := wasmtime.NewStoreWithData(engine, &sessionData{
+			request_id: int32(i),
+		})
+
+		instance, err := linker.Instantiate(store, module)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// After we've instantiated we can lookup our `run` function and call
+		// it.
+		run := instance.GetFunc(store, "run")
+		_, err = run.Call(store)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	// Output:
+	// Hello request 0
+	// Hello request 1
+	// Hello request 2
+	// Hello request 3
+	// Hello request 4
+}

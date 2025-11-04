@@ -125,8 +125,14 @@ func TestLinkerFuncs(t *testing.T) {
 	engine := NewEngine()
 	linker := NewLinker(engine)
 	var called int
-	err := linker.FuncWrap("foo", "bar", func() {
+	var callers []string
+	err := linker.FuncWrap("foo", "bar", func(c *Caller) {
 		called += 1
+
+		data := c.Data()
+		if data != nil {
+			callers = append(callers, data.(string))
+		}
 	})
 	require.NoError(t, err)
 
@@ -141,9 +147,10 @@ func TestLinkerFuncs(t *testing.T) {
 	module, err := NewModule(engine, wasm)
 	require.NoError(t, err)
 
-	_, err = linker.Instantiate(NewStore(engine), module)
+	_, err = linker.Instantiate(NewStoreWithData(engine, "one"), module)
 	require.NoError(t, err)
 	require.Equal(t, 1, called, "expected a call")
+	require.Equal(t, []string{"one"}, callers)
 
 	_, err = linker.Instantiate(NewStore(engine), module)
 	require.NoError(t, err)
@@ -151,6 +158,11 @@ func TestLinkerFuncs(t *testing.T) {
 
 	cb := func(caller *Caller, args []Val) ([]Val, *Trap) {
 		called += 2
+		data := caller.Data()
+		if data != nil {
+			callers = append(callers, data.(string))
+		}
+
 		return []Val{}, nil
 	}
 	ty := NewFuncType([]*ValType{}, []*ValType{})
@@ -158,9 +170,10 @@ func TestLinkerFuncs(t *testing.T) {
 	err = linker.FuncNew("foo", "bar", ty, cb)
 	require.NoError(t, err)
 
-	_, err = linker.Instantiate(NewStore(engine), module)
+	_, err = linker.Instantiate(NewStoreWithData(engine, "two"), module)
 	require.NoError(t, err)
 	require.Equal(t, 4, called, "expected a call")
+	require.Equal(t, []string{"one", "two"}, callers)
 
 	_, err = linker.Instantiate(NewStore(engine), module)
 	require.NoError(t, err)

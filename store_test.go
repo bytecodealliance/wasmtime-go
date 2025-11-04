@@ -101,3 +101,59 @@ func TestLimiterMemorySizeSuccess(t *testing.T) {
 	_, err = NewInstance(store, module, []AsExtern{})
 	require.NoError(t, err)
 }
+
+type embeddedStoreData []string
+
+type testStoreData struct {
+	s string
+	i int32
+
+	m   map[string]any
+	ptr *embeddedStoreData
+
+	inline struct {
+		foo string
+	}
+}
+
+func TestStoreData(t *testing.T) {
+	embedded := embeddedStoreData{"what", "ever"}
+	data := &testStoreData{
+		s: "foobar",
+		i: 42,
+		m: map[string]any{
+			"intval":    42,
+			"stringval": "hello",
+		},
+		ptr:    &embedded,
+		inline: struct{ foo string }{"bar"},
+	}
+
+	engine := NewEngine()
+	store := NewStoreWithData(engine, data)
+	wasm, err := Wat2Wasm(`
+	  (module
+	  	(func $f1 (import "" "f1"))
+		(func (export "run") (call $f1))
+      )
+	`)
+	require.NoError(t, err)
+
+	module, err := NewModule(store.Engine, wasm)
+	require.NoError(t, err)
+
+	called := false
+	f := WrapFunc(store, func(c *Caller) {
+		t.Helper()
+		called = true
+		sd, ok := c.Data().(*testStoreData)
+		require.True(t, ok)
+		require.Equal(t, data, sd)
+	})
+
+	instance, err := NewInstance(store, module, []AsExtern{f})
+
+	_, err = instance.GetFunc(store, "run").Call(store)
+	require.NoError(t, err)
+	require.True(t, called, "expected wrapped func to be called")
+}
