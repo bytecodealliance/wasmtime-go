@@ -2,6 +2,7 @@ package wasmtime
 
 // #include "shims.h"
 import "C"
+
 import (
 	"errors"
 	"reflect"
@@ -459,7 +460,6 @@ func (f *Func) Call(store Storelike, args ...interface{}) (interface{}, error) {
 		}
 		return results, nil
 	}
-
 }
 
 // Implementation of the `AsExtern` interface for `Func`
@@ -490,7 +490,6 @@ func (c *Caller) GetExport(name string) *Extern {
 		return mkExtern(&ret)
 	}
 	return nil
-
 }
 
 // Implementation of the `Storelike` interface for `Caller`.
@@ -499,6 +498,16 @@ func (c *Caller) Context() *C.wasmtime_context_t {
 		panic("cannot use caller after host function returns")
 	}
 	return C.wasmtime_caller_context(c.ptr)
+}
+
+// Implementation of [Storelike.Data] for [Caller]
+// See [Store.Data] and [NewStoreWithData] for more.
+func (c *Caller) Data() interface{} {
+	if c.ptr == nil {
+		panic("cannot use caller after host function returns")
+	}
+
+	return getDataInStore(c).data
 }
 
 // Shim function that's expected to wrap any invocations of WebAssembly from Go

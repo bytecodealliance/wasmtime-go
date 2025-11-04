@@ -3,6 +3,7 @@ package wasmtime
 // #include <wasmtime.h>
 // #include "shims.h"
 import "C"
+
 import (
 	"reflect"
 	"runtime"
@@ -29,11 +30,19 @@ type Store struct {
 type Storelike interface {
 	// Returns the wasmtime context pointer this store is attached to.
 	Context() *C.wasmtime_context_t
+
+	// Arbitrary data attached to the store. Embedders should cast this into an appropriate domain
+	// specific type.
+	// Note that this will return nil for a [Store] created with [NewStore]. Use [NewStoreWithData]
+	// to use this method.
+	Data() interface{}
 }
 
-var gStoreLock sync.Mutex
-var gStoreMap = make(map[int]*storeData)
-var gStoreSlab slab
+var (
+	gStoreLock sync.Mutex
+	gStoreMap  = make(map[int]*storeData)
+	gStoreSlab slab
+)
 
 // State associated with a `Store`, currently used to propagate panic
 // information through invocations as well as store Go closures that have been
@@ -43,6 +52,9 @@ type storeData struct {
 	funcNew   []funcNewEntry
 	funcWrap  []funcWrapEntry
 	lastPanic interface{}
+
+	// arbitrary data supplied by the embedder
+	data interface{}
 }
 
 type funcNewEntry struct {
@@ -56,11 +68,17 @@ type funcWrapEntry struct {
 
 // NewStore creates a new `Store` from the configuration provided in `engine`
 func NewStore(engine *Engine) *Store {
+	return NewStoreWithData(engine, nil)
+}
+
+// NewStoreWithData creates a new [Store] from engine and associates data with it.
+// Embedders can access data via [Storelike.Data]
+func NewStoreWithData(engine *Engine, data interface{}) *Store {
 	// Allocate an index for this store and allocate some internal data to go with
 	// the store.
 	gStoreLock.Lock()
 	idx := gStoreSlab.allocate()
-	gStoreMap[idx] = &storeData{engine: engine}
+	gStoreMap[idx] = &storeData{engine: engine, data: data}
 	gStoreLock.Unlock()
 
 	ptr := C.go_store_new(engine.ptr(), C.size_t(idx))
@@ -139,6 +157,12 @@ func (store *Store) Context() *C.wasmtime_context_t {
 	return ret
 }
 
+// Data returns arbitrary data attached to [Store] via [NewStoreWithData].
+// If [Store] was created with [NewStore], this function returns nil.
+func (store *Store) Data() interface{} {
+	return getDataInStore(store).data
+}
+
 // SetEpochDeadline will configure the relative deadline, from the current
 // engine's epoch number, after which wasm code will be interrupted.
 func (store *Store) SetEpochDeadline(deadline uint64) {
@@ -155,11 +179,13 @@ func getDataInStore(store Storelike) *storeData {
 	return gStoreMap[int(data)]
 }
 
-var gEngineFuncLock sync.Mutex
-var gEngineFuncNew = make(map[int]*funcNewEntry)
-var gEngineFuncNewSlab slab
-var gEngineFuncWrap = make(map[int]*funcWrapEntry)
-var gEngineFuncWrapSlab slab
+var (
+	gEngineFuncLock     sync.Mutex
+	gEngineFuncNew      = make(map[int]*funcNewEntry)
+	gEngineFuncNewSlab  slab
+	gEngineFuncWrap     = make(map[int]*funcWrapEntry)
+	gEngineFuncWrapSlab slab
+)
 
 func insertFuncNew(data *storeData, ty *FuncType, callback func(*Caller, []Val) ([]Val, *Trap)) int {
 	var idx int
@@ -206,7 +232,6 @@ func insertFuncWrap(data *storeData, callback reflect.Value) int {
 		idx = (idx << 1) | 1
 	}
 	return idx
-
 }
 
 func (data *storeData) getFuncWrap(idx int) *funcWrapEntry {
@@ -230,7 +255,6 @@ func goFinalizeFuncNew(env unsafe.Pointer) {
 	defer gEngineFuncLock.Unlock()
 	delete(gEngineFuncNew, idx)
 	gEngineFuncNewSlab.deallocate(idx)
-
 }
 
 //export goFinalizeFuncWrap
