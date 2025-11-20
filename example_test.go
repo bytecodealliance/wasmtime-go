@@ -422,7 +422,8 @@ func ExampleMemory() {
 
 	// Finally we can also create standalone memories to get imported by
 	// wasm modules too.
-	memorytype := wasmtime.NewMemoryType(5, true, 5, false)
+	memorytype, err := wasmtime.NewMemoryType(5, true, 5, false)
+	assert(err == nil)
 	memory2, err := wasmtime.NewMemory(store, memorytype)
 	assert(err == nil)
 	assert(memory2.Size(store) == 5)
