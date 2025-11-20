@@ -19,12 +19,18 @@ type MemoryType struct {
 //
 // Note that this will create a 32-bit memory type, the default outside of the
 // memory64 proposal.
-func NewMemoryType(min uint32, has_max bool, max uint32, shared bool) *MemoryType {
+func NewMemoryType(min uint32, has_max bool, max uint32, shared bool) (*MemoryType, error) {
 	if min > (1<<16) || max > (1<<16) {
 		panic("provided sizes are too large")
 	}
-	ptr := C.wasmtime_memorytype_new(C.uint64_t(min), C._Bool(has_max), C.uint64_t(max), false, C._Bool(shared))
-	return mkMemoryType(ptr, nil)
+	var ptr *C.wasm_memorytype_t
+	page_size_log2 := C.uint8_t(16)
+	err := C.wasmtime_memorytype_new(C.uint64_t(min), C._Bool(has_max), C.uint64_t(max), false, C._Bool(shared), page_size_log2, &ptr)
+	if err != nil {
+		return nil, mkError(err)
+
+	}
+	return mkMemoryType(ptr, nil), nil
 }
 
 // NewMemoryType64 creates a new 64-bit `MemoryType` with the provided limits
@@ -34,12 +40,17 @@ func NewMemoryType(min uint32, has_max bool, max uint32, shared bool) *MemoryTyp
 // `max` is used as the maximum size of memory, in wasm pages.
 //
 // Note that 64-bit memories are part of the memory64 WebAssembly proposal.
-func NewMemoryType64(min uint64, has_max bool, max uint64, shared bool) *MemoryType {
+func NewMemoryType64(min uint64, has_max bool, max uint64, shared bool) (*MemoryType, error) {
 	if min > (1<<48) || max > (1<<48) {
 		panic("provided sizes are too large")
 	}
-	ptr := C.wasmtime_memorytype_new(C.uint64_t(min), C._Bool(has_max), C.uint64_t(max), true, C._Bool(shared))
-	return mkMemoryType(ptr, nil)
+	var ptr *C.wasm_memorytype_t
+	page_size_log2 := C.uint8_t(16)
+	err := C.wasmtime_memorytype_new(C.uint64_t(min), C._Bool(has_max), C.uint64_t(max), true, C._Bool(shared), page_size_log2, &ptr)
+	if err != nil {
+		return nil, mkError(err)
+	}
+	return mkMemoryType(ptr, nil), nil
 }
 
 func mkMemoryType(ptr *C.wasm_memorytype_t, owner interface{}) *MemoryType {
