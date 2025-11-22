@@ -15,6 +15,8 @@ import (
 	_ "github.com/bytecodealliance/wasmtime-go/v39/build/include"
 	_ "github.com/bytecodealliance/wasmtime-go/v39/build/include/wasmtime"
 	_ "github.com/bytecodealliance/wasmtime-go/v39/build/include/wasmtime/component"
+	_ "github.com/bytecodealliance/wasmtime-go/v39/build/include/wasmtime/component/types"
+	_ "github.com/bytecodealliance/wasmtime-go/v39/build/include/wasmtime/types"
 	_ "github.com/bytecodealliance/wasmtime-go/v39/build/linux-aarch64"
 	_ "github.com/bytecodealliance/wasmtime-go/v39/build/linux-x86_64"
 	_ "github.com/bytecodealliance/wasmtime-go/v39/build/macos-aarch64"
