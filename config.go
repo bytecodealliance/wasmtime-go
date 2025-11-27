@@ -161,7 +161,7 @@ func (cfg *Config) SetParallelCompilation(enabled bool) {
 	runtime.KeepAlive(cfg)
 }
 
-// SetCraneliftNanCanonicalization configures whether whether Cranelift should perform a
+// SetCraneliftNanCanonicalization configures whether Cranelift should perform a
 // NaN-canonicalization pass.
 //
 // When Cranelift is used as a code generation backend this will configure it to replace NaNs with a single
