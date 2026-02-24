@@ -44,7 +44,7 @@ func TestTrapFrames(t *testing.T) {
     2:     0x1c - <unknown>!<wasm function 0>
 
 Caused by:
-    wasm trap: wasm ` + "`unreachable` instruction executed"
+    wasm trap: wasm ` + "`unreachable` instruction executed\n"
 
 	require.Equal(t, expected, trap.Error())
 	code := trap.Code()
