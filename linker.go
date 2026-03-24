@@ -211,6 +211,44 @@ func (l *Linker) DefineWasi() error {
 	return mkError(err)
 }
 
+// DefineUnknownImportsAsTraps defines all otherwise-missing imports of the
+// module as functions that immediately trap.
+//
+// Returns an error if the imports could not be defined.
+func (l *Linker) DefineUnknownImportsAsTraps(module *Module) error {
+	err := C.wasmtime_linker_define_unknown_imports_as_traps(
+		l.ptr(),
+		module.ptr(),
+	)
+	runtime.KeepAlive(l)
+	runtime.KeepAlive(module)
+	if err == nil {
+		return nil
+	}
+
+	return mkError(err)
+}
+
+// DefineUnknownImportsAsDefaultValues defines all otherwise-missing imports of
+// the module as values that return the default for their type.
+//
+// Returns an error if the imports could not be defined.
+func (l *Linker) DefineUnknownImportsAsDefaultValues(store Storelike, module *Module) error {
+	err := C.wasmtime_linker_define_unknown_imports_as_default_values(
+		l.ptr(),
+		store.Context(),
+		module.ptr(),
+	)
+	runtime.KeepAlive(l)
+	runtime.KeepAlive(store)
+	runtime.KeepAlive(module)
+	if err == nil {
+		return nil
+	}
+
+	return mkError(err)
+}
+
 // Instantiate instantiates a module with all imports defined in this linker.
 //
 // Returns an error if the instance's imports couldn't be satisfied, had the
