@@ -21,6 +21,7 @@ func TestConfig(t *testing.T) {
 	NewConfig().SetWasmTailCall(true)
 	NewConfig().SetWasmFunctionReferences(true)
 	NewConfig().SetWasmGC(true)
+	NewConfig().SetGCSupport(true)
 	NewConfig().SetWasmComponentModel(true)
 	NewConfig().SetWasmWideArithmetic(true)
 	NewConfig().SetConsumeFuel(true)
