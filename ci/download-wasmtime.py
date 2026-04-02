@@ -1,6 +1,7 @@
 # Helper script to download a precompiled binary of the wasmtime dll for the
 # current platform. Currently always downloads the dev release of wasmtime.
 
+import argparse
 import urllib.request
 import zipfile
 import tarfile
@@ -9,6 +10,10 @@ import os
 import shutil
 import glob
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--min', action='store_true',
+                    help='Download the minimal runtime library instead of the full one')
+args = parser.parse_args()
 
 version = 'v43.0.0'
 urls = [
@@ -50,7 +55,8 @@ for i, arr in enumerate(urls):
     if i == 0:
         shutil.copytree(src + '/include', 'build/include', dirs_exist_ok=True)
 
-    shutil.copytree(src + '/lib', 'build/' + dirname, dirs_exist_ok=True)
+    lib_src = src + '/min/lib' if args.min else src + '/lib'
+    shutil.copytree(lib_src, 'build/' + dirname, dirs_exist_ok=True)
     shutil.rmtree(src)
 
 for dylib in glob.glob("build/**/*.dll"):

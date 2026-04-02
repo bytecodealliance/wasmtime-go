@@ -72,6 +72,10 @@ jobs:
       shell: bash
       run: ./ci/test-vendoring.sh
       if: runner.os != 'Windows'
+    - name: Test the minimal runtime
+      shell: bash
+      run: ./ci/test-minimal-runtime/test.sh
+      if: runner.os != 'Windows'
 
   coverage:
     runs-on: ubuntu-latest

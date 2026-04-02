@@ -136,19 +136,6 @@ func (store *Store) GC() {
 	runtime.KeepAlive(store)
 }
 
-// SetWasi will configure the WASI state to use for instances within this
-// `Store`.
-//
-// The `wasi` argument cannot be reused for another `Store`, it's consumed by
-// this function.
-func (store *Store) SetWasi(wasi *WasiConfig) {
-	runtime.SetFinalizer(wasi, nil)
-	ptr := wasi.ptr()
-	wasi._ptr = nil
-	C.wasmtime_context_set_wasi(store.Context(), ptr)
-	runtime.KeepAlive(store)
-}
-
 // Implementation of the `Storelike` interface
 func (store *Store) Context() *C.wasmtime_context_t {
 	ret := C.wasmtime_store_context(store.ptr())
