@@ -15,7 +15,7 @@ parser.add_argument('--min', action='store_true',
                     help='Download the minimal runtime library instead of the full one')
 args = parser.parse_args()
 
-version = 'v43.0.0'
+version = 'v44.0.0'
 urls = [
     ['wasmtime-{}-x86_64-mingw-c-api.zip', 'windows-x86_64'],
     ['wasmtime-{}-x86_64-linux-c-api.tar.xz', 'linux-x86_64'],

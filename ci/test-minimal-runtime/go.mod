@@ -3,7 +3,7 @@ module test-minimal-runtime
 go 1.18
 
 require (
-	github.com/bytecodealliance/wasmtime-go/v43 v43.0.0
+	github.com/bytecodealliance/wasmtime-go/v44 v44.0.0
 	github.com/stretchr/testify v1.8.0
 )
 
@@ -14,4 +14,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/bytecodealliance/wasmtime-go/v43 => ../../
+replace github.com/bytecodealliance/wasmtime-go/v44 => ../../
