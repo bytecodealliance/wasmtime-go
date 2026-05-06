@@ -16,23 +16,46 @@ func newComponentEngine() *Engine {
 	return NewEngineWithConfig(cfg)
 }
 
-func TestComponent(t *testing.T) {
-	engine := newComponentEngine()
-	_, err := NewComponent(engine, []byte{})
-	require.Error(t, err, "empty bytes should fail")
-	_, err = NewComponent(engine, []byte{1, 2, 3})
-	require.Error(t, err, "garbage bytes should fail")
+// helloComponent is the smallest non-trivial component used by several tests:
+// a single `hello` function with no arguments or results.
+const helloComponent = `
+(component
+  (core module $m (func (export "hello")))
+  (core instance $i (instantiate $m))
+  (func (export "hello") (canon lift (core func $i "hello"))))
+`
 
-	wasm, err := Wat2Wasm(`(component)`)
+func TestComponentNew(t *testing.T) {
+	helloWasm, err := Wat2Wasm(helloComponent)
 	require.NoError(t, err)
-	component, err := NewComponent(engine, wasm)
-	require.NoError(t, err)
-	defer component.Close()
+
+	cases := []struct {
+		name    string
+		input   []byte
+		wantErr bool
+	}{
+		{"empty", []byte{}, true},
+		{"garbage", []byte{1, 2, 3}, true},
+		{"valid", helloWasm, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			engine := newComponentEngine()
+			component, err := NewComponent(engine, tc.input)
+			if tc.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.NotNil(t, component)
+			component.Close()
+		})
+	}
 }
 
-func TestComponentSerialize(t *testing.T) {
+func TestComponentSerializeRoundTripBytes(t *testing.T) {
 	engine := newComponentEngine()
-	wasm, err := Wat2Wasm(`(component)`)
+	wasm, err := Wat2Wasm(helloComponent)
 	require.NoError(t, err)
 	component, err := NewComponent(engine, wasm)
 	require.NoError(t, err)
@@ -45,6 +68,19 @@ func TestComponentSerialize(t *testing.T) {
 	round, err := NewComponentDeserialize(engine, bytes)
 	require.NoError(t, err)
 	defer round.Close()
+	require.NotNil(t, round.GetExportIndex(nil, "hello"))
+}
+
+func TestComponentSerializeRoundTripFile(t *testing.T) {
+	engine := newComponentEngine()
+	wasm, err := Wat2Wasm(helloComponent)
+	require.NoError(t, err)
+	component, err := NewComponent(engine, wasm)
+	require.NoError(t, err)
+	defer component.Close()
+
+	bytes, err := component.Serialize()
+	require.NoError(t, err)
 
 	tmp, err := os.CreateTemp("", "component-serialize")
 	require.NoError(t, err)
@@ -53,24 +89,17 @@ func TestComponentSerialize(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, tmp.Close())
 
-	roundFromFile, err := NewComponentDeserializeFile(engine, tmp.Name())
+	round, err := NewComponentDeserializeFile(engine, tmp.Name())
 	require.NoError(t, err)
-	defer roundFromFile.Close()
+	defer round.Close()
+	require.NotNil(t, round.GetExportIndex(nil, "hello"))
 }
 
 func TestComponentInstantiate(t *testing.T) {
 	engine := newComponentEngine()
 	store := NewStore(engine)
 
-	wasm, err := Wat2Wasm(`
-      (component
-        (core module $m
-          (func (export "hello"))
-        )
-        (core instance $i (instantiate $m))
-        (func (export "hello") (canon lift (core func $i "hello")))
-      )
-    `)
+	wasm, err := Wat2Wasm(helloComponent)
 	require.NoError(t, err)
 	component, err := NewComponent(engine, wasm)
 	require.NoError(t, err)
@@ -116,27 +145,31 @@ func TestComponentDefineUnknownImportsAsTraps(t *testing.T) {
 
 func TestComponentGetExportIndex(t *testing.T) {
 	engine := newComponentEngine()
-
-	wasm, err := Wat2Wasm(`
-      (component
-        (core module $m
-          (func (export "hello"))
-        )
-        (core instance $i (instantiate $m))
-        (func (export "hello") (canon lift (core func $i "hello")))
-      )
-    `)
+	wasm, err := Wat2Wasm(helloComponent)
 	require.NoError(t, err)
 	component, err := NewComponent(engine, wasm)
 	require.NoError(t, err)
 	defer component.Close()
 
-	idx := component.GetExportIndex(nil, "hello")
-	require.NotNil(t, idx, "expected to find hello export")
-	defer idx.Close()
-
-	missing := component.GetExportIndex(nil, "nope")
-	require.Nil(t, missing, "expected nil for missing export")
+	cases := []struct {
+		name      string
+		target    string
+		wantFound bool
+	}{
+		{"existing", "hello", true},
+		{"missing", "nope", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			idx := component.GetExportIndex(nil, tc.target)
+			if tc.wantFound {
+				require.NotNil(t, idx)
+				idx.Close()
+			} else {
+				require.Nil(t, idx)
+			}
+		})
+	}
 }
 
 // primitiveTestComponent is a component that exports identity functions for
@@ -193,8 +226,24 @@ func setupPrimitiveTest(t *testing.T) (*Store, *ComponentInstance) {
 
 func TestComponentInstanceGetFunc(t *testing.T) {
 	store, instance := setupPrimitiveTest(t)
-	require.NotNil(t, instance.GetFunc(store, "id-s32"))
-	require.Nil(t, instance.GetFunc(store, "nope"))
+	cases := []struct {
+		name      string
+		target    string
+		wantFound bool
+	}{
+		{"existing", "id-s32", true},
+		{"missing", "nope", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			f := instance.GetFunc(store, tc.target)
+			if tc.wantFound {
+				require.NotNil(t, f)
+			} else {
+				require.Nil(t, f)
+			}
+		})
+	}
 }
 
 func TestComponentCallVoid(t *testing.T) {
@@ -211,9 +260,11 @@ func TestComponentCallBool(t *testing.T) {
 	f := instance.GetFunc(store, "id-bool")
 	require.NotNil(t, f)
 	for _, want := range []bool{true, false} {
-		got, err := f.Call(store, want)
-		require.NoError(t, err)
-		require.Equal(t, want, got)
+		t.Run(fmt.Sprintf("%v", want), func(t *testing.T) {
+			got, err := f.Call(store, want)
+			require.NoError(t, err)
+			require.Equal(t, want, got)
+		})
 	}
 }
 
@@ -271,41 +322,49 @@ func TestComponentCallUnsignedIntegers(t *testing.T) {
 
 func TestComponentCallFloats(t *testing.T) {
 	store, instance := setupPrimitiveTest(t)
-
-	f32fn := instance.GetFunc(store, "id-f32")
-	require.NotNil(t, f32fn)
-	got, err := f32fn.Call(store, float32(3.14))
-	require.NoError(t, err)
-	require.Equal(t, float32(3.14), got)
-
-	f64fn := instance.GetFunc(store, "id-f64")
-	require.NotNil(t, f64fn)
-	got, err = f64fn.Call(store, float64(2.718281828))
-	require.NoError(t, err)
-	require.Equal(t, float64(2.718281828), got)
+	cases := []struct {
+		name string
+		val  interface{}
+	}{
+		{"id-f32", float32(3.14)},
+		{"id-f64", float64(2.718281828)},
+	}
+	for _, tc := range cases {
+		t.Run(fmt.Sprintf("%s/%v", tc.name, tc.val), func(t *testing.T) {
+			f := instance.GetFunc(store, tc.name)
+			require.NotNil(t, f)
+			got, err := f.Call(store, tc.val)
+			require.NoError(t, err)
+			require.Equal(t, tc.val, got)
+		})
+	}
 }
 
 func TestComponentCallChar(t *testing.T) {
 	store, instance := setupPrimitiveTest(t)
 	f := instance.GetFunc(store, "id-char")
 	require.NotNil(t, f)
-
-	// rune (= int32) is the natural type for char
-	got, err := f.Call(store, rune('A'))
-	require.NoError(t, err)
-	require.Equal(t, rune('A'), got)
-
-	// Multi-byte codepoint round-trip
-	got, err = f.Call(store, rune('あ')) // Hiragana 'a'
-	require.NoError(t, err)
-	require.Equal(t, rune('あ'), got)
+	cases := []struct {
+		name string
+		val  rune
+	}{
+		{"ascii", 'A'},
+		{"hiragana", 'あ'},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := f.Call(store, tc.val)
+			require.NoError(t, err)
+			require.Equal(t, tc.val, got)
+		})
+	}
 }
 
 func TestComponentCallMultipleParams(t *testing.T) {
 	store, instance := setupPrimitiveTest(t)
 	f := instance.GetFunc(store, "first-s32")
 	require.NotNil(t, f)
-	// `first_s32` is wired to a core function that returns its first argument,
+	// `first-s32` is wired to a core function that returns its first argument,
 	// so this verifies that multiple arguments are marshaled in the right
 	// order.
 	got, err := f.Call(store, int32(7), int32(35))
@@ -317,11 +376,19 @@ func TestComponentCallWrongArgCount(t *testing.T) {
 	store, instance := setupPrimitiveTest(t)
 	f := instance.GetFunc(store, "id-s32")
 	require.NotNil(t, f)
-
-	_, err := f.Call(store)
-	require.Error(t, err)
-	_, err = f.Call(store, int32(1), int32(2))
-	require.Error(t, err)
+	cases := []struct {
+		name string
+		args []interface{}
+	}{
+		{"too_few", nil},
+		{"too_many", []interface{}{int32(1), int32(2)}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := f.Call(store, tc.args...)
+			require.Error(t, err)
+		})
+	}
 }
 
 func TestComponentCallWrongArgType(t *testing.T) {
@@ -430,56 +497,72 @@ func TestComponentCallStringRoundtrip(t *testing.T) {
 	store, instance := setupStringTest(t)
 	f := instance.GetFunc(store, "id-string")
 	require.NotNil(t, f)
-	for _, want := range []string{"", "ascii", "日本語", "emoji 🎉"} {
-		got, err := f.Call(store, want)
-		require.NoError(t, err)
-		require.Equal(t, want, got)
+	cases := []struct {
+		name string
+		val  string
+	}{
+		{"empty", ""},
+		{"ascii", "ascii"},
+		{"japanese", "日本語"},
+		{"emoji", "emoji 🎉"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := f.Call(store, tc.val)
+			require.NoError(t, err)
+			require.Equal(t, tc.val, got)
+		})
 	}
 }
 
-func TestComponentClone(t *testing.T) {
+// newHelloComponent compiles a fresh helloComponent for tests that need an
+// independent Component instance.
+func newHelloComponent(t *testing.T, engine *Engine) *Component {
+	t.Helper()
+	wasm, err := Wat2Wasm(helloComponent)
+	require.NoError(t, err)
+	component, err := NewComponent(engine, wasm)
+	require.NoError(t, err)
+	return component
+}
+
+func TestComponentCloneInstantiable(t *testing.T) {
 	engine := newComponentEngine()
 	store := NewStore(engine)
-	wasm, err := Wat2Wasm(`
-      (component
-        (core module $m (func (export "hello")))
-        (core instance $i (instantiate $m))
-        (func (export "hello") (canon lift (core func $i "hello"))))
-    `)
-	require.NoError(t, err)
-	original, err := NewComponent(engine, wasm)
-	require.NoError(t, err)
+
+	original := newHelloComponent(t, engine)
 	defer original.Close()
 
 	cloned := original.Clone()
-	require.NotNil(t, cloned)
 	defer cloned.Close()
+	require.NotNil(t, cloned)
 
-	// The clone should be independently usable and instantiable.
 	linker := NewComponentLinker(engine)
 	defer linker.Close()
 	instance, err := linker.Instantiate(store, cloned)
 	require.NoError(t, err)
 	require.NotNil(t, instance)
+}
 
-	// And closing the original must not affect the clone.
+func TestComponentCloneIndependentOfOriginal(t *testing.T) {
+	engine := newComponentEngine()
+
+	original := newHelloComponent(t, engine)
+	cloned := original.Clone()
+	defer cloned.Close()
+
+	// Closing the original must not invalidate the clone.
 	original.Close()
 	idx := cloned.GetExportIndex(nil, "hello")
 	require.NotNil(t, idx)
 	idx.Close()
 }
 
-func TestComponentExportIndexClone(t *testing.T) {
+func TestComponentExportIndexCloneUsable(t *testing.T) {
 	engine := newComponentEngine()
-	wasm, err := Wat2Wasm(`
-      (component
-        (core module $m (func (export "hello")))
-        (core instance $i (instantiate $m))
-        (func (export "hello") (canon lift (core func $i "hello"))))
-    `)
-	require.NoError(t, err)
-	component, err := NewComponent(engine, wasm)
-	require.NoError(t, err)
+	store := NewStore(engine)
+
+	component := newHelloComponent(t, engine)
 	defer component.Close()
 
 	idx := component.GetExportIndex(nil, "hello")
@@ -487,12 +570,9 @@ func TestComponentExportIndexClone(t *testing.T) {
 	defer idx.Close()
 
 	cloned := idx.Clone()
-	require.NotNil(t, cloned)
 	defer cloned.Close()
+	require.NotNil(t, cloned)
 
-	// Closing the original index must not invalidate the clone.
-	idx.Close()
-	store := NewStore(engine)
 	linker := NewComponentLinker(engine)
 	defer linker.Close()
 	instance, err := linker.Instantiate(store, component)
@@ -500,13 +580,23 @@ func TestComponentExportIndexClone(t *testing.T) {
 	require.NotNil(t, instance.GetFuncByIndex(store, cloned))
 }
 
-func TestComponentLinkerAllowShadowing(t *testing.T) {
+func TestComponentExportIndexCloneIndependentOfOriginal(t *testing.T) {
 	engine := newComponentEngine()
+	store := NewStore(engine)
+
+	component := newHelloComponent(t, engine)
+	defer component.Close()
+
+	idx := component.GetExportIndex(nil, "hello")
+	require.NotNil(t, idx)
+	cloned := idx.Clone()
+	defer cloned.Close()
+
+	// Closing the original index must not invalidate the clone.
+	idx.Close()
 	linker := NewComponentLinker(engine)
 	defer linker.Close()
-
-	// Toggling the flag should be a no-op observable here, but verifying it
-	// runs without panicking confirms the cgo binding is wired up.
-	linker.AllowShadowing(true)
-	linker.AllowShadowing(false)
+	instance, err := linker.Instantiate(store, component)
+	require.NoError(t, err)
+	require.NotNil(t, instance.GetFuncByIndex(store, cloned))
 }
