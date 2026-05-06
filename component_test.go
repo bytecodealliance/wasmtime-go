@@ -546,16 +546,25 @@ func TestComponentCloneInstantiable(t *testing.T) {
 
 func TestComponentCloneIndependentOfOriginal(t *testing.T) {
 	engine := newComponentEngine()
+	store := NewStore(engine)
 
 	original := newHelloComponent(t, engine)
 	cloned := original.Clone()
 	defer cloned.Close()
 
-	// Closing the original must not invalidate the clone.
+	// Closing the original must not invalidate the clone, so the clone
+	// should still be usable end-to-end after the original is gone.
 	original.Close()
-	idx := cloned.GetExportIndex(nil, "hello")
-	require.NotNil(t, idx)
-	idx.Close()
+
+	linker := NewComponentLinker(engine)
+	defer linker.Close()
+	instance, err := linker.Instantiate(store, cloned)
+	require.NoError(t, err)
+	f := instance.GetFunc(store, "hello")
+	require.NotNil(t, f)
+	got, err := f.Call(store)
+	require.NoError(t, err)
+	require.Nil(t, got)
 }
 
 func TestComponentExportIndexCloneUsable(t *testing.T) {
@@ -573,11 +582,17 @@ func TestComponentExportIndexCloneUsable(t *testing.T) {
 	defer cloned.Close()
 	require.NotNil(t, cloned)
 
+	// The clone resolves to the same export, so calling the function it
+	// produces should succeed (hello is `() -> ()`).
 	linker := NewComponentLinker(engine)
 	defer linker.Close()
 	instance, err := linker.Instantiate(store, component)
 	require.NoError(t, err)
-	require.NotNil(t, instance.GetFuncByIndex(store, cloned))
+	f := instance.GetFuncByIndex(store, cloned)
+	require.NotNil(t, f)
+	got, err := f.Call(store)
+	require.NoError(t, err)
+	require.Nil(t, got)
 }
 
 func TestComponentExportIndexCloneIndependentOfOriginal(t *testing.T) {
@@ -592,11 +607,17 @@ func TestComponentExportIndexCloneIndependentOfOriginal(t *testing.T) {
 	cloned := idx.Clone()
 	defer cloned.Close()
 
-	// Closing the original index must not invalidate the clone.
+	// Closing the original index must not invalidate the clone, so the
+	// clone should still resolve to a callable function.
 	idx.Close()
+
 	linker := NewComponentLinker(engine)
 	defer linker.Close()
 	instance, err := linker.Instantiate(store, component)
 	require.NoError(t, err)
-	require.NotNil(t, instance.GetFuncByIndex(store, cloned))
+	f := instance.GetFuncByIndex(store, cloned)
+	require.NotNil(t, f)
+	got, err := f.Call(store)
+	require.NoError(t, err)
+	require.Nil(t, got)
 }
