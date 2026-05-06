@@ -9,6 +9,9 @@ import (
 	"unsafe"
 )
 
+// TODO: expose Component.Type() (wasmtime_component_type) and the surrounding
+// type-reflection API once the composite WIT type representation is decided.
+
 // Component is a compiled WebAssembly component, the binary representation of
 // a component-model artifact. Components are instantiated through a
 // [ComponentLinker].

@@ -78,6 +78,13 @@ func (l *ComponentLinker) DefineUnknownImportsAsTraps(component *Component) erro
 	return nil
 }
 
+// TODO: expose ComponentLinker.Root() and the LinkerInstance type so host
+// functions, modules, and resources can be defined. The C API has an
+// "exclusive access" requirement on the parent linker while a
+// LinkerInstance is alive; mirror that with a locking flag (see
+// wasmtime-py's `Linker.locked` for the reference pattern).
+// TODO: WASIp2 / wasi:http integration via `wasmtime_component_linker_add_*`.
+
 // Close deallocates this linker's state explicitly.
 //
 // For more information see the documentation for engine.Close().

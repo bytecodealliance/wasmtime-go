@@ -43,6 +43,12 @@ func mkComponentFunc(val C.wasmtime_component_func_t) *ComponentFunc {
 // only supports zero or one result, so multi-value returns are represented as
 // a tuple at the WIT level (and are unsupported here for now).
 func (f *ComponentFunc) Call(store Storelike, args ...interface{}) (interface{}, error) {
+	// The function's type is consulted internally to know the expected kinds
+	// of each parameter (so that primitives like int32 vs rune can be routed
+	// to s32 vs char correctly). A public type-reflection API is intentionally
+	// not exposed yet; that will come together with composite-type support.
+	// TODO: expose a public Type API (ComponentType / ComponentValType / ...)
+	// once the composite-type representation is settled.
 	fty := C.wasmtime_component_func_type(&f.val, store.Context())
 	runtime.KeepAlive(store)
 	if fty == nil {

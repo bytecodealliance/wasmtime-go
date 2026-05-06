@@ -151,6 +151,11 @@ func componentMarshalArg(arg interface{}, kind C.wasmtime_component_valtype_kind
 		C.go_component_val_set_string(out, C._GoStringPtr(v), C._GoStringLen(v))
 		runtime.KeepAlive(v)
 	default:
+		// TODO: support composite WIT types (list, record, tuple, variant,
+		// enum, option, result, flags, map) and resource types. The Go
+		// representation for these (especially variant/result, which Go
+		// has no native sum type for) is the design question to be worked
+		// out in a follow-up PR.
 		return fmt.Errorf("unsupported component type kind: %d (only primitive WIT types are supported in this version)", kind)
 	}
 	return nil
@@ -189,6 +194,9 @@ func componentUnmarshalVal(v *C.wasmtime_component_val_t) (interface{}, error) {
 		size := C.go_component_val_string_size(v)
 		return C.GoStringN(data, C.int(size)), nil
 	default:
+		// TODO: support composite WIT types (list, record, tuple, variant,
+		// enum, option, result, flags, map) and resource types. See the
+		// matching TODO in componentMarshalArg.
 		return nil, fmt.Errorf("unsupported component value kind: %d (only primitive WIT types are supported in this version)", v.kind)
 	}
 }

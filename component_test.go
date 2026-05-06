@@ -331,3 +331,182 @@ func TestComponentCallWrongArgType(t *testing.T) {
 	_, err := f.Call(store, int64(1)) // expects int32
 	require.Error(t, err)
 }
+
+// stringTestComponent exposes a `() -> string` (returns "hello") and a
+// `(string) -> string` identity, exercising the canonical-ABI plumbing for
+// strings. Memory layout used by the core module:
+//
+//   [0..5]      = "hello" data segment
+//   [1024..]    = bump allocator pool (cabi_realloc returns a fresh chunk
+//                 here per call, advancing the bump pointer at memory[8])
+//   [16..24]    = scratch return area for string returns (ptr at +0, len at +4)
+//
+// The canon lift convention expects the core function to return a single i32
+// pointing to a (ptr, len) struct in linear memory.
+const stringTestComponent = `
+(component
+  (core module $m
+    (memory (export "memory") 1)
+    (data (i32.const 0) "hello")
+    ;; cabi_realloc: bump allocator. The bump cursor lives at memory[8].
+    (func (export "cabi_realloc")
+      (param $orig_ptr i32) (param $orig_size i32) (param $align i32) (param $new_size i32)
+      (result i32)
+      (local $cursor i32)
+      ;; if cursor is 0, initialize it to 1024
+      i32.const 8
+      i32.load
+      local.tee $cursor
+      i32.eqz
+      if
+        i32.const 1024
+        local.set $cursor
+      end
+      ;; advance cursor by new_size and store back
+      i32.const 8
+      local.get $cursor
+      local.get $new_size
+      i32.add
+      i32.store
+      ;; return original cursor as the allocation
+      local.get $cursor)
+    ;; ret_hello returns a pointer to a (ptr=0, len=5) struct at memory[16..24].
+    (func (export "ret_hello") (result i32)
+      i32.const 16 i32.const 0 i32.store
+      i32.const 20 i32.const 5 i32.store
+      i32.const 16)
+    ;; id_string_core writes (ptr_in, len_in) to memory[16..24] and returns 16.
+    (func (export "id_string_core")
+      (param $ptr_in i32) (param $len_in i32) (result i32)
+      i32.const 16 local.get $ptr_in i32.store
+      i32.const 20 local.get $len_in i32.store
+      i32.const 16))
+  (core instance $i (instantiate $m))
+  (func (export "ret-hello") (result string)
+    (canon lift
+      (core func $i "ret_hello")
+      (memory $i "memory")
+      (realloc (func $i "cabi_realloc"))
+      string-encoding=utf8))
+  (func (export "id-string") (param "s" string) (result string)
+    (canon lift
+      (core func $i "id_string_core")
+      (memory $i "memory")
+      (realloc (func $i "cabi_realloc"))
+      string-encoding=utf8)))
+`
+
+func setupStringTest(t *testing.T) (*Store, *ComponentInstance) {
+	t.Helper()
+	engine := newComponentEngine()
+	store := NewStore(engine)
+
+	wasm, err := Wat2Wasm(stringTestComponent)
+	require.NoError(t, err)
+
+	component, err := NewComponent(engine, wasm)
+	require.NoError(t, err)
+	t.Cleanup(component.Close)
+
+	linker := NewComponentLinker(engine)
+	t.Cleanup(linker.Close)
+
+	instance, err := linker.Instantiate(store, component)
+	require.NoError(t, err)
+
+	return store, instance
+}
+
+func TestComponentCallStringReturn(t *testing.T) {
+	store, instance := setupStringTest(t)
+	f := instance.GetFunc(store, "ret-hello")
+	require.NotNil(t, f)
+	got, err := f.Call(store)
+	require.NoError(t, err)
+	require.Equal(t, "hello", got)
+}
+
+func TestComponentCallStringRoundtrip(t *testing.T) {
+	store, instance := setupStringTest(t)
+	f := instance.GetFunc(store, "id-string")
+	require.NotNil(t, f)
+	for _, want := range []string{"", "ascii", "日本語", "emoji 🎉"} {
+		got, err := f.Call(store, want)
+		require.NoError(t, err)
+		require.Equal(t, want, got)
+	}
+}
+
+func TestComponentClone(t *testing.T) {
+	engine := newComponentEngine()
+	store := NewStore(engine)
+	wasm, err := Wat2Wasm(`
+      (component
+        (core module $m (func (export "hello")))
+        (core instance $i (instantiate $m))
+        (func (export "hello") (canon lift (core func $i "hello"))))
+    `)
+	require.NoError(t, err)
+	original, err := NewComponent(engine, wasm)
+	require.NoError(t, err)
+	defer original.Close()
+
+	cloned := original.Clone()
+	require.NotNil(t, cloned)
+	defer cloned.Close()
+
+	// The clone should be independently usable and instantiable.
+	linker := NewComponentLinker(engine)
+	defer linker.Close()
+	instance, err := linker.Instantiate(store, cloned)
+	require.NoError(t, err)
+	require.NotNil(t, instance)
+
+	// And closing the original must not affect the clone.
+	original.Close()
+	idx := cloned.GetExportIndex(nil, "hello")
+	require.NotNil(t, idx)
+	idx.Close()
+}
+
+func TestComponentExportIndexClone(t *testing.T) {
+	engine := newComponentEngine()
+	wasm, err := Wat2Wasm(`
+      (component
+        (core module $m (func (export "hello")))
+        (core instance $i (instantiate $m))
+        (func (export "hello") (canon lift (core func $i "hello"))))
+    `)
+	require.NoError(t, err)
+	component, err := NewComponent(engine, wasm)
+	require.NoError(t, err)
+	defer component.Close()
+
+	idx := component.GetExportIndex(nil, "hello")
+	require.NotNil(t, idx)
+	defer idx.Close()
+
+	cloned := idx.Clone()
+	require.NotNil(t, cloned)
+	defer cloned.Close()
+
+	// Closing the original index must not invalidate the clone.
+	idx.Close()
+	store := NewStore(engine)
+	linker := NewComponentLinker(engine)
+	defer linker.Close()
+	instance, err := linker.Instantiate(store, component)
+	require.NoError(t, err)
+	require.NotNil(t, instance.GetFuncByIndex(store, cloned))
+}
+
+func TestComponentLinkerAllowShadowing(t *testing.T) {
+	engine := newComponentEngine()
+	linker := NewComponentLinker(engine)
+	defer linker.Close()
+
+	// Toggling the flag should be a no-op observable here, but verifying it
+	// runs without panicking confirms the cgo binding is wired up.
+	linker.AllowShadowing(true)
+	linker.AllowShadowing(false)
+}
