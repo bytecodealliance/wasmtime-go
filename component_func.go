@@ -43,24 +43,34 @@ func mkComponentFunc(val C.wasmtime_component_func_t) *ComponentFunc {
 // only supports zero or one result, so multi-value returns are represented as
 // a tuple at the WIT level (and are unsupported here for now).
 func (f *ComponentFunc) Call(store Storelike, args ...interface{}) (interface{}, error) {
-	// The function's type is consulted internally to know the expected kinds
-	// of each parameter (so that primitives like int32 vs rune can be routed
-	// to s32 vs char correctly). A public type-reflection API is intentionally
-	// not exposed yet; that will come together with composite-type support.
+	// 1. Look up the function's type so we know which WIT kind each parameter
+	// expects. The result type is also needed to size the result buffer. The
+	// type is consulted only internally so primitives like int32 vs rune can
+	// be routed to s32 vs char correctly; a public type-reflection API is
+	// intentionally not exposed yet.
 	// TODO: expose a public Type API (ComponentType / ComponentValType / ...)
 	// once the composite-type representation is settled.
 	fty := C.wasmtime_component_func_type(&f.val, store.Context())
+	runtime.KeepAlive(f)
 	runtime.KeepAlive(store)
 	if fty == nil {
 		return nil, fmt.Errorf("could not retrieve component function type")
 	}
 	defer C.wasmtime_component_func_type_delete(fty)
 
+	// 2. Validate the argument count up front so users get a clear error
+	// before any marshaling work.
 	paramCount := int(C.wasmtime_component_func_type_param_count(fty))
 	if len(args) != paramCount {
 		return nil, fmt.Errorf("wrong number of arguments: got %d, expected %d", len(args), paramCount)
 	}
 
+	// 3. Marshal each Go arg into a wasmtime_component_val_t slot.
+	//
+	// The deferred cleanup runs even on partial-marshal failure: zero-
+	// initialized slots have kind=BOOL with no owned allocations, so
+	// val_delete is a safe no-op for them. Slots successfully marshaled
+	// (e.g. a STRING with allocated bytes) are properly freed.
 	cArgs := make([]C.wasmtime_component_val_t, paramCount)
 	defer func() {
 		for i := range cArgs {
@@ -81,6 +91,9 @@ func (f *ComponentFunc) Call(store Storelike, args ...interface{}) (interface{},
 		}
 	}
 
+	// 4. Allocate a result slot if the function produces one. Component
+	// model functions return zero or one value; multi-value returns are
+	// expressed as tuples at the WIT level.
 	var resultTy C.wasmtime_component_valtype_t
 	hasResult := bool(C.wasmtime_component_func_type_result(fty, &resultTy))
 	var resultArr [1]C.wasmtime_component_val_t
@@ -93,6 +106,8 @@ func (f *ComponentFunc) Call(store Storelike, args ...interface{}) (interface{},
 		resultsLen = 1
 	}
 
+	// 5. Invoke the function. post-return is now handled internally by
+	// wasmtime_component_func_call (since wasmtime 44).
 	var argsPtr *C.wasmtime_component_val_t
 	if len(cArgs) > 0 {
 		argsPtr = (*C.wasmtime_component_val_t)(unsafe.Pointer(&cArgs[0]))
@@ -111,6 +126,7 @@ func (f *ComponentFunc) Call(store Storelike, args ...interface{}) (interface{},
 		return nil, mkError(cerr)
 	}
 
+	// 6. Unmarshal the result back into a Go value, if any.
 	if !hasResult {
 		return nil, nil
 	}

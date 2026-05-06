@@ -35,13 +35,6 @@ func (l *ComponentLinker) ptr() *C.wasmtime_component_linker_t {
 	return ret
 }
 
-// AllowShadowing configures whether this linker allows later definitions to
-// shadow previous definitions of the same name. The default is false.
-func (l *ComponentLinker) AllowShadowing(allow bool) {
-	C.wasmtime_component_linker_allow_shadowing(l.ptr(), C.bool(allow))
-	runtime.KeepAlive(l)
-}
-
 // Instantiate creates a new [ComponentInstance] of `component` using the
 // imports defined in this linker.
 func (l *ComponentLinker) Instantiate(store Storelike, component *Component) (*ComponentInstance, error) {
@@ -82,7 +75,9 @@ func (l *ComponentLinker) DefineUnknownImportsAsTraps(component *Component) erro
 // functions, modules, and resources can be defined. The C API has an
 // "exclusive access" requirement on the parent linker while a
 // LinkerInstance is alive; mirror that with a locking flag (see
-// wasmtime-py's `Linker.locked` for the reference pattern).
+// wasmtime-py's `Linker.locked` for the reference pattern). The
+// `wasmtime_component_linker_allow_shadowing` knob is meaningful only once
+// definitions exist, so it will be wired up alongside the host-side API.
 // TODO: WASIp2 / wasi:http integration via `wasmtime_component_linker_add_*`.
 
 // Close deallocates this linker's state explicitly.
