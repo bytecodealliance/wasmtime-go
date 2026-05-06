@@ -44,3 +44,33 @@ func (i *ComponentInstance) GetExportIndex(store Storelike, parent *ComponentExp
 	}
 	return mkComponentExportIndex(idxPtr)
 }
+
+// GetFunc returns the [ComponentFunc] exported under `name` from this
+// instance, or `nil` if no such function exists.
+func (i *ComponentInstance) GetFunc(store Storelike, name string) *ComponentFunc {
+	idx := i.GetExportIndex(store, nil, name)
+	if idx == nil {
+		return nil
+	}
+	defer idx.Close()
+	return i.GetFuncByIndex(store, idx)
+}
+
+// GetFuncByIndex returns the [ComponentFunc] referenced by the given export
+// index, or `nil` if the index does not correspond to a function export.
+func (i *ComponentInstance) GetFuncByIndex(store Storelike, idx *ComponentExportIndex) *ComponentFunc {
+	var f C.wasmtime_component_func_t
+	found := bool(C.wasmtime_component_instance_get_func(
+		&i.val,
+		store.Context(),
+		idx.ptr(),
+		&f,
+	))
+	runtime.KeepAlive(i)
+	runtime.KeepAlive(store)
+	runtime.KeepAlive(idx)
+	if !found {
+		return nil
+	}
+	return mkComponentFunc(f)
+}
