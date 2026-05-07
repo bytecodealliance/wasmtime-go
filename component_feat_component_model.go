@@ -182,13 +182,6 @@ func (idx *ComponentExportIndex) ptr() *C.wasmtime_component_export_index_t {
 	return ret
 }
 
-// Clone creates a separately-owned copy of this index.
-func (idx *ComponentExportIndex) Clone() *ComponentExportIndex {
-	ptr := C.wasmtime_component_export_index_clone(idx.ptr())
-	runtime.KeepAlive(idx)
-	return mkComponentExportIndex(ptr)
-}
-
 // Close deallocates this index explicitly.
 func (idx *ComponentExportIndex) Close() {
 	if idx._ptr == nil {
