@@ -403,10 +403,10 @@ func TestComponentCallWrongArgType(t *testing.T) {
 // `(string) -> string` identity, exercising the canonical-ABI plumbing for
 // strings. Memory layout used by the core module:
 //
-//   [0..5]      = "hello" data segment
-//   [1024..]    = bump allocator pool (cabi_realloc returns a fresh chunk
-//                 here per call, advancing the bump pointer at memory[8])
-//   [16..24]    = scratch return area for string returns (ptr at +0, len at +4)
+//	[0..5]      = "hello" data segment
+//	[1024..]    = bump allocator pool (cabi_realloc returns a fresh chunk
+//	              here per call, advancing the bump pointer at memory[8])
+//	[16..24]    = scratch return area for string returns (ptr at +0, len at +4)
 //
 // The canon lift convention expects the core function to return a single i32
 // pointing to a (ptr, len) struct in linear memory.
