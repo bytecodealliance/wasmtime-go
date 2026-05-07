@@ -115,10 +115,16 @@ func (c *Component) Clone() *Component {
 	return mkComponent(ptr)
 }
 
-// GetExportIndex looks up the export named `name` in this component,
-// optionally nested within the instance identified by `parent`. Pass `nil`
-// for `parent` to search the component's root namespace. Returns `nil` if
-// no matching export is found.
+// GetExportIndex looks up the export named `name` in this component and
+// returns a reusable [ComponentExportIndex] handle pointing at it.
+//
+// Pass `nil` for `parent` to search the component's root namespace. Pass an
+// index returned by an earlier call (whose result identified an exported
+// instance) to traverse one level deeper into nested instance exports —
+// for example, to walk from a `wasi:http/incoming-handler` instance export
+// down to its `handle` function.
+//
+// Returns `nil` if no matching export is found.
 func (c *Component) GetExportIndex(parent *ComponentExportIndex, name string) *ComponentExportIndex {
 	var parentPtr *C.wasmtime_component_export_index_t
 	if parent != nil {
@@ -151,9 +157,19 @@ func (c *Component) Close() {
 	c._ptr = nil
 }
 
-// ComponentExportIndex identifies a known export of a component. It can be
-// reused across calls to [Component.GetExportIndex] to traverse nested
-// instance exports.
+// ComponentExportIndex is an opaque, precomputed handle pointing at a known
+// export of a component. It has two main uses:
+//
+//   - Caching: pass an index to [ComponentInstance.GetFuncByIndex] instead
+//     of looking up an export by name on every call, useful in hot paths.
+//   - Nested traversal: pass an index identifying an exported instance as
+//     the `parent` argument to [Component.GetExportIndex] (or
+//     [ComponentInstance.GetExportIndex]) to look up an export within that
+//     nested instance.
+//
+// An index owns its own underlying handle and must be closed (or left to
+// the finalizer) independently of the component or instance that produced
+// it.
 type ComponentExportIndex struct {
 	_ptr *C.wasmtime_component_export_index_t
 }
