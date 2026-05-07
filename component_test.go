@@ -526,47 +526,6 @@ func newHelloComponent(t *testing.T, engine *Engine) *Component {
 	return component
 }
 
-func TestComponentCloneInstantiable(t *testing.T) {
-	engine := newComponentEngine()
-	store := NewStore(engine)
-
-	original := newHelloComponent(t, engine)
-	defer original.Close()
-
-	cloned := original.Clone()
-	defer cloned.Close()
-	require.NotNil(t, cloned)
-
-	linker := NewComponentLinker(engine)
-	defer linker.Close()
-	instance, err := linker.Instantiate(store, cloned)
-	require.NoError(t, err)
-	require.NotNil(t, instance)
-}
-
-func TestComponentCloneIndependentOfOriginal(t *testing.T) {
-	engine := newComponentEngine()
-	store := NewStore(engine)
-
-	original := newHelloComponent(t, engine)
-	cloned := original.Clone()
-	defer cloned.Close()
-
-	// Closing the original must not invalidate the clone, so the clone
-	// should still be usable end-to-end after the original is gone.
-	original.Close()
-
-	linker := NewComponentLinker(engine)
-	defer linker.Close()
-	instance, err := linker.Instantiate(store, cloned)
-	require.NoError(t, err)
-	f := instance.GetFunc(store, "hello")
-	require.NotNil(t, f)
-	got, err := f.Call(store)
-	require.NoError(t, err)
-	require.Nil(t, got)
-}
-
 func TestComponentExportIndexCloneUsable(t *testing.T) {
 	engine := newComponentEngine()
 	store := NewStore(engine)

@@ -106,15 +106,6 @@ func NewComponentDeserializeFile(engine *Engine, path string) (*Component, error
 	return mkComponent(ptr), nil
 }
 
-// Clone creates a shallow clone of this component, incrementing its internal
-// reference count. The returned component is independently owned and must be
-// explicitly closed (or left to the finalizer).
-func (c *Component) Clone() *Component {
-	ptr := C.wasmtime_component_clone(c.ptr())
-	runtime.KeepAlive(c)
-	return mkComponent(ptr)
-}
-
 // GetExportIndex looks up the export named `name` in this component and
 // returns a reusable [ComponentExportIndex] handle pointing at it.
 //
