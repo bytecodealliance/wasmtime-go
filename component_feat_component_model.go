@@ -9,18 +9,29 @@ import (
 	"unsafe"
 )
 
-// TODO: expose Component.Type() and the type-reflection hierarchy
-// (ComponentType / ComponentValType / ComponentFuncType / ...) — flagged in
-// review on #281 as the natural next slice, ahead of value handling.
+// TODO: expose ComponentFuncType so callers can introspect a function's
+// parameter and result types.
+// TODO: expose ComponentInstanceType / ComponentResourceType / the composite
+// ComponentValType sub-types (list, record, tuple, variant, enum, option,
+// result, flags, map) so each [ComponentItem] kind has an accessor that
+// returns the embedded payload type. The slice currently exposed here
+// intentionally only surfaces the kinds reachable without those further
+// sub-types.
 // TODO: ComponentFunc + value marshaling (call exported component functions
-// with primitive / composite WIT values). Deferred per #281 review so the
-// component-model-values design can have its own focused thread.
+// with primitive / composite WIT values).
 
 // Component is a compiled WebAssembly component, the binary representation of
 // a component-model artifact. Components are instantiated through a
 // [ComponentLinker].
 type Component struct {
 	_ptr *C.wasmtime_component_t
+
+	// engine is the [Engine] that compiled this component. The component
+	// uses the engine for follow-up queries such as [Component.Type], so
+	// the engine must outlive the component. Held privately so the field
+	// does not commit the package to a public lifecycle contract; can be
+	// promoted later if a user-facing need appears.
+	engine *Engine
 }
 
 // NewComponent compiles a component-model binary into a [Component].
@@ -39,11 +50,11 @@ func NewComponent(engine *Engine, wasm []byte) (*Component, error) {
 	if err != nil {
 		return nil, mkError(err)
 	}
-	return mkComponent(ptr), nil
+	return mkComponent(ptr, engine), nil
 }
 
-func mkComponent(ptr *C.wasmtime_component_t) *Component {
-	c := &Component{_ptr: ptr}
+func mkComponent(ptr *C.wasmtime_component_t, engine *Engine) *Component {
+	c := &Component{_ptr: ptr, engine: engine}
 	runtime.SetFinalizer(c, func(c *Component) {
 		c.Close()
 	})
@@ -93,7 +104,7 @@ func NewComponentDeserialize(engine *Engine, encoded []byte) (*Component, error)
 	if err != nil {
 		return nil, mkError(err)
 	}
-	return mkComponent(ptr), nil
+	return mkComponent(ptr, engine), nil
 }
 
 // NewComponentDeserializeFile is the same as [NewComponentDeserialize] except
@@ -107,7 +118,7 @@ func NewComponentDeserializeFile(engine *Engine, path string) (*Component, error
 	if err != nil {
 		return nil, mkError(err)
 	}
-	return mkComponent(ptr), nil
+	return mkComponent(ptr, engine), nil
 }
 
 // GetExportIndex looks up the export named `name` in this component and
@@ -138,6 +149,15 @@ func (c *Component) GetExportIndex(parent *ComponentExportIndex, name string) *C
 		return nil
 	}
 	return mkComponentExportIndex(idxPtr)
+}
+
+// Type returns the [ComponentType] describing this component's imports
+// and exports. The returned value owns its underlying handle and must be
+// closed (or left to the finalizer).
+func (c *Component) Type() *ComponentType {
+	ptr := C.wasmtime_component_type(c.ptr())
+	runtime.KeepAlive(c)
+	return mkComponentType(ptr, c.engine)
 }
 
 // Close deallocates this component's state explicitly.
