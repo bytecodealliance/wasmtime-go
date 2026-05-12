@@ -112,6 +112,17 @@ func (c *WasiConfig) SetStdinFile(path string) error {
 	return errors.New("failed to open file")
 }
 
+func (c *WasiConfig) SetStdinBytes(data []byte) {
+	dataC := C.CBytes(data)
+	bytes := C.wasm_byte_vec_t{
+		size: C.size_t(len(data)),
+		data: (*C.wasm_byte_t)(dataC),
+	}
+	C.wasi_config_set_stdin_bytes(c.ptr(), &bytes)
+	runtime.KeepAlive(c)
+	C.free(unsafe.Pointer(dataC))
+}
+
 func (c *WasiConfig) InheritStdin() {
 	C.wasi_config_inherit_stdin(c.ptr())
 	runtime.KeepAlive(c)
