@@ -155,19 +155,19 @@ func TestComponentValTypeTuple(t *testing.T) {
 	tt := vt.Tuple()
 	require.NotNil(t, tt)
 	defer tt.Close()
-	require.Equal(t, 3, tt.TypesCount())
+	require.Equal(t, 3, tt.TypeCount())
 
-	ty0 := tt.TypesNth(0)
+	ty0 := tt.TypeNth(0)
 	require.NotNil(t, ty0)
 	defer ty0.Close()
 	require.Equal(t, ComponentValTypeKindBool, ty0.Kind())
 
-	ty1 := tt.TypesNth(1)
+	ty1 := tt.TypeNth(1)
 	require.NotNil(t, ty1)
 	defer ty1.Close()
 	require.Equal(t, ComponentValTypeKindS32, ty1.Kind())
 
-	ty2 := tt.TypesNth(2)
+	ty2 := tt.TypeNth(2)
 	require.NotNil(t, ty2)
 	defer ty2.Close()
 	require.Equal(t, ComponentValTypeKindString, ty2.Kind())
@@ -192,7 +192,7 @@ func TestComponentValTypeTupleTypesNthOutOfRange(t *testing.T) {
 	tt := vt.Tuple()
 	defer tt.Close()
 
-	require.Nil(t, tt.TypesNth(1))
+	require.Nil(t, tt.TypeNth(1))
 }
 
 func TestComponentValTypeTupleOnNonTupleReturnsNil(t *testing.T) {
@@ -233,10 +233,10 @@ func TestComponentValTypeEnum(t *testing.T) {
 	et := vt.Enum()
 	require.NotNil(t, et)
 	defer et.Close()
-	require.Equal(t, 3, et.NamesCount())
-	require.Equal(t, "red", et.NamesNth(0))
-	require.Equal(t, "green", et.NamesNth(1))
-	require.Equal(t, "blue", et.NamesNth(2))
+	require.Equal(t, 3, et.CaseCount())
+	require.Equal(t, "red", et.CaseNth(0))
+	require.Equal(t, "green", et.CaseNth(1))
+	require.Equal(t, "blue", et.CaseNth(2))
 }
 
 func TestComponentValTypeEnumNamesNthOutOfRange(t *testing.T) {
@@ -258,7 +258,7 @@ func TestComponentValTypeEnumNamesNthOutOfRange(t *testing.T) {
 	et := vt.Enum()
 	defer et.Close()
 
-	require.Equal(t, "", et.NamesNth(1))
+	require.Equal(t, "", et.CaseNth(1))
 }
 
 func TestComponentValTypeEnumOnNonEnumReturnsNil(t *testing.T) {
@@ -299,10 +299,10 @@ func TestComponentValTypeFlags(t *testing.T) {
 	ft := vt.Flags()
 	require.NotNil(t, ft)
 	defer ft.Close()
-	require.Equal(t, 3, ft.NamesCount())
-	require.Equal(t, "read", ft.NamesNth(0))
-	require.Equal(t, "write", ft.NamesNth(1))
-	require.Equal(t, "exec", ft.NamesNth(2))
+	require.Equal(t, 3, ft.FlagCount())
+	require.Equal(t, "read", ft.FlagNth(0))
+	require.Equal(t, "write", ft.FlagNth(1))
+	require.Equal(t, "exec", ft.FlagNth(2))
 }
 
 func TestComponentValTypeFlagsNamesNthOutOfRange(t *testing.T) {
@@ -324,7 +324,7 @@ func TestComponentValTypeFlagsNamesNthOutOfRange(t *testing.T) {
 	ft := vt.Flags()
 	defer ft.Close()
 
-	require.Equal(t, "", ft.NamesNth(1))
+	require.Equal(t, "", ft.FlagNth(1))
 }
 
 func TestComponentValTypeFlagsOnNonFlagsReturnsNil(t *testing.T) {

@@ -271,15 +271,15 @@ func (tt *ComponentTupleType) ptr() *C.wasmtime_component_tuple_type_t {
 	return tt._ptr
 }
 
-// TypesCount returns the number of types in this tuple.
-func (tt *ComponentTupleType) TypesCount() int {
+// TypeCount returns the number of types in this tuple.
+func (tt *ComponentTupleType) TypeCount() int {
 	n := C.wasmtime_component_tuple_type_types_count(tt.ptr())
 	runtime.KeepAlive(tt)
 	return int(n)
 }
 
-// TypesNth returns the type at position `i`, or nil if `i` is out of range.
-func (tt *ComponentTupleType) TypesNth(i int) *ComponentValType {
+// TypeNth returns the type at position `i`, or nil if `i` is out of range.
+func (tt *ComponentTupleType) TypeNth(i int) *ComponentValType {
 	var out C.wasmtime_component_valtype_t
 	found := C.wasmtime_component_tuple_type_types_nth(tt.ptr(), C.size_t(i), &out)
 	runtime.KeepAlive(tt)
@@ -320,15 +320,15 @@ func (et *ComponentEnumType) ptr() *C.wasmtime_component_enum_type_t {
 	return et._ptr
 }
 
-// NamesCount returns the number of cases in this enum.
-func (et *ComponentEnumType) NamesCount() int {
+// CaseCount returns the number of cases in this enum.
+func (et *ComponentEnumType) CaseCount() int {
 	n := C.wasmtime_component_enum_type_names_count(et.ptr())
 	runtime.KeepAlive(et)
 	return int(n)
 }
 
-// NamesNth returns the name of the `i`-th case, or "" if `i` is out of range.
-func (et *ComponentEnumType) NamesNth(i int) string {
+// CaseNth returns the name of the `i`-th case, or "" if `i` is out of range.
+func (et *ComponentEnumType) CaseNth(i int) string {
 	var nameP *C.char
 	var nameLen C.size_t
 	found := C.wasmtime_component_enum_type_names_nth(et.ptr(), C.size_t(i), &nameP, &nameLen)
@@ -370,15 +370,15 @@ func (ft *ComponentFlagsType) ptr() *C.wasmtime_component_flags_type_t {
 	return ft._ptr
 }
 
-// NamesCount returns the number of flag names in this flags type.
-func (ft *ComponentFlagsType) NamesCount() int {
+// FlagCount returns the number of flags in this flags type.
+func (ft *ComponentFlagsType) FlagCount() int {
 	n := C.wasmtime_component_flags_type_names_count(ft.ptr())
 	runtime.KeepAlive(ft)
 	return int(n)
 }
 
-// NamesNth returns the name of the `i`-th flag, or "" if `i` is out of range.
-func (ft *ComponentFlagsType) NamesNth(i int) string {
+// FlagNth returns the name of the `i`-th flag, or "" if `i` is out of range.
+func (ft *ComponentFlagsType) FlagNth(i int) string {
 	var nameP *C.char
 	var nameLen C.size_t
 	found := C.wasmtime_component_flags_type_names_nth(ft.ptr(), C.size_t(i), &nameP, &nameLen)
