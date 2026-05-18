@@ -37,7 +37,7 @@ func TestComponentValTypeList(t *testing.T) {
 	require.Equal(t, ComponentValTypeKindU32, elem.Kind())
 }
 
-func TestComponentValTypeListOnNonListReturnsNil(t *testing.T) {
+func TestComponentValTypeListReturnsNilForNonListKind(t *testing.T) {
 	engine := newComponentEngine()
 	wasm, err := Wat2Wasm(`(component (type $a u32) (export "a" (type $a)))`)
 	require.NoError(t, err)
@@ -117,7 +117,7 @@ func TestComponentValTypeRecordFieldNthOutOfRange(t *testing.T) {
 	require.Nil(t, ty)
 }
 
-func TestComponentValTypeRecordOnNonRecordReturnsNil(t *testing.T) {
+func TestComponentValTypeRecordReturnsNilForNonRecordKind(t *testing.T) {
 	engine := newComponentEngine()
 	wasm, err := Wat2Wasm(`(component (type $a u32) (export "a" (type $a)))`)
 	require.NoError(t, err)
@@ -173,7 +173,7 @@ func TestComponentValTypeTuple(t *testing.T) {
 	require.Equal(t, ComponentValTypeKindString, ty2.Kind())
 }
 
-func TestComponentValTypeTupleTypesNthOutOfRange(t *testing.T) {
+func TestComponentValTypeTupleTypeNthOutOfRange(t *testing.T) {
 	engine := newComponentEngine()
 	wasm, err := Wat2Wasm(`(component
   (type $t (tuple bool))
@@ -195,7 +195,7 @@ func TestComponentValTypeTupleTypesNthOutOfRange(t *testing.T) {
 	require.Nil(t, tt.TypeNth(1))
 }
 
-func TestComponentValTypeTupleOnNonTupleReturnsNil(t *testing.T) {
+func TestComponentValTypeTupleReturnsNilForNonTupleKind(t *testing.T) {
 	engine := newComponentEngine()
 	wasm, err := Wat2Wasm(`(component (type $a u32) (export "a" (type $a)))`)
 	require.NoError(t, err)
@@ -239,7 +239,7 @@ func TestComponentValTypeEnum(t *testing.T) {
 	require.Equal(t, "blue", et.CaseNth(2))
 }
 
-func TestComponentValTypeEnumNamesNthOutOfRange(t *testing.T) {
+func TestComponentValTypeEnumCaseNthOutOfRange(t *testing.T) {
 	engine := newComponentEngine()
 	wasm, err := Wat2Wasm(`(component
   (type $e (enum "only"))
@@ -261,7 +261,7 @@ func TestComponentValTypeEnumNamesNthOutOfRange(t *testing.T) {
 	require.Equal(t, "", et.CaseNth(1))
 }
 
-func TestComponentValTypeEnumOnNonEnumReturnsNil(t *testing.T) {
+func TestComponentValTypeEnumReturnsNilForNonEnumKind(t *testing.T) {
 	engine := newComponentEngine()
 	wasm, err := Wat2Wasm(`(component (type $a u32) (export "a" (type $a)))`)
 	require.NoError(t, err)
@@ -305,7 +305,7 @@ func TestComponentValTypeFlags(t *testing.T) {
 	require.Equal(t, "exec", ft.FlagNth(2))
 }
 
-func TestComponentValTypeFlagsNamesNthOutOfRange(t *testing.T) {
+func TestComponentValTypeFlagsFlagNthOutOfRange(t *testing.T) {
 	engine := newComponentEngine()
 	wasm, err := Wat2Wasm(`(component
   (type $f (flags "only"))
@@ -327,7 +327,7 @@ func TestComponentValTypeFlagsNamesNthOutOfRange(t *testing.T) {
 	require.Equal(t, "", ft.FlagNth(1))
 }
 
-func TestComponentValTypeFlagsOnNonFlagsReturnsNil(t *testing.T) {
+func TestComponentValTypeFlagsReturnsNilForNonFlagsKind(t *testing.T) {
 	engine := newComponentEngine()
 	wasm, err := Wat2Wasm(`(component (type $a u32) (export "a" (type $a)))`)
 	require.NoError(t, err)
