@@ -35,23 +35,20 @@ func TestComponentValTypeList(t *testing.T) {
 	require.NotNil(t, elem)
 	defer elem.Close()
 	require.Equal(t, ComponentValTypeKindU32, elem.Kind())
-}
 
-func TestComponentValTypeListReturnsNilForNonListKind(t *testing.T) {
-	engine := newComponentEngine()
-	wasm, err := Wat2Wasm(`(component (type $a u32) (export "a" (type $a)))`)
+	// List() on a non-list kind returns nil.
+	wasmU32, err := Wat2Wasm(`(component (type $a u32) (export "a" (type $a)))`)
 	require.NoError(t, err)
-	component, err := NewComponent(engine, wasm)
+	comp2, err := NewComponent(engine, wasmU32)
 	require.NoError(t, err)
-	defer component.Close()
-
-	ct := component.Type()
-	defer ct.Close()
-	_, item := ct.ExportNth(0)
-	defer item.Close()
-	vt := item.TypeAlias()
-	defer vt.Close()
-	require.Nil(t, vt.List())
+	defer comp2.Close()
+	ct2 := comp2.Type()
+	defer ct2.Close()
+	_, item2 := ct2.ExportNth(0)
+	defer item2.Close()
+	vt2 := item2.TypeAlias()
+	defer vt2.Close()
+	require.Nil(t, vt2.List())
 }
 
 func TestComponentValTypeRecord(t *testing.T) {
@@ -67,11 +64,8 @@ func TestComponentValTypeRecord(t *testing.T) {
 	ct := component.Type()
 	defer ct.Close()
 	_, item := ct.ExportNth(0)
-	require.NotNil(t, item)
 	defer item.Close()
-
 	vt := item.TypeAlias()
-	require.NotNil(t, vt)
 	defer vt.Close()
 	require.Equal(t, ComponentValTypeKindRecord, vt.Kind())
 
@@ -91,47 +85,25 @@ func TestComponentValTypeRecord(t *testing.T) {
 	require.NotNil(t, ty1)
 	defer ty1.Close()
 	require.Equal(t, ComponentValTypeKindString, ty1.Kind())
-}
 
-func TestComponentValTypeRecordFieldNthOutOfRange(t *testing.T) {
-	engine := newComponentEngine()
-	wasm, err := Wat2Wasm(`(component
-  (type $r (record (field "x" u32)))
-  (export "r" (type $r)))`)
+	// FieldNth out of range returns ("", nil).
+	name2, ty2 := rt.FieldNth(2)
+	require.Equal(t, "", name2)
+	require.Nil(t, ty2)
+
+	// Record() on a non-record kind returns nil.
+	wasmU32, err := Wat2Wasm(`(component (type $a u32) (export "a" (type $a)))`)
 	require.NoError(t, err)
-	component, err := NewComponent(engine, wasm)
+	comp2, err := NewComponent(engine, wasmU32)
 	require.NoError(t, err)
-	defer component.Close()
-
-	ct := component.Type()
-	defer ct.Close()
-	_, item := ct.ExportNth(0)
-	defer item.Close()
-	vt := item.TypeAlias()
-	defer vt.Close()
-	rt := vt.Record()
-	defer rt.Close()
-
-	name, ty := rt.FieldNth(1)
-	require.Equal(t, "", name)
-	require.Nil(t, ty)
-}
-
-func TestComponentValTypeRecordReturnsNilForNonRecordKind(t *testing.T) {
-	engine := newComponentEngine()
-	wasm, err := Wat2Wasm(`(component (type $a u32) (export "a" (type $a)))`)
-	require.NoError(t, err)
-	component, err := NewComponent(engine, wasm)
-	require.NoError(t, err)
-	defer component.Close()
-
-	ct := component.Type()
-	defer ct.Close()
-	_, item := ct.ExportNth(0)
-	defer item.Close()
-	vt := item.TypeAlias()
-	defer vt.Close()
-	require.Nil(t, vt.Record())
+	defer comp2.Close()
+	ct2 := comp2.Type()
+	defer ct2.Close()
+	_, item2 := ct2.ExportNth(0)
+	defer item2.Close()
+	vt2 := item2.TypeAlias()
+	defer vt2.Close()
+	require.Nil(t, vt2.Record())
 }
 
 func TestComponentValTypeTuple(t *testing.T) {
@@ -171,45 +143,23 @@ func TestComponentValTypeTuple(t *testing.T) {
 	require.NotNil(t, ty2)
 	defer ty2.Close()
 	require.Equal(t, ComponentValTypeKindString, ty2.Kind())
-}
 
-func TestComponentValTypeTupleTypeNthOutOfRange(t *testing.T) {
-	engine := newComponentEngine()
-	wasm, err := Wat2Wasm(`(component
-  (type $t (tuple bool))
-  (export "t" (type $t)))`)
+	// TypeNth out of range returns nil.
+	require.Nil(t, tt.TypeNth(3))
+
+	// Tuple() on a non-tuple kind returns nil.
+	wasmU32, err := Wat2Wasm(`(component (type $a u32) (export "a" (type $a)))`)
 	require.NoError(t, err)
-	component, err := NewComponent(engine, wasm)
+	comp2, err := NewComponent(engine, wasmU32)
 	require.NoError(t, err)
-	defer component.Close()
-
-	ct := component.Type()
-	defer ct.Close()
-	_, item := ct.ExportNth(0)
-	defer item.Close()
-	vt := item.TypeAlias()
-	defer vt.Close()
-	tt := vt.Tuple()
-	defer tt.Close()
-
-	require.Nil(t, tt.TypeNth(1))
-}
-
-func TestComponentValTypeTupleReturnsNilForNonTupleKind(t *testing.T) {
-	engine := newComponentEngine()
-	wasm, err := Wat2Wasm(`(component (type $a u32) (export "a" (type $a)))`)
-	require.NoError(t, err)
-	component, err := NewComponent(engine, wasm)
-	require.NoError(t, err)
-	defer component.Close()
-
-	ct := component.Type()
-	defer ct.Close()
-	_, item := ct.ExportNth(0)
-	defer item.Close()
-	vt := item.TypeAlias()
-	defer vt.Close()
-	require.Nil(t, vt.Tuple())
+	defer comp2.Close()
+	ct2 := comp2.Type()
+	defer ct2.Close()
+	_, item2 := ct2.ExportNth(0)
+	defer item2.Close()
+	vt2 := item2.TypeAlias()
+	defer vt2.Close()
+	require.Nil(t, vt2.Tuple())
 }
 
 func TestComponentValTypeEnum(t *testing.T) {
@@ -237,45 +187,23 @@ func TestComponentValTypeEnum(t *testing.T) {
 	require.Equal(t, "red", et.CaseNth(0))
 	require.Equal(t, "green", et.CaseNth(1))
 	require.Equal(t, "blue", et.CaseNth(2))
-}
 
-func TestComponentValTypeEnumCaseNthOutOfRange(t *testing.T) {
-	engine := newComponentEngine()
-	wasm, err := Wat2Wasm(`(component
-  (type $e (enum "only"))
-  (export "e" (type $e)))`)
+	// CaseNth out of range returns "".
+	require.Equal(t, "", et.CaseNth(3))
+
+	// Enum() on a non-enum kind returns nil.
+	wasmU32, err := Wat2Wasm(`(component (type $a u32) (export "a" (type $a)))`)
 	require.NoError(t, err)
-	component, err := NewComponent(engine, wasm)
+	comp2, err := NewComponent(engine, wasmU32)
 	require.NoError(t, err)
-	defer component.Close()
-
-	ct := component.Type()
-	defer ct.Close()
-	_, item := ct.ExportNth(0)
-	defer item.Close()
-	vt := item.TypeAlias()
-	defer vt.Close()
-	et := vt.Enum()
-	defer et.Close()
-
-	require.Equal(t, "", et.CaseNth(1))
-}
-
-func TestComponentValTypeEnumReturnsNilForNonEnumKind(t *testing.T) {
-	engine := newComponentEngine()
-	wasm, err := Wat2Wasm(`(component (type $a u32) (export "a" (type $a)))`)
-	require.NoError(t, err)
-	component, err := NewComponent(engine, wasm)
-	require.NoError(t, err)
-	defer component.Close()
-
-	ct := component.Type()
-	defer ct.Close()
-	_, item := ct.ExportNth(0)
-	defer item.Close()
-	vt := item.TypeAlias()
-	defer vt.Close()
-	require.Nil(t, vt.Enum())
+	defer comp2.Close()
+	ct2 := comp2.Type()
+	defer ct2.Close()
+	_, item2 := ct2.ExportNth(0)
+	defer item2.Close()
+	vt2 := item2.TypeAlias()
+	defer vt2.Close()
+	require.Nil(t, vt2.Enum())
 }
 
 func TestComponentValTypeFlags(t *testing.T) {
@@ -303,43 +231,21 @@ func TestComponentValTypeFlags(t *testing.T) {
 	require.Equal(t, "read", ft.FlagNth(0))
 	require.Equal(t, "write", ft.FlagNth(1))
 	require.Equal(t, "exec", ft.FlagNth(2))
-}
 
-func TestComponentValTypeFlagsFlagNthOutOfRange(t *testing.T) {
-	engine := newComponentEngine()
-	wasm, err := Wat2Wasm(`(component
-  (type $f (flags "only"))
-  (export "f" (type $f)))`)
+	// FlagNth out of range returns "".
+	require.Equal(t, "", ft.FlagNth(3))
+
+	// Flags() on a non-flags kind returns nil.
+	wasmU32, err := Wat2Wasm(`(component (type $a u32) (export "a" (type $a)))`)
 	require.NoError(t, err)
-	component, err := NewComponent(engine, wasm)
+	comp2, err := NewComponent(engine, wasmU32)
 	require.NoError(t, err)
-	defer component.Close()
-
-	ct := component.Type()
-	defer ct.Close()
-	_, item := ct.ExportNth(0)
-	defer item.Close()
-	vt := item.TypeAlias()
-	defer vt.Close()
-	ft := vt.Flags()
-	defer ft.Close()
-
-	require.Equal(t, "", ft.FlagNth(1))
-}
-
-func TestComponentValTypeFlagsReturnsNilForNonFlagsKind(t *testing.T) {
-	engine := newComponentEngine()
-	wasm, err := Wat2Wasm(`(component (type $a u32) (export "a" (type $a)))`)
-	require.NoError(t, err)
-	component, err := NewComponent(engine, wasm)
-	require.NoError(t, err)
-	defer component.Close()
-
-	ct := component.Type()
-	defer ct.Close()
-	_, item := ct.ExportNth(0)
-	defer item.Close()
-	vt := item.TypeAlias()
-	defer vt.Close()
-	require.Nil(t, vt.Flags())
+	defer comp2.Close()
+	ct2 := comp2.Type()
+	defer ct2.Close()
+	_, item2 := ct2.ExportNth(0)
+	defer item2.Close()
+	vt2 := item2.TypeAlias()
+	defer vt2.Close()
+	require.Nil(t, vt2.Flags())
 }
