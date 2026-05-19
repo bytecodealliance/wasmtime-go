@@ -62,11 +62,9 @@ const (
 )
 
 // ComponentValType describes the WIT type of a value in the component
-// model. Use [ComponentValType.Kind] to discriminate, then call the
-// corresponding downcast method ([ComponentValType.List],
-// [ComponentValType.Record], ...) for composite kinds. Downcast methods
-// return independently-owned wrappers that must be closed (or left to the
-// finalizer) separately from this value type.
+// model. For composite kinds, the matching accessor
+// ([ComponentValType.List], [ComponentValType.Record], etc.) returns an
+// independently-owned wrapper, or nil if the kind does not match.
 type ComponentValType struct {
 	val    C.wasmtime_component_valtype_t
 	closed bool
@@ -89,8 +87,7 @@ func (vt *ComponentValType) Kind() ComponentValTypeKind {
 	return ComponentValTypeKind(C.go_component_valtype_kind(&vt.val))
 }
 
-// List returns the [ComponentListType] wrapper when this value type's kind
-// is [ComponentValTypeKindList], or nil otherwise.
+// List returns the underlying [ComponentListType] if this is a list type. Otherwise returns nil.
 func (vt *ComponentValType) List() *ComponentListType {
 	if vt.Kind() != ComponentValTypeKindList {
 		return nil
@@ -100,8 +97,7 @@ func (vt *ComponentValType) List() *ComponentListType {
 	return mkComponentListType(cloned)
 }
 
-// Record returns the [ComponentRecordType] wrapper when this value type's
-// kind is [ComponentValTypeKindRecord], or nil otherwise.
+// Record returns the underlying [ComponentRecordType] if this is a record type. Otherwise returns nil.
 func (vt *ComponentValType) Record() *ComponentRecordType {
 	if vt.Kind() != ComponentValTypeKindRecord {
 		return nil
@@ -111,8 +107,7 @@ func (vt *ComponentValType) Record() *ComponentRecordType {
 	return mkComponentRecordType(cloned)
 }
 
-// Tuple returns the [ComponentTupleType] wrapper when this value type's
-// kind is [ComponentValTypeKindTuple], or nil otherwise.
+// Tuple returns the underlying [ComponentTupleType] if this is a tuple type. Otherwise returns nil.
 func (vt *ComponentValType) Tuple() *ComponentTupleType {
 	if vt.Kind() != ComponentValTypeKindTuple {
 		return nil
@@ -122,8 +117,7 @@ func (vt *ComponentValType) Tuple() *ComponentTupleType {
 	return mkComponentTupleType(cloned)
 }
 
-// Enum returns the [ComponentEnumType] wrapper when this value type's kind
-// is [ComponentValTypeKindEnum], or nil otherwise.
+// Enum returns the underlying [ComponentEnumType] if this is an enum type. Otherwise returns nil.
 func (vt *ComponentValType) Enum() *ComponentEnumType {
 	if vt.Kind() != ComponentValTypeKindEnum {
 		return nil
@@ -133,8 +127,7 @@ func (vt *ComponentValType) Enum() *ComponentEnumType {
 	return mkComponentEnumType(cloned)
 }
 
-// Flags returns the [ComponentFlagsType] wrapper when this value type's
-// kind is [ComponentValTypeKindFlags], or nil otherwise.
+// Flags returns the underlying [ComponentFlagsType] if this is a flags type. Otherwise returns nil.
 func (vt *ComponentValType) Flags() *ComponentFlagsType {
 	if vt.Kind() != ComponentValTypeKindFlags {
 		return nil

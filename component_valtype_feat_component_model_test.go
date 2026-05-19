@@ -35,6 +35,11 @@ func TestComponentValTypeList(t *testing.T) {
 	require.NotNil(t, elem)
 	defer elem.Close()
 	require.Equal(t, ComponentValTypeKindU32, elem.Kind())
+
+	require.Nil(t, vt.Record())
+	require.Nil(t, vt.Tuple())
+	require.Nil(t, vt.Enum())
+	require.Nil(t, vt.Flags())
 }
 
 func TestComponentValTypeRecord(t *testing.T) {
@@ -76,6 +81,11 @@ func TestComponentValTypeRecord(t *testing.T) {
 	name2, ty2 := rt.FieldNth(2)
 	require.Equal(t, "", name2)
 	require.Nil(t, ty2)
+
+	require.Nil(t, vt.List())
+	require.Nil(t, vt.Tuple())
+	require.Nil(t, vt.Enum())
+	require.Nil(t, vt.Flags())
 }
 
 func TestComponentValTypeTuple(t *testing.T) {
@@ -118,6 +128,11 @@ func TestComponentValTypeTuple(t *testing.T) {
 
 	// TypeNth out of range returns nil.
 	require.Nil(t, tt.TypeNth(3))
+
+	require.Nil(t, vt.List())
+	require.Nil(t, vt.Record())
+	require.Nil(t, vt.Enum())
+	require.Nil(t, vt.Flags())
 }
 
 func TestComponentValTypeEnum(t *testing.T) {
@@ -148,6 +163,11 @@ func TestComponentValTypeEnum(t *testing.T) {
 
 	// CaseNth out of range returns "".
 	require.Equal(t, "", et.CaseNth(3))
+
+	require.Nil(t, vt.List())
+	require.Nil(t, vt.Record())
+	require.Nil(t, vt.Tuple())
+	require.Nil(t, vt.Flags())
 }
 
 func TestComponentValTypeFlags(t *testing.T) {
@@ -178,33 +198,9 @@ func TestComponentValTypeFlags(t *testing.T) {
 
 	// FlagNth out of range returns "".
 	require.Equal(t, "", ft.FlagNth(3))
-}
-
-// TestComponentValTypeDowncastNilForOtherKinds checks that each composite
-// downcast method ([ComponentValType.List], [ComponentValType.Record],
-// [ComponentValType.Tuple], [ComponentValType.Enum],
-// [ComponentValType.Flags]) returns nil when invoked on a value type of an
-// unrelated kind. A single `u32` type alias serves as the unrelated kind
-// for all five probes.
-func TestComponentValTypeDowncastNilForOtherKinds(t *testing.T) {
-	engine := newComponentEngine()
-	wasm, err := Wat2Wasm(`(component (type $a u32) (export "a" (type $a)))`)
-	require.NoError(t, err)
-	component, err := NewComponent(engine, wasm)
-	require.NoError(t, err)
-	defer component.Close()
-
-	ct := component.Type()
-	defer ct.Close()
-	_, item := ct.ExportNth(0)
-	defer item.Close()
-	vt := item.TypeAlias()
-	defer vt.Close()
-	require.Equal(t, ComponentValTypeKindU32, vt.Kind())
 
 	require.Nil(t, vt.List())
 	require.Nil(t, vt.Record())
 	require.Nil(t, vt.Tuple())
 	require.Nil(t, vt.Enum())
-	require.Nil(t, vt.Flags())
 }
