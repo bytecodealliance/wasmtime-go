@@ -25,11 +25,7 @@ import "C"
 import "runtime"
 
 // ComponentValTypeKind discriminates the WIT type that a [ComponentValType]
-// represents. This release exposes the 13 primitive kinds plus the
-// product/enum composite kinds (list / record / tuple / enum / flags).
-// Constants for the remaining composite kinds (variant / option / result /
-// own / borrow / future / stream / error-context / map) are commented out
-// and arrive in follow-up work along with their payload accessors.
+// represents.
 type ComponentValTypeKind uint8
 
 const (
@@ -52,9 +48,7 @@ const (
 	ComponentValTypeKindEnum   ComponentValTypeKind = C.WASMTIME_COMPONENT_VALTYPE_ENUM
 	ComponentValTypeKindFlags  ComponentValTypeKind = C.WASMTIME_COMPONENT_VALTYPE_FLAGS
 
-	// Remaining composite-kind constants are deferred until each gets a
-	// payload accessor that returns the corresponding sub-type wrapper,
-	// with a test path. Uncomment as each one lands.
+	// Remaining composite kinds: each lands with its payload accessor.
 	//
 	// ComponentValTypeKindVariant      ComponentValTypeKind = C.WASMTIME_COMPONENT_VALTYPE_VARIANT
 	// ComponentValTypeKindOption       ComponentValTypeKind = C.WASMTIME_COMPONENT_VALTYPE_OPTION
@@ -70,7 +64,9 @@ const (
 // ComponentValType describes the WIT type of a value in the component
 // model. Use [ComponentValType.Kind] to discriminate, then call the
 // corresponding downcast method ([ComponentValType.List],
-// [ComponentValType.Record], ...) for composite kinds.
+// [ComponentValType.Record], ...) for composite kinds. Downcast methods
+// return independently-owned wrappers that must be closed (or left to the
+// finalizer) separately from this value type.
 type ComponentValType struct {
 	val    C.wasmtime_component_valtype_t
 	closed bool
@@ -94,8 +90,7 @@ func (vt *ComponentValType) Kind() ComponentValTypeKind {
 }
 
 // List returns the [ComponentListType] wrapper when this value type's kind
-// is [ComponentValTypeKindList], or nil otherwise. The returned wrapper has
-// an independent lifecycle from the parent.
+// is [ComponentValTypeKindList], or nil otherwise.
 func (vt *ComponentValType) List() *ComponentListType {
 	if vt.Kind() != ComponentValTypeKindList {
 		return nil
