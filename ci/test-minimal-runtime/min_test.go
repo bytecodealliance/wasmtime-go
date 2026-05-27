@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	wasmtime "github.com/bytecodealliance/wasmtime-go/v44"
+	wasmtime "github.com/bytecodealliance/wasmtime-go/v45"
 )
 
 func TestMinimalRuntime(t *testing.T) {
