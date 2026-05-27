@@ -52,8 +52,9 @@ for i, arr in enumerate(urls):
         t.extractall()
 
     src = filename.replace('.zip', '').replace('.tar.xz', '')
+    include_src = src + '/min/include' if args.min else src + '/include'
     if i == 0:
-        shutil.copytree(src + '/include', 'build/include', dirs_exist_ok=True)
+        shutil.copytree(include_src, 'build/include', dirs_exist_ok=True)
 
     lib_src = src + '/min/lib' if args.min else src + '/lib'
     shutil.copytree(lib_src, 'build/' + dirname, dirs_exist_ok=True)

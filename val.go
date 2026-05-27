@@ -5,13 +5,7 @@ package wasmtime
 import "C"
 import (
 	"runtime"
-	"sync"
-	"unsafe"
 )
-
-var gExternrefLock sync.Mutex
-var gExternrefMap = make(map[int]interface{})
-var gExternrefSlab slab
 
 // Val is a primitive numeric value.
 // Moreover, in the definition of programs, immutable sequences of values occur to represent more complex data, such as text strings or other vectors.
@@ -47,22 +41,29 @@ func ValFuncref(f *Func) Val {
 	return Val{kind: C.WASMTIME_FUNCREF, val: f}
 }
 
-// ValExternref converts a go value to a externref Val
-//
-// Using `externref` is a way to pass arbitrary Go data into a WebAssembly
-// module for it to store. Later, when you get a `Val`, you can extract the type
-// with the `Externref()` method.
-func ValExternref(val interface{}) Val {
-	return Val{kind: C.WASMTIME_EXTERNREF, val: val}
+// mkValGC is overridden in val_feat_gc.go when GC support is compiled in to
+// handle GC kinds such as `externref`.
+var mkValGC = func(store Storelike, src *C.wasmtime_val_t) Val {
+	panic("failed to get kind of `Val`")
 }
 
-//export goFinalizeExternref
-func goFinalizeExternref(env unsafe.Pointer) {
-	idx := int(uintptr(env)) - 1
-	gExternrefLock.Lock()
-	defer gExternrefLock.Unlock()
-	delete(gExternrefMap, idx)
-	gExternrefSlab.deallocate(idx)
+// valKindGC is overridden in val_feat_gc.go to translate GC value kinds (such
+// as `externref`) to their `ValKind` counterpart.
+var valKindGC = func(kind C.wasmtime_valkind_t) ValKind {
+	panic("failed to get kind of `Val`")
+}
+
+// valInitializeGC is overridden in val_feat_gc.go to populate a
+// `wasmtime_val_t` for GC-typed values (such as `externref`).
+var valInitializeGC = func(v Val, store Storelike, ptr *C.wasmtime_val_t) {
+	panic("failed to get kind of `Val`")
+}
+
+// initializeExternrefArg is overridden in val_feat_gc.go to wrap arbitrary Go
+// values into an `externref` argument when calling host->wasm. Without GC
+// support, no externref values can flow into wasm, so this panics.
+var initializeExternrefArg = func(store Storelike, val interface{}, dst *C.wasmtime_val_t) Val {
+	panic("externref support is not available in this build")
 }
 
 func mkVal(store Storelike, src *C.wasmtime_val_t) Val {
@@ -82,19 +83,8 @@ func mkVal(store Storelike, src *C.wasmtime_val_t) Val {
 		} else {
 			return ValFuncref(mkFunc(val))
 		}
-	case C.WASMTIME_EXTERNREF:
-		val := C.go_wasmtime_val_externref_get(src)
-		if val.store_id == 0 {
-			return ValExternref(nil)
-		}
-		data := C.wasmtime_externref_data(store.Context(), &val)
-		runtime.KeepAlive(store)
-
-		gExternrefLock.Lock()
-		defer gExternrefLock.Unlock()
-		return ValExternref(gExternrefMap[int(uintptr(data))-1])
 	}
-	panic("failed to get kind of `Val`")
+	return mkValGC(store, src)
 }
 
 func takeVal(store Storelike, src *C.wasmtime_val_t) Val {
@@ -117,10 +107,8 @@ func (v Val) Kind() ValKind {
 		return KindF64
 	case C.WASMTIME_FUNCREF:
 		return KindFuncref
-	case C.WASMTIME_EXTERNREF:
-		return KindExternref
 	}
-	panic("failed to get kind of `Val`")
+	return valKindGC(v.kind)
 }
 
 // I32 returns the underlying 32-bit integer if this is an `i32`, or panics.
@@ -165,16 +153,6 @@ func (v Val) Funcref() *Func {
 	return v.val.(*Func)
 }
 
-// Externref returns the underlying value if this is an `externref`, or panics.
-//
-// Note that a null `externref` is returned as `nil`.
-func (v Val) Externref() interface{} {
-	if v.Kind() != KindExternref {
-		panic("not an externref")
-	}
-	return v.val
-}
-
 // Get returns the underlying 64-bit float if this is an `f64`, or panics.
 func (v Val) Get() interface{} {
 	return v.val
@@ -199,30 +177,7 @@ func (v Val) initialize(store Storelike, ptr *C.wasmtime_val_t) {
 			empty := C.wasmtime_func_t{}
 			C.go_wasmtime_val_funcref_set(ptr, empty)
 		}
-	case C.WASMTIME_EXTERNREF:
-		// If we have a non-nil value then store it in our global map
-		// of all externref values. Otherwise there's nothing for us to
-		// do since the `ref` field will already be a nil pointer.
-		//
-		// Note that we add 1 so all non-null externref values are
-		// created with non-null pointers.
-		if v.val == nil {
-			C.go_wasmtime_val_externref_set(ptr, C.wasmtime_externref_t{})
-		} else {
-			gExternrefLock.Lock()
-			defer gExternrefLock.Unlock()
-			index := gExternrefSlab.allocate()
-			gExternrefMap[index] = v.val
-			var ref C.wasmtime_externref_t
-			ok := C.go_externref_new(store.Context(), C.size_t(index+1), &ref)
-			runtime.KeepAlive(store)
-			if ok {
-				C.go_wasmtime_val_externref_set(ptr, ref)
-			} else {
-				panic("failed to create an externref")
-			}
-		}
 	default:
-		panic("failed to get kind of `Val`")
+		valInitializeGC(v, store, ptr)
 	}
 }

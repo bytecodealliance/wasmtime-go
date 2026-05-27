@@ -63,10 +63,6 @@ wasmtime_error_t *go_linker_define_func(
   return wasmtime_linker_define_func(linker, module, module_len, name, name_len, ty, cb, (void*) env, finalizer);
 }
 
-bool go_externref_new(wasmtime_context_t *cx, size_t env, wasmtime_externref_t *ref) {
-  return wasmtime_externref_new(cx, (void*) env, goFinalizeExternref, ref);
-}
-
 #define UNION_ACCESSOR(name, field, ty) \
   ty go_##name##_##field##_get(const name##_t *val) { return val->of.field; } \
   void go_##name##_##field##_set(name##_t *val, ty i) { val->of.field = i; }

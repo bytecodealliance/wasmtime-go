@@ -313,7 +313,7 @@ func goTrampolineWrap(
 				}
 			}
 		default:
-			ValExternref(val).initialize(caller, ptr)
+			initializeExternrefArg(caller, val, ptr)
 		}
 		base = unsafe.Pointer(uintptr(base) + unsafe.Sizeof(raw))
 	}
@@ -410,9 +410,8 @@ func (f *Func) Call(store Storelike, args ...interface{}) (interface{}, error) {
 			val.initialize(store, dst)
 
 		default:
-			externref := ValExternref(val)
+			externref := initializeExternrefArg(store, val, dst)
 			externrefs = append(externrefs, externref)
-			externref.initialize(store, dst)
 		}
 
 	}

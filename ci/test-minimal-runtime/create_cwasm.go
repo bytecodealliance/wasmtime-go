@@ -17,6 +17,7 @@ func main() {
 	cfg.SetGCSupport(false)
 	cfg.SetWasmThreads(false)
 	cfg.SetWasmComponentModel(false)
+	cfg.SetConcurrencySupport(false)
 	engine := wasmtime.NewEngineWithConfig(cfg)
 	module, err := wasmtime.NewModule(engine, wasm)
 	check(err)
