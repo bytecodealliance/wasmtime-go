@@ -15,4 +15,3 @@ func (store *Store) GC() {
 	C.wasmtime_context_gc(store.Context())
 	runtime.KeepAlive(store)
 }
-
