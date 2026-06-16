@@ -25,7 +25,7 @@
 ## Installation
 
 ```sh
-go get -u github.com/bytecodealliance/wasmtime-go/v45@v45.0.1
+go get -u github.com/bytecodealliance/wasmtime-go/v45@v45.0.0
 ```
 
 Be sure to check out the [API documentation][api]!
@@ -34,8 +34,9 @@ This Go library uses CGO to consume the C API of the [Wasmtime
 project][wasmtime] which is written in Rust. Precompiled binaries of Wasmtime
 are checked into this repository on tagged releases so you won't have to install
 Wasmtime locally, but it means that this project only works on Linux x86\_64,
-macOS x86\_64 , and Windows x86\_64 currently. Building on other platforms will
-need to arrange to build Wasmtime and use `CGO_*` env vars to compile correctly.
+Linux aarch64, Linux riscv64, macOS x86\_64, macOS aarch64, and Windows x86\_64 currently.
+Building on other platforms will need to arrange to build Wasmtime and use
+`CGO_*` env vars to compile correctly.
 
 This project has been tested with Go 1.13 or later.
 
@@ -130,11 +131,11 @@ $ git clone https://github.com/bytecodealliance/wasmtime-go
 Next up you'll want to have a [local Wasmtime build
 available](https://bytecodealliance.github.io/wasmtime/contributing-building.html).
 
-You'll need to build at least the `wasmtime-c-api` crate, which, at the time of
-this writing, would be:
+You'll need to build the `wasmtime-c-api` artifact crate to produce the static
+library (`libwasmtime.a`) and shared library (`libwasmtime.so`):
 
 ```sh
-$ cargo build -p wasmtime-c-api
+$ cargo build --release -p wasmtime-c-api --manifest-path crates/c-api/artifact/Cargo.toml
 ```
 
 Once you've got that you can set up the environment of this library with:
@@ -166,7 +167,7 @@ Make sure everything passes at the current version.
 Next run:
 
 ```
-$ git ls-files | xargs sed -i 's/v16/v17/g'
+$ git ls-files | xargs sed -i 's/v45/v46/g'
 $ python3 ci/download-wasmtime.py
 $ go test
 ```

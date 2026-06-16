@@ -1,13 +1,14 @@
 package wasmtime
 
 // #cgo CFLAGS:-I${SRCDIR}/build/include
-// #cgo !windows LDFLAGS:-lwasmtime -lm -ldl -pthread
+// #cgo !windows LDFLAGS:-ldl -pthread
 // #cgo windows CFLAGS:-DWASM_API_EXTERN= -DWASI_API_EXTERN=
 // #cgo windows LDFLAGS:-lwasmtime -luserenv -lole32 -lntdll -lws2_32 -lkernel32 -lbcrypt
-// #cgo linux,amd64 LDFLAGS:-L${SRCDIR}/build/linux-x86_64
-// #cgo linux,arm64 LDFLAGS:-L${SRCDIR}/build/linux-aarch64
-// #cgo darwin,amd64 LDFLAGS:-L${SRCDIR}/build/macos-x86_64
-// #cgo darwin,arm64 LDFLAGS:-L${SRCDIR}/build/macos-aarch64
+// #cgo linux,amd64 LDFLAGS:-L${SRCDIR}/build/linux-x86_64 -lwasmtime -lm
+// #cgo linux,arm64 LDFLAGS:-L${SRCDIR}/build/linux-aarch64 -lwasmtime -lm
+// #cgo linux,riscv64 LDFLAGS:-L${SRCDIR}/build/linux-riscv64 -lwasmtime -lm
+// #cgo darwin,amd64 LDFLAGS:-L${SRCDIR}/build/macos-x86_64 -lwasmtime
+// #cgo darwin,arm64 LDFLAGS:-L${SRCDIR}/build/macos-aarch64 -lwasmtime
 // #cgo windows,amd64 LDFLAGS:-L${SRCDIR}/build/windows-x86_64
 // #include <wasm.h>
 import "C"

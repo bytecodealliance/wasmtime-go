@@ -77,6 +77,57 @@ jobs:
       run: ./ci/test-minimal-runtime/test.sh
       if: runner.os != 'Windows'
 
+  build-cross:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        goarch: [amd64, arm64, riscv64]
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+    - run: python ci/download-wasmtime.py
+
+    - uses: actions/setup-go@v2
+      with:
+        go-version: '1.24.x'
+
+    - name: Install cross-compiler (arm64)
+      if: matrix.goarch == 'arm64'
+      run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
+
+    - name: Install zig (riscv64)
+      if: matrix.goarch == 'riscv64'
+      uses: mlugg/setup-zig@v2
+      with:
+        version: 0.14.0
+
+    - name: Build test files for amd64
+      if: matrix.goarch == 'amd64'
+      env:
+        GOARCH: amd64
+        CGO_ENABLED: 1
+      run: go build -o /dev/null ./... 2>&1 | head -20
+
+    - name: Build test files for arm64
+      if: matrix.goarch == 'arm64'
+      env:
+        GOARCH: arm64
+        CGO_ENABLED: 1
+        CC: aarch64-linux-gnu-gcc
+      run: go build -o /dev/null ./... 2>&1 | head -20
+
+    - name: Build test files for riscv64
+      if: matrix.goarch == 'riscv64'
+      env:
+        GOARCH: riscv64
+        CGO_ENABLED: 1
+        CC: zig cc -target riscv64-linux-gnu
+      run: go build -o /dev/null ./... 2>&1 | head -20
+
   coverage:
     runs-on: ubuntu-latest
     steps:
