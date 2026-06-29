@@ -12,14 +12,14 @@ import (
 	// included in vendored dependencies.
 	// Cf. https://github.com/golang/go/issues/26366
 
-	_ "github.com/bytecodealliance/wasmtime-go/v45/build/include"
-	_ "github.com/bytecodealliance/wasmtime-go/v45/build/include/wasmtime"
-	_ "github.com/bytecodealliance/wasmtime-go/v45/build/include/wasmtime/component"
-	_ "github.com/bytecodealliance/wasmtime-go/v45/build/include/wasmtime/component/types"
-	_ "github.com/bytecodealliance/wasmtime-go/v45/build/include/wasmtime/types"
-	_ "github.com/bytecodealliance/wasmtime-go/v45/build/linux-aarch64"
-	_ "github.com/bytecodealliance/wasmtime-go/v45/build/linux-x86_64"
-	_ "github.com/bytecodealliance/wasmtime-go/v45/build/macos-aarch64"
-	_ "github.com/bytecodealliance/wasmtime-go/v45/build/macos-x86_64"
-	_ "github.com/bytecodealliance/wasmtime-go/v45/build/windows-x86_64"
+	_ "github.com/bytecodealliance/wasmtime-go/v46/build/include"
+	_ "github.com/bytecodealliance/wasmtime-go/v46/build/include/wasmtime"
+	_ "github.com/bytecodealliance/wasmtime-go/v46/build/include/wasmtime/component"
+	_ "github.com/bytecodealliance/wasmtime-go/v46/build/include/wasmtime/component/types"
+	_ "github.com/bytecodealliance/wasmtime-go/v46/build/include/wasmtime/types"
+	_ "github.com/bytecodealliance/wasmtime-go/v46/build/linux-aarch64"
+	_ "github.com/bytecodealliance/wasmtime-go/v46/build/linux-x86_64"
+	_ "github.com/bytecodealliance/wasmtime-go/v46/build/macos-aarch64"
+	_ "github.com/bytecodealliance/wasmtime-go/v46/build/macos-x86_64"
+	_ "github.com/bytecodealliance/wasmtime-go/v46/build/windows-x86_64"
 )
