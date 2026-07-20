@@ -23,3 +23,9 @@ func (cfg *Config) SetWasmFunctionReferences(enabled bool) {
 	C.wasmtime_config_wasm_function_references_set(cfg.ptr(), C.bool(enabled))
 	runtime.KeepAlive(cfg)
 }
+
+// SetWasmExceptions configures whether exceptions are enabled
+func (cfg *Config) SetWasmExceptions(enabled bool) {
+	C.wasmtime_config_wasm_exceptions_set(cfg.ptr(), C.bool(enabled))
+	runtime.KeepAlive(cfg)
+}
