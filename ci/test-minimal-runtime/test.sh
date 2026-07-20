@@ -14,7 +14,7 @@ go run create_cwasm.go
 DOWNLOAD_SCRIPT="$(pwd)/../download-wasmtime.py"
 go mod vendor
 (
-  cd vendor/github.com/bytecodealliance/wasmtime-go/v46
+  cd vendor/github.com/bytecodealliance/wasmtime-go/v47
   rm -f wat2wasm.go wasi.go *_feat_*.go *_feats_*.go
   python3 "$DOWNLOAD_SCRIPT" --min
 )
