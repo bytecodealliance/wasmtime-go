@@ -10,12 +10,9 @@ import "C"
 import "runtime"
 
 // ComponentValTypeKind discriminates the WIT type that a [ComponentValType]
-// represents. Only constants for the 13 primitive kinds (bool through
-// string) are exposed in this release; constants for the composite kinds
-// (list / record / tuple / variant / enum / option / result / flags / own /
-// borrow / future / stream / error-context / map) are intentionally
-// commented out below — they will be uncommented when each composite kind
-// gets a dedicated payload accessor and a test path that exercises it.
+// represents. Constants are exposed for the primitive and synchronous
+// composite kinds supported by [ComponentVal]. Resource and asynchronous
+// kinds remain deferred until their ownership contracts are implemented.
 type ComponentValTypeKind uint8
 
 const (
@@ -33,18 +30,14 @@ const (
 	ComponentValTypeKindChar   ComponentValTypeKind = C.WASMTIME_COMPONENT_VALTYPE_CHAR
 	ComponentValTypeKindString ComponentValTypeKind = C.WASMTIME_COMPONENT_VALTYPE_STRING
 
-	// Composite-kind constants are deferred until each gets a payload
-	// accessor that returns the corresponding sub-type wrapper, with a
-	// test path. Uncomment as each one lands.
-	//
-	// ComponentValTypeKindList         ComponentValTypeKind = C.WASMTIME_COMPONENT_VALTYPE_LIST
-	// ComponentValTypeKindRecord       ComponentValTypeKind = C.WASMTIME_COMPONENT_VALTYPE_RECORD
-	// ComponentValTypeKindTuple        ComponentValTypeKind = C.WASMTIME_COMPONENT_VALTYPE_TUPLE
-	// ComponentValTypeKindVariant      ComponentValTypeKind = C.WASMTIME_COMPONENT_VALTYPE_VARIANT
-	// ComponentValTypeKindEnum         ComponentValTypeKind = C.WASMTIME_COMPONENT_VALTYPE_ENUM
-	// ComponentValTypeKindOption       ComponentValTypeKind = C.WASMTIME_COMPONENT_VALTYPE_OPTION
-	// ComponentValTypeKindResult       ComponentValTypeKind = C.WASMTIME_COMPONENT_VALTYPE_RESULT
-	// ComponentValTypeKindFlags        ComponentValTypeKind = C.WASMTIME_COMPONENT_VALTYPE_FLAGS
+	ComponentValTypeKindList    ComponentValTypeKind = C.WASMTIME_COMPONENT_VALTYPE_LIST
+	ComponentValTypeKindRecord  ComponentValTypeKind = C.WASMTIME_COMPONENT_VALTYPE_RECORD
+	ComponentValTypeKindTuple   ComponentValTypeKind = C.WASMTIME_COMPONENT_VALTYPE_TUPLE
+	ComponentValTypeKindVariant ComponentValTypeKind = C.WASMTIME_COMPONENT_VALTYPE_VARIANT
+	ComponentValTypeKindEnum    ComponentValTypeKind = C.WASMTIME_COMPONENT_VALTYPE_ENUM
+	ComponentValTypeKindOption  ComponentValTypeKind = C.WASMTIME_COMPONENT_VALTYPE_OPTION
+	ComponentValTypeKindResult  ComponentValTypeKind = C.WASMTIME_COMPONENT_VALTYPE_RESULT
+	ComponentValTypeKindFlags   ComponentValTypeKind = C.WASMTIME_COMPONENT_VALTYPE_FLAGS
 	// ComponentValTypeKindOwn          ComponentValTypeKind = C.WASMTIME_COMPONENT_VALTYPE_OWN
 	// ComponentValTypeKindBorrow       ComponentValTypeKind = C.WASMTIME_COMPONENT_VALTYPE_BORROW
 	// ComponentValTypeKindFuture       ComponentValTypeKind = C.WASMTIME_COMPONENT_VALTYPE_FUTURE
@@ -56,11 +49,9 @@ const (
 // ComponentValType describes the WIT type of a value in the component
 // model.
 //
-// In this release [ComponentValType.Kind] returns one of the 13 primitive
-// [ComponentValTypeKind] constants. If the underlying value type is a
-// composite kind, the returned uint8 will not match any exposed constant
-// — those, along with payload accessors that return their sub-type
-// wrappers, arrive in follow-up work.
+// [ComponentValType.Kind] returns a [ComponentValTypeKind] discriminator.
+// Payload type accessors for composite definitions arrive separately from
+// the runtime-value support in [ComponentVal].
 type ComponentValType struct {
 	val    C.wasmtime_component_valtype_t
 	closed bool
