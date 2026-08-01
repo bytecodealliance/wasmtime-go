@@ -85,27 +85,28 @@ import (
 type ComponentValKind uint8
 
 const (
-	ComponentValKindBool    ComponentValKind = C.WASMTIME_COMPONENT_BOOL
-	ComponentValKindS8      ComponentValKind = C.WASMTIME_COMPONENT_S8
-	ComponentValKindU8      ComponentValKind = C.WASMTIME_COMPONENT_U8
-	ComponentValKindS16     ComponentValKind = C.WASMTIME_COMPONENT_S16
-	ComponentValKindU16     ComponentValKind = C.WASMTIME_COMPONENT_U16
-	ComponentValKindS32     ComponentValKind = C.WASMTIME_COMPONENT_S32
-	ComponentValKindU32     ComponentValKind = C.WASMTIME_COMPONENT_U32
-	ComponentValKindS64     ComponentValKind = C.WASMTIME_COMPONENT_S64
-	ComponentValKindU64     ComponentValKind = C.WASMTIME_COMPONENT_U64
-	ComponentValKindF32     ComponentValKind = C.WASMTIME_COMPONENT_F32
-	ComponentValKindF64     ComponentValKind = C.WASMTIME_COMPONENT_F64
-	ComponentValKindChar    ComponentValKind = C.WASMTIME_COMPONENT_CHAR
-	ComponentValKindString  ComponentValKind = C.WASMTIME_COMPONENT_STRING
-	ComponentValKindList    ComponentValKind = C.WASMTIME_COMPONENT_LIST
-	ComponentValKindRecord  ComponentValKind = C.WASMTIME_COMPONENT_RECORD
-	ComponentValKindTuple   ComponentValKind = C.WASMTIME_COMPONENT_TUPLE
-	ComponentValKindVariant ComponentValKind = C.WASMTIME_COMPONENT_VARIANT
-	ComponentValKindEnum    ComponentValKind = C.WASMTIME_COMPONENT_ENUM
-	ComponentValKindOption  ComponentValKind = C.WASMTIME_COMPONENT_OPTION
-	ComponentValKindResult  ComponentValKind = C.WASMTIME_COMPONENT_RESULT
-	ComponentValKindFlags   ComponentValKind = C.WASMTIME_COMPONENT_FLAGS
+	ComponentValKindBool     ComponentValKind = C.WASMTIME_COMPONENT_BOOL
+	ComponentValKindS8       ComponentValKind = C.WASMTIME_COMPONENT_S8
+	ComponentValKindU8       ComponentValKind = C.WASMTIME_COMPONENT_U8
+	ComponentValKindS16      ComponentValKind = C.WASMTIME_COMPONENT_S16
+	ComponentValKindU16      ComponentValKind = C.WASMTIME_COMPONENT_U16
+	ComponentValKindS32      ComponentValKind = C.WASMTIME_COMPONENT_S32
+	ComponentValKindU32      ComponentValKind = C.WASMTIME_COMPONENT_U32
+	ComponentValKindS64      ComponentValKind = C.WASMTIME_COMPONENT_S64
+	ComponentValKindU64      ComponentValKind = C.WASMTIME_COMPONENT_U64
+	ComponentValKindF32      ComponentValKind = C.WASMTIME_COMPONENT_F32
+	ComponentValKindF64      ComponentValKind = C.WASMTIME_COMPONENT_F64
+	ComponentValKindChar     ComponentValKind = C.WASMTIME_COMPONENT_CHAR
+	ComponentValKindString   ComponentValKind = C.WASMTIME_COMPONENT_STRING
+	ComponentValKindList     ComponentValKind = C.WASMTIME_COMPONENT_LIST
+	ComponentValKindRecord   ComponentValKind = C.WASMTIME_COMPONENT_RECORD
+	ComponentValKindTuple    ComponentValKind = C.WASMTIME_COMPONENT_TUPLE
+	ComponentValKindVariant  ComponentValKind = C.WASMTIME_COMPONENT_VARIANT
+	ComponentValKindEnum     ComponentValKind = C.WASMTIME_COMPONENT_ENUM
+	ComponentValKindOption   ComponentValKind = C.WASMTIME_COMPONENT_OPTION
+	ComponentValKindResult   ComponentValKind = C.WASMTIME_COMPONENT_RESULT
+	ComponentValKindFlags    ComponentValKind = C.WASMTIME_COMPONENT_FLAGS
+	ComponentValKindResource ComponentValKind = C.WASMTIME_COMPONENT_RESOURCE
 )
 
 // ComponentVal is an owned dynamically typed component-model value.
@@ -370,6 +371,8 @@ func (v *ComponentVal) Value() any {
 			flags[i] = C.GoStringN(C.go_component_val_flags_get(v.ptr(), C.size_t(i)), C.int(C.go_component_val_flags_get_len(v.ptr(), C.size_t(i))))
 		}
 		return flags
+	case ComponentValKindResource:
+		panic("resource values require TakeHostResource with an explicit store")
 	default:
 		panic("unsupported component value kind")
 	}
