@@ -5,6 +5,7 @@ package wasmtime
 import "C"
 
 import (
+	"fmt"
 	"runtime"
 )
 
@@ -73,6 +74,9 @@ func (i *ComponentLinkerInstance) ptr() *C.wasmtime_component_linker_instance_t 
 
 // AddFunc defines a host component function in this namespace.
 func (i *ComponentLinkerInstance) AddFunc(name string, callback ComponentHostFunc) error {
+	if callback == nil {
+		return fmt.Errorf("component host function callback is required")
+	}
 	index := insertComponentFunc(callback)
 	err := C.go_component_linker_instance_add_func(
 		i.ptr(), C._GoStringPtr(name), C._GoStringLen(name), C.size_t(index),
@@ -89,6 +93,9 @@ func (i *ComponentLinkerInstance) AddFunc(name string, callback ComponentHostFun
 
 // AddResource defines a host resource type and its destructor in this namespace.
 func (i *ComponentLinkerInstance) AddResource(name string, resourceType *ComponentResourceType, destructor ComponentResourceDestructor) error {
+	if destructor == nil {
+		return fmt.Errorf("component resource destructor is required")
+	}
 	index := insertComponentResourceDestructor(destructor)
 	err := C.go_component_linker_instance_add_resource(
 		i.ptr(), C._GoStringPtr(name), C._GoStringLen(name), resourceType.ptr(), C.size_t(index),
@@ -162,6 +169,9 @@ func (l *ComponentLinker) DefineUnknownImportsAsTraps(component *Component) erro
 func (l *ComponentLinker) Close() {
 	if l._ptr == nil {
 		return
+	}
+	if l.locked {
+		panic("component linker is exclusively borrowed by a linker instance")
 	}
 	runtime.SetFinalizer(l, nil)
 	C.wasmtime_component_linker_delete(l._ptr)

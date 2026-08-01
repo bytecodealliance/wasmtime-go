@@ -49,6 +49,8 @@ func TestComponentHostFunctionsAndLinkerBorrow(t *testing.T) {
 	defer linker.Close()
 	root := linker.Root()
 	require.Panics(t, func() { linker.Instantiate(store, component) })
+	require.Panics(t, func() { linker.Close() })
+	require.Error(t, root.AddFunc("nil-host", nil))
 	require.NoError(t, root.AddFunc("host-add", func(caller *ComponentCaller, args []*ComponentVal) ([]*ComponentVal, error) {
 		hostState := caller.Data().(*componentHostState)
 		hostState.calls++
@@ -63,6 +65,7 @@ func TestComponentHostFunctionsAndLinkerBorrow(t *testing.T) {
 	}))
 	resourceType := NewComponentResourceType(7)
 	defer resourceType.Close()
+	require.Error(t, root.AddResource("nil-resource", resourceType, nil))
 	require.NoError(t, root.AddResource("host-resource", resourceType, func(*ComponentCaller, uint32) error { return nil }))
 	root.Close()
 
