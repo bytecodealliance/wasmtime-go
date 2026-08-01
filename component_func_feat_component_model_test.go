@@ -5,6 +5,8 @@ package wasmtime
 import (
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 const byteComponent = `(component
@@ -61,6 +63,11 @@ func TestComponentFuncRepeatedListU8Calls(t *testing.T) {
 	if increment == nil {
 		t.Fatal("increment-bytes function not found")
 	}
+	typeInfo := increment.Type(store)
+	require.Equal(t, 1, typeInfo.ParamCount())
+	require.True(t, typeInfo.HasResult())
+	typeInfo.Close()
+	require.Panics(t, func() { typeInfo.ParamCount() })
 	value := []byte{0, 1, 2, 253}
 	for iteration := 0; iteration < 100; iteration++ {
 		elements := make([]*ComponentVal, len(value))

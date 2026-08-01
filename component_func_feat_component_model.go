@@ -32,16 +32,25 @@ func (f *ComponentFunc) Type(store Storelike) *ComponentFuncType {
 	ptr := C.wasmtime_component_func_type(&f.val, store.Context())
 	runtime.KeepAlive(f)
 	runtime.KeepAlive(store)
-	return &ComponentFuncType{_ptr: ptr}
+	typeInfo := &ComponentFuncType{_ptr: ptr}
+	runtime.SetFinalizer(typeInfo, func(typeInfo *ComponentFuncType) { typeInfo.Close() })
+	return typeInfo
+}
+
+func (t *ComponentFuncType) ptr() *C.wasmtime_component_func_type_t {
+	if t == nil || t._ptr == nil {
+		panic("component function type has been closed")
+	}
+	return t._ptr
 }
 
 func (t *ComponentFuncType) ParamCount() int {
-	return int(C.wasmtime_component_func_type_param_count(t._ptr))
+	return int(C.wasmtime_component_func_type_param_count(t.ptr()))
 }
 
 func (t *ComponentFuncType) HasResult() bool {
 	var result C.wasmtime_component_valtype_t
-	found := bool(C.wasmtime_component_func_type_result(t._ptr, &result))
+	found := bool(C.wasmtime_component_func_type_result(t.ptr(), &result))
 	if found {
 		C.wasmtime_component_valtype_delete(&result)
 	}
@@ -50,6 +59,7 @@ func (t *ComponentFuncType) HasResult() bool {
 
 func (t *ComponentFuncType) Close() {
 	if t != nil && t._ptr != nil {
+		runtime.SetFinalizer(t, nil)
 		C.wasmtime_component_func_type_delete(t._ptr)
 		t._ptr = nil
 	}
