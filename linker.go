@@ -4,8 +4,10 @@ package wasmtime
 // #include "shims.h"
 import "C"
 import (
+	"errors"
 	"reflect"
 	"runtime"
+	"unicode/utf8"
 )
 
 // Linker implements a wasmtime Linking module, which can link instantiated modules together.
@@ -95,14 +97,19 @@ func (l *Linker) DefineFunc(store Storelike, module, name string, f interface{})
 //
 // Returns an error if shadowing is disabled and the name is already defined.
 func (l *Linker) FuncNew(module, name string, ty *FuncType, f func(*Caller, []Val) ([]Val, *Trap)) error {
+	if !utf8.ValidString(module) || !utf8.ValidString(name) {
+		return errors.New("module and name must be valid UTF-8")
+	}
+	linkerPtr := l.ptr()
+	typePtr := ty.ptr()
 	idx := insertFuncNew(nil, ty, f)
 	err := C.go_linker_define_func(
-		l.ptr(),
+		linkerPtr,
 		C._GoStringPtr(module),
 		C._GoStringLen(module),
 		C._GoStringPtr(name),
 		C._GoStringLen(name),
-		ty.ptr(),
+		typePtr,
 		0, // this is "new"
 		C.size_t(idx),
 	)
@@ -126,16 +133,21 @@ func (l *Linker) FuncNew(module, name string, ty *FuncType, f func(*Caller, []Va
 //
 // Returns an error if shadowing is disabled and the name is already defined.
 func (l *Linker) FuncWrap(module, name string, f interface{}) error {
+	if !utf8.ValidString(module) || !utf8.ValidString(name) {
+		return errors.New("module and name must be valid UTF-8")
+	}
+	linkerPtr := l.ptr()
 	val := reflect.ValueOf(f)
 	ty := inferFuncType(val)
+	typePtr := ty.ptr()
 	idx := insertFuncWrap(nil, val)
 	err := C.go_linker_define_func(
-		l.ptr(),
+		linkerPtr,
 		C._GoStringPtr(module),
 		C._GoStringLen(module),
 		C._GoStringPtr(name),
 		C._GoStringLen(name),
-		ty.ptr(),
+		typePtr,
 		1, // this is "wrap"
 		C.size_t(idx),
 	)

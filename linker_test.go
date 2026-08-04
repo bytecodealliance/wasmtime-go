@@ -182,6 +182,77 @@ func TestLinkerFuncs(t *testing.T) {
 	require.Equal(t, 6, called, "expected a call")
 }
 
+func TestLinkerFuncWrapRejectsInvalidUTF8WithoutRetainingCallback(t *testing.T) {
+	engine := NewEngine()
+	linker := NewLinker(engine)
+	defer linker.Close()
+
+	for _, tc := range []struct {
+		module string
+		name   string
+	}{
+		{module: string([]byte{0xff}), name: "host"},
+		{module: "host", name: string([]byte{0xff})},
+	} {
+		_, before := engineFuncCounts()
+		err := linker.FuncWrap(tc.module, tc.name, func() {})
+		require.EqualError(t, err, "module and name must be valid UTF-8")
+		_, after := engineFuncCounts()
+		require.Equal(t, before, after)
+	}
+}
+
+func TestLinkerFuncNewRejectsInvalidUTF8WithoutRetainingCallback(t *testing.T) {
+	engine := NewEngine()
+	linker := NewLinker(engine)
+	defer linker.Close()
+	ty := NewFuncType(nil, nil)
+	defer ty.Close()
+
+	for _, tc := range []struct {
+		module string
+		name   string
+	}{
+		{module: string([]byte{0xff}), name: "host"},
+		{module: "host", name: string([]byte{0xff})},
+	} {
+		before, _ := engineFuncCounts()
+		err := linker.FuncNew(tc.module, tc.name, ty, func(*Caller, []Val) ([]Val, *Trap) {
+			return nil, nil
+		})
+		require.EqualError(t, err, "module and name must be valid UTF-8")
+		after, _ := engineFuncCounts()
+		require.Equal(t, before, after)
+	}
+}
+
+func engineFuncCounts() (funcNew, funcWrap int) {
+	gEngineFuncLock.Lock()
+	defer gEngineFuncLock.Unlock()
+	return len(gEngineFuncNew), len(gEngineFuncWrap)
+}
+
+func TestLinkerFuncsDoNotRetainCallbacksWhenLinkerIsClosed(t *testing.T) {
+	engine := NewEngine()
+	linker := NewLinker(engine)
+	linker.Close()
+	ty := NewFuncType(nil, nil)
+	defer ty.Close()
+
+	beforeNew, beforeWrap := engineFuncCounts()
+	require.PanicsWithValue(t, "object has been closed already", func() {
+		linker.FuncWrap("host", "wrap", func() {})
+	})
+	require.PanicsWithValue(t, "object has been closed already", func() {
+		linker.FuncNew("host", "new", ty, func(*Caller, []Val) ([]Val, *Trap) {
+			return nil, nil
+		})
+	})
+	afterNew, afterWrap := engineFuncCounts()
+	require.Equal(t, beforeNew, afterNew)
+	require.Equal(t, beforeWrap, afterWrap)
+}
+
 func TestLinkerDefineUnknownImportsAsTraps(t *testing.T) {
 	engine := NewEngine()
 	wasm, err := Wat2Wasm(`
