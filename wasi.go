@@ -154,18 +154,10 @@ func (c *WasiConfig) InheritStderr() {
 type WasiDirPerms uint8
 type WasiFilePerms uint8
 
-const (
-	DIR_READ   WasiDirPerms  = C.WASMTIME_WASI_DIR_PERMS_READ
-	DIR_WRITE  WasiDirPerms  = C.WASMTIME_WASI_DIR_PERMS_WRITE
-	FILE_READ  WasiFilePerms = C.WASMTIME_WASI_FILE_PERMS_READ
-	FILE_WRITE WasiFilePerms = C.WASMTIME_WASI_FILE_PERMS_WRITE
-)
-
-func (c *WasiConfig) PreopenDir(path, guestPath string, dirPerms WasiDirPerms, filePerms WasiFilePerms) error {
+func (c *WasiConfig) PreopenDir(path, guestPath string, fsMutable bool) error {
 	pathC := C.CString(path)
 	guestPathC := C.CString(guestPath)
-	ok := C.wasi_config_preopen_dir(c.ptr(), pathC, guestPathC,
-		C.wasi_dir_perms(dirPerms), C.wasi_file_perms(filePerms))
+	ok := C.wasi_config_preopen_dir(c.ptr(), pathC, guestPathC, C.bool(fsMutable))
 	runtime.KeepAlive(c)
 	C.free(unsafe.Pointer(pathC))
 	C.free(unsafe.Pointer(guestPathC))

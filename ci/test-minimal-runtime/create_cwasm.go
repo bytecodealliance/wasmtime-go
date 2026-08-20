@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	wasmtime "github.com/bytecodealliance/wasmtime-go/v47"
+	wasmtime "github.com/bytecodealliance/wasmtime-go/v48"
 )
 
 func main() {
