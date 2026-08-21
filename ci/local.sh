@@ -1,6 +1,7 @@
 #!/bin/bash
 
 wasmtime=$1
+target=$2
 if [ "$wasmtime" = "" ]; then
   echo "must pass path to wasmtime"
   exit 1
@@ -15,9 +16,9 @@ for d in "include" "include/wasmtime" "linux-x86_64" "macos-x86_64" "windows-x86
   echo "package ${name/-/_}" > "$path/empty.go"
 done
 
-build="$wasmtime/target/release"
+build="$wasmtime/target/"$target"/release"
 if [ ! -d "$build" ]; then
-  build="$wasmtime/target/debug"
+  build="$wasmtime/target/"$target"/debug"
 fi
 # Use absolute path for symbolic links
 build=$(cd "$build" && pwd)
