@@ -82,16 +82,17 @@ func (ct *ComponentType) ExportNth(i int) (string, *ComponentItem) {
 func (ct *ComponentType) itemNth(i int, isImport bool) (string, *ComponentItem) {
 	var nameP *C.char
 	var nameLen C.size_t
+	var extern *C.wasmtime_component_extern_t
 	var item C.wasmtime_component_item_t
 	var found C.bool
 	if isImport {
 		found = C.wasmtime_component_type_import_nth(
 			ct.ptr(), ct.engine.ptr(), C.size_t(i),
-			&nameP, &nameLen, &item)
+			&nameP, &nameLen, &extern)
 	} else {
 		found = C.wasmtime_component_type_export_nth(
 			ct.ptr(), ct.engine.ptr(), C.size_t(i),
-			&nameP, &nameLen, &item)
+			&nameP, &nameLen, &extern)
 	}
 	runtime.KeepAlive(ct)
 	runtime.KeepAlive(ct.engine)
@@ -99,6 +100,8 @@ func (ct *ComponentType) itemNth(i int, isImport bool) (string, *ComponentItem) 
 		return "", nil
 	}
 	name := C.GoStringN(nameP, C.int(nameLen))
+	C.wasmtime_component_extern_type(extern, &item)
+	C.wasmtime_component_extern_delete(extern)
 	return name, mkComponentItem(item)
 }
 
