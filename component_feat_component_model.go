@@ -17,9 +17,6 @@ import (
 // returns the embedded payload type. The slice currently exposed here
 // intentionally only surfaces the kinds reachable without those further
 // sub-types.
-// TODO: ComponentFunc + value marshaling (call exported component functions
-// with primitive / composite WIT values).
-
 // Component is a compiled WebAssembly component, the binary representation of
 // a component-model artifact. Components are instantiated through a
 // [ComponentLinker].
