@@ -8,7 +8,8 @@ import "runtime"
 // ComponentLinker is used to satisfy the imports of a [Component] and
 // instantiate it. Use [NewComponentLinker] to create one.
 type ComponentLinker struct {
-	_ptr *C.wasmtime_component_linker_t
+	_ptr   *C.wasmtime_component_linker_t
+	locked bool
 }
 
 // NewComponentLinker creates a new [ComponentLinker] for the given engine.
@@ -30,6 +31,9 @@ func (l *ComponentLinker) ptr() *C.wasmtime_component_linker_t {
 	ret := l._ptr
 	if ret == nil {
 		panic("object has been closed already")
+	}
+	if l.locked {
+		panic("component linker is exclusively borrowed by a linker instance")
 	}
 	maybeGC()
 	return ret
@@ -71,13 +75,6 @@ func (l *ComponentLinker) DefineUnknownImportsAsTraps(component *Component) erro
 	return nil
 }
 
-// TODO: expose ComponentLinker.Root() and the LinkerInstance type so host
-// functions, modules, and resources can be defined. The C API has an
-// "exclusive access" requirement on the parent linker while a
-// LinkerInstance is alive; mirror that with a locking flag (see
-// wasmtime-py's `Linker.locked` for the reference pattern). The
-// `wasmtime_component_linker_allow_shadowing` knob is meaningful only once
-// definitions exist, so it will be wired up alongside the host-side API.
 // TODO: WASIp2 / wasi:http integration via `wasmtime_component_linker_add_*`.
 
 // Close deallocates this linker's state explicitly.
@@ -86,6 +83,9 @@ func (l *ComponentLinker) DefineUnknownImportsAsTraps(component *Component) erro
 func (l *ComponentLinker) Close() {
 	if l._ptr == nil {
 		return
+	}
+	if l.locked {
+		panic("component linker is exclusively borrowed by a linker instance")
 	}
 	runtime.SetFinalizer(l, nil)
 	C.wasmtime_component_linker_delete(l._ptr)
