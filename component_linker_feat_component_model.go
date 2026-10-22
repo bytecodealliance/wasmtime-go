@@ -78,7 +78,18 @@ func (l *ComponentLinker) DefineUnknownImportsAsTraps(component *Component) erro
 // wasmtime-py's `Linker.locked` for the reference pattern). The
 // `wasmtime_component_linker_allow_shadowing` knob is meaningful only once
 // definitions exist, so it will be wired up alongside the host-side API.
-// TODO: WASIp2 / wasi:http integration via `wasmtime_component_linker_add_*`.
+
+// AddWASIP2 defines Wasmtime's synchronous WASIp2 interfaces in this linker.
+func (l *ComponentLinker) AddWASIP2() error {
+	err := C.wasmtime_component_linker_add_wasip2(l.ptr())
+	runtime.KeepAlive(l)
+	if err != nil {
+		return mkError(err)
+	}
+	return nil
+}
+
+// TODO: wasi:http integration via `wasmtime_component_linker_add_wasi_http`.
 
 // Close deallocates this linker's state explicitly.
 //
