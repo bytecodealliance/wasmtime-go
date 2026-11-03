@@ -22,7 +22,7 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-2025]
         go: ['1.20.x', '1.21.x', '1.22.x', '1.23.x', '1.24.x']
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     # first download wasmtime's last static library build using python
     - uses: actions/setup-python@v7
@@ -31,7 +31,7 @@ jobs:
     - run: python ci/download-wasmtime.py
 
     # then run our go tests ...
-    - uses: actions/setup-go@v2
+    - uses: actions/setup-go@v7
       with:
         go-version: ${{ matrix.go }}
     - run: go vet
@@ -80,17 +80,17 @@ jobs:
   coverage:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-python@v2
+    - uses: actions/checkout@v7
+    - uses: actions/setup-python@v7
       with:
         python-version: 3.8
     - run: python ci/download-wasmtime.py
-    - uses: actions/setup-go@v2
+    - uses: actions/setup-go@v7
       with:
         go-version: '1.20'
     - run: go test -coverprofile cover.out ./...
     - run: go tool cover -html=cover.out -o coverage.html
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       with:
         name: coverage
         path: coverage.html
@@ -98,8 +98,8 @@ jobs:
   fmt:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-go@v2
+    - uses: actions/checkout@v7
+    - uses: actions/setup-go@v7
       with:
         go-version: '1.20'
     # https://stackoverflow.com/questions/42510140/check-format-for-continous-integration
@@ -109,17 +109,17 @@ jobs:
     needs: [coverage]
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/download-artifact@v4
+    - uses: actions/checkout@v7
+    - uses: actions/download-artifact@v8
       with:
         name: coverage
         path: coverage
     - run: find .
 
     - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-      uses: actions/configure-pages@v5
+      uses: actions/configure-pages@v6
     - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-      uses: actions/upload-pages-artifact@v3
+      uses: actions/upload-pages-artifact@v5
       with:
         path: "coverage"
 
@@ -136,4 +136,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
