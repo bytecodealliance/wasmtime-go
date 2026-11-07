@@ -82,3 +82,11 @@ func TestComponentDefineUnknownImportsAsTraps(t *testing.T) {
 		})
 	}
 }
+
+func TestComponentLinkerAddWASIP2(t *testing.T) {
+	engine := newComponentEngine()
+	defer engine.Close()
+	linker := NewComponentLinker(engine)
+	defer linker.Close()
+	require.NoError(t, linker.AddWASIP2())
+}
