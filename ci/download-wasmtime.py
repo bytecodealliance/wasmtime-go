@@ -18,12 +18,12 @@ args = parser.parse_args()
 version = 'v51.0.0'
 urls = [
     ['wasmtime-{}-x86_64-linux-c-api.tar.xz', 'linux-x86_64'],
-    ['wasmtime-{}-x86_64-macos-c-api.tar.xz', 'macos-x86_64'],
     ['wasmtime-{}-aarch64-linux-c-api.tar.xz', 'linux-aarch64'],
     ['wasmtime-{}-aarch64-macos-c-api.tar.xz', 'macos-aarch64'],
 ]
 if not args.min:
     urls.append(['wasmtime-{}-x86_64-mingw-c-api.zip', 'windows-x86_64'])
+    urls.append(['wasmtime-{}-x86_64-macos-c-api.tar.xz', 'macos-x86_64'])
 
 try:
     # keep directory structure, only iremove files
