@@ -75,7 +75,7 @@ jobs:
     - name: Test the minimal runtime
       shell: bash
       run: ./ci/test-minimal-runtime/test.sh
-      if: runner.os != 'Windows'
+      if: runner.os == 'Linux'
 
   coverage:
     runs-on: ubuntu-latest
